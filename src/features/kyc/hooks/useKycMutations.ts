@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   addKycDocument,
   addKycPerson,
+  createKycDocumentUploadUrl,
   submitKyc,
   upsertKycBusiness,
 } from '../services/kycService.ts'
@@ -29,6 +30,12 @@ export function useAddKycDocumentMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['kyc-documents'] })
     },
+  })
+}
+
+export function useCreateKycDocumentUploadUrlMutation() {
+  return useMutation({
+    mutationFn: createKycDocumentUploadUrl,
   })
 }
 

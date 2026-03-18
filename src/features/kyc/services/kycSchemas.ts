@@ -52,6 +52,22 @@ export const kycDocumentPayloadSchema = z.object({
   merchantPersonId: z.string().optional(),
 })
 
+export const kycDocumentUploadUrlPayloadSchema = z.object({
+  documentType: z.string().min(1),
+  filename: z.string().min(1),
+  contentType: z.string().min(1).optional(),
+  merchantPersonId: z.string().optional(),
+})
+
+export const kycDocumentUploadUrlResponseSchema = z.object({
+  uploadUrl: z.string().min(1),
+  uploadToken: z.string().min(1),
+  path: z.string().min(1),
+  bucket: z.string().min(1),
+  fileReference: z.string().min(1),
+  expiresIn: z.number(),
+})
+
 export const kycDocumentListItemSchema = z.object({
   id: z.string().min(1),
   documentType: z.string().min(1),
@@ -72,4 +88,10 @@ export type KycBusinessResponse = z.infer<typeof kycBusinessResponseSchema>
 export type KycPersonPayload = z.infer<typeof kycPersonPayloadSchema>
 export type KycPersonListItem = z.infer<typeof kycPersonListItemSchema>
 export type KycDocumentPayload = z.infer<typeof kycDocumentPayloadSchema>
+export type KycDocumentUploadUrlPayload = z.infer<
+  typeof kycDocumentUploadUrlPayloadSchema
+>
+export type KycDocumentUploadUrlResponse = z.infer<
+  typeof kycDocumentUploadUrlResponseSchema
+>
 export type KycDocumentListItem = z.infer<typeof kycDocumentListItemSchema>

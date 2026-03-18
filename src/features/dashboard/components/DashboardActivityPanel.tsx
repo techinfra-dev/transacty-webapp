@@ -1,88 +1,69 @@
-interface ActivityItem {
-  id: string
-  type: string
-  counterparty: string
-  currency: string
-  direction: 'inflow' | 'outflow'
-  date: string
-  time: string
-  amount: string
-  fee: string
-  balance: string
-  status: 'Successful' | 'Pending' | 'Failed'
-}
+import { Link } from '@tanstack/react-router'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
+import { useTransactionsListQuery } from '../hooks/useTransactionsQueries.ts'
+import type {
+  TransactionItem,
+  TransactionStatus,
+  TransactionType,
+} from '../services/transactionsSchemas.ts'
 
-const activities: ActivityItem[] = [
-  {
-    id: 'TRX-18472',
-    type: 'Bank Transfer Direct Deposit',
-    counterparty: 'From: Green Ventures Ltd.',
-    currency: 'BDT',
-    direction: 'inflow',
-    date: 'Mar 11, 2026',
-    time: '03:04 PM',
-    amount: '+BDT 200.00',
-    fee: 'BDT 1.00',
-    balance: 'BDT 905.76',
-    status: 'Successful',
-  },
-  {
-    id: 'TRX-18458',
-    type: 'Withdrawal',
-    counterparty: 'To: Olivia Stone',
-    currency: 'BDT',
-    direction: 'outflow',
-    date: 'Mar 10, 2026',
-    time: '01:59 PM',
-    amount: '-BDT 200.00',
-    fee: 'BDT 10.00',
-    balance: 'BDT 717.14',
-    status: 'Pending',
-  },
-  {
-    id: 'TRX-18416',
-    type: 'Bank Transfer Direct Deposit',
-    counterparty: 'From: Daniel Adeola',
-    currency: 'BDT',
-    direction: 'inflow',
-    date: 'Mar 09, 2026',
-    time: '11:28 AM',
-    amount: '+BDT 100.00',
-    fee: 'BDT 0.50',
-    balance: 'BDT 1,147.44',
-    status: 'Successful',
-  },
-]
-
-function statusClassName(status: ActivityItem['status']) {
-  if (status === 'Successful') {
+function statusClassName(status: TransactionStatus) {
+  if (status === 'success') {
     return 'bg-emerald-100 text-emerald-700'
   }
-  if (status === 'Pending') {
+  if (status === 'pending') {
     return 'bg-amber-100 text-amber-700'
   }
   return 'bg-rose-100 text-rose-700'
 }
 
-function directionAccentClass(direction: ActivityItem['direction']) {
-  return direction === 'inflow'
+function directionAccentClass(type: TransactionType) {
+  return type === 'payin' || type === 'refund'
     ? 'bg-emerald-500/14 text-emerald-700'
     : 'bg-rose-500/14 text-rose-700'
 }
 
-function activityMethodLabel(type: ActivityItem['type']) {
-  if (type.toLowerCase().includes('withdrawal')) {
-    return 'Withdrawal'
-  }
-  return 'Bank Transfer'
+function toTitleCaseFromSnake(value: string) {
+  return value
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
 }
 
-function activityCustomerLabel(counterparty: ActivityItem['counterparty']) {
-  return counterparty.replace(/^From:\s*|^To:\s*/i, '')
+function formatMoney(amountText: string) {
+  const amountNumber = Number(amountText)
+  const amount = Number.isFinite(amountNumber) ? amountNumber : 0
+  return `BDT ${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`
+}
+
+function formatDateTime(isoDate: string) {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) {
+    return { dateText: isoDate, timeText: '' }
+  }
+  return {
+    dateText: date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    timeText: date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  }
 }
 
 export function DashboardActivityPanel() {
-  const displayedActivities = activities.slice(0, 10)
+  const transactionsQuery = useTransactionsListQuery({
+    limit: 10,
+    offset: 0,
+  })
+  const displayedActivities = transactionsQuery.data?.items ?? []
 
   return (
     <section className="rounded-2xl border border-(--color-accent)/45 bg-(--color-card) p-5">
@@ -90,12 +71,12 @@ export function DashboardActivityPanel() {
         <h2 className="[font-family:var(--font-display)] text-xl font-semibold text-(--color-foreground)">
           Recent activity
         </h2>
-        <button
-          type="button"
+        <Link
+          to="/dashboard/transactions"
           className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-secondary) hover:text-(--color-foreground)"
         >
           View all
-        </button>
+        </Link>
       </div>
 
       <div className="hidden grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] gap-3 border-b border-(--color-accent)/35 px-5 py-3 [font-family:var(--font-body)] text-[11px] font-semibold uppercase tracking-wide text-(--color-secondary) lg:grid">
@@ -109,19 +90,37 @@ export function DashboardActivityPanel() {
       </div>
 
       <div className="max-h-[420px] overflow-y-auto">
-        {displayedActivities.map((activity) => (
-          <article
-            key={activity.id}
-            className="grid gap-2 border-b border-(--color-accent)/25 px-5 py-3 last:border-b-0 lg:grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] lg:items-center lg:gap-3"
-          >
+        {transactionsQuery.isPending ? (
+          <div className="flex min-h-[180px] items-center justify-center">
+            <LoadingSpinner label="Loading activity..." />
+          </div>
+        ) : transactionsQuery.isError ? (
+          <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-rose-600">
+            Unable to load activity right now.
+          </div>
+        ) : displayedActivities.length === 0 ? (
+          <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+            No recent activity found.
+          </div>
+        ) : (
+          displayedActivities.map((activity: TransactionItem) => {
+            const { dateText, timeText } = formatDateTime(activity.createdAt)
+            const isInflow = activity.type === 'payin' || activity.type === 'refund'
+            const amountLabel = `${isInflow ? '+' : '-'}${formatMoney(activity.amount)}`
+
+            return (
+              <article
+                key={activity.id}
+                className="grid gap-2 border-b border-(--color-accent)/25 px-5 py-3 last:border-b-0 lg:grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] lg:items-center lg:gap-3"
+              >
             <div className="grid grid-cols-[auto_1fr_auto] gap-3 lg:hidden">
               <div
                 className={`mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full ${directionAccentClass(
-                  activity.direction,
+                  activity.type,
                 )}`}
               >
                 <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden="true">
-                  {activity.direction === 'inflow' ? (
+                  {isInflow ? (
                     <path d="M10 3.5a.75.75 0 0 1 .75.75v8.44l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 0 1 1.06-1.06l2.22 2.22V4.25A.75.75 0 0 1 10 3.5Z" />
                   ) : (
                     <path d="M10 16.5a.75.75 0 0 1-.75-.75V7.31l-2.22 2.22a.75.75 0 1 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 1 1-1.06 1.06l-2.22-2.22v8.44A.75.75 0 0 1 10 16.5Z" />
@@ -131,37 +130,38 @@ export function DashboardActivityPanel() {
 
               <div className="min-w-0">
                 <p className="truncate [font-family:var(--font-display)] text-[0.98rem] font-semibold leading-tight text-(--color-foreground)">
-                  {activity.type}
+                  {toTitleCaseFromSnake(activity.type)}
                 </p>
                 <p className="truncate [font-family:var(--font-body)] text-[11px] text-(--color-secondary)">
-                  {activity.counterparty}
+                  {activity.customerWalletId || 'General ledger'}
                 </p>
                 <p className="mt-0.5 [font-family:var(--font-body)] text-[11px] text-(--color-secondary)">
-                  {activity.date}, {activity.time}
+                  {dateText}
+                  {timeText ? `, ${timeText}` : ''}
                 </p>
 
                 <div className="mt-1 flex flex-wrap items-center gap-2.5 [font-family:var(--font-body)] text-[10px] text-(--color-secondary)">
-                  <span>Fee: {activity.fee}</span>
-                  <span>Bal: {activity.balance}</span>
+                  <span>Paid: {formatMoney(activity.paidAmount || activity.amount)}</span>
+                  <span>Status: {toTitleCaseFromSnake(activity.status)}</span>
                 </div>
               </div>
 
               <div className="text-right">
                 <p
                   className={`[font-family:var(--font-display)] text-[1.7rem] font-semibold leading-tight ${
-                    activity.direction === 'inflow'
+                    isInflow
                       ? 'text-emerald-600'
                       : 'text-(--color-foreground)'
                   }`}
                 >
-                  {activity.amount}
+                  {amountLabel}
                 </p>
                 <span
                   className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[11px] font-semibold ${statusClassName(
                     activity.status,
                   )}`}
                 >
-                  {activity.status}
+                  {toTitleCaseFromSnake(activity.status)}
                 </span>
 
                 <div className="mt-1.5 flex items-center justify-end gap-1 text-(--color-secondary)">
@@ -184,28 +184,28 @@ export function DashboardActivityPanel() {
 
             <div className="hidden min-w-0 lg:block">
               <p className="[font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {activityCustomerLabel(activity.counterparty)}
+                {activity.customerWalletId || 'General ledger'}
               </p>
             </div>
 
             <p
               className="hidden [font-family:var(--font-body)] text-sm text-(--color-foreground) lg:block"
             >
-              {activityMethodLabel(activity.type)}
+              {toTitleCaseFromSnake(activity.type)}
             </p>
 
             <p
               className={`hidden [font-family:var(--font-body)] text-sm lg:block ${
-                activity.direction === 'inflow'
+                isInflow
                   ? 'text-emerald-600'
                   : 'text-(--color-foreground)'
               }`}
             >
-              {activity.amount}
+              {amountLabel}
             </p>
 
             <p className="hidden [font-family:var(--font-body)] text-sm text-(--color-secondary) lg:block">
-              {activity.fee}
+              {formatMoney(activity.paidAmount || activity.amount)}
             </p>
 
             <div className="hidden lg:block">
@@ -214,15 +214,18 @@ export function DashboardActivityPanel() {
                   activity.status,
                 )}`}
               >
-                {activity.status}
+                {toTitleCaseFromSnake(activity.status)}
               </span>
             </div>
 
             <p className="hidden [font-family:var(--font-body)] text-xs text-(--color-secondary) lg:block">
-              {activity.date} {activity.time}
+              {dateText}
+              {timeText ? ` ${timeText}` : ''}
             </p>
           </article>
-        ))}
+            )
+          })
+        )}
       </div>
     </section>
   )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button.tsx'
 import { logout } from '../features/auth/services/authService.ts'
+import { useProfileQuery } from '../features/dashboard/hooks/useProfileQuery.ts'
 import { KycActivationModal } from '../features/kyc/components/KycActivationModal.tsx'
 import { useKycDialogStore } from '../store/kycDialogStore.ts'
 import {
@@ -107,10 +108,21 @@ export function DashboardLayout() {
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const closeKycDialog = useKycDialogStore((state) => state.closeDialog)
   const navigate = useNavigate()
+  const profileQuery = useProfileQuery(Boolean(authUser))
   const sidebarTitle = (authUser?.merchantName || 'Transcaty').toUpperCase()
   const sidebarSubtitle = authUser?.role
     ? `${toCapitalizedWord(authUser.role)} workspace`
     : 'Merchant workspace'
+  const hasSubmittedBusinessProfile =
+    profileQuery.data?.businessProfile?.status === 'submitted'
+  const isKycPending = profileQuery.data?.kycStatus === 'pending'
+  const isKycVerified = profileQuery.data?.kycStatus === 'verified'
+  const isBusinessVerified = profileQuery.data?.businessProfile?.status === 'verified'
+  const isFullyVerified = isKycVerified && isBusinessVerified
+  const showKycPendingBanner =
+    !isFullyVerified && hasSubmittedBusinessProfile && isKycPending
+  const showActivationBanner =
+    !isFullyVerified && !showKycPendingBanner && authUser?.needsActivation
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthSessionUpdates(() => {
@@ -209,7 +221,22 @@ export function DashboardLayout() {
         </aside>
 
         <main className="h-full overflow-y-auto p-5 md:p-7">
-          {authUser?.needsActivation ? (
+          {showKycPendingBanner ? (
+            <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
+              <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">
+                <span className="inline-flex items-center gap-1 font-semibold text-(--color-background)">
+                  <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-amber-400" aria-hidden="true">
+                    <path d="M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Zm0 2.75a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75Zm0 8.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
+                  </svg>
+                  KYC pending verification
+                </span>
+                <div className="text-center">
+                  Your business profile has been submitted and is currently under
+                  compliance review.
+                </div>
+              </div>
+            </section>
+          ) : showActivationBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
               <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">
                 <span className="inline-flex items-center gap-1 font-semibold text-(--color-background)">

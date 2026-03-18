@@ -15,10 +15,7 @@ export interface SettingsTab {
 
 export const accountTabs: SettingsTab[] = [
   { id: 'profile', label: 'Profile' },
-  { id: 'business-preference', label: 'Business preference' },
-  { id: 'settlement-accounts', label: 'Settlement accounts' },
-  { id: 'team', label: 'Team' },
-  { id: 'permissions', label: 'Permissions' },
+  { id: 'team', label: 'Directors' },
   { id: 'whitelisted-ip-addresses', label: 'Whitelisted IP addresses' },
 ]
 

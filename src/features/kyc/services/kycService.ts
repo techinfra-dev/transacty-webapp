@@ -1,4 +1,5 @@
 import { AxiosError } from 'axios'
+import { supabaseClient } from '../../../api/supabaseClient.ts'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
 import {
@@ -6,12 +7,16 @@ import {
   kycBusinessResponseSchema,
   kycCreatedItemResponseSchema,
   kycDocumentPayloadSchema,
+  kycDocumentUploadUrlPayloadSchema,
+  kycDocumentUploadUrlResponseSchema,
   kycDocumentsListResponseSchema,
   kycPersonPayloadSchema,
   kycPersonsListResponseSchema,
   kycSubmitResponseSchema,
   type KycBusinessPayload,
   type KycDocumentPayload,
+  type KycDocumentUploadUrlPayload,
+  type KycDocumentUploadUrlResponse,
   type KycPersonPayload,
 } from './kycSchemas.ts'
 
@@ -86,6 +91,40 @@ export async function addKycDocument(payload: KycDocumentPayload) {
     return kycCreatedItemResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getKycApiErrorMessage(error))
+  }
+}
+
+export async function createKycDocumentUploadUrl(
+  payload: KycDocumentUploadUrlPayload,
+): Promise<KycDocumentUploadUrlResponse> {
+  try {
+    const validatedPayload = kycDocumentUploadUrlPayloadSchema.parse(payload)
+    const response = await axiosInstance.post(
+      'me/kyc/documents/upload-url',
+      validatedPayload,
+      {
+        headers: getAuthHeader(),
+      },
+    )
+    return kycDocumentUploadUrlResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getKycApiErrorMessage(error))
+  }
+}
+
+export async function uploadDocumentToSignedUrl(params: {
+  bucket: string
+  path: string
+  uploadToken: string
+  file: File
+}) {
+  const { bucket, path, uploadToken, file } = params
+  const result = await supabaseClient.storage
+    .from(bucket)
+    .uploadToSignedUrl(path, uploadToken, file)
+
+  if (result.error) {
+    throw new Error(result.error.message || 'Unable to upload file right now.')
   }
 }
 

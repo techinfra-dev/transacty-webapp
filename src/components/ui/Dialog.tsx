@@ -11,6 +11,7 @@ interface DialogProps {
   footer?: ReactNode
   maxWidthClassName?: string
   contentClassName?: string
+  allowOverflow?: boolean
   showCloseButton?: boolean
   closeOnBackdrop?: boolean
 }
@@ -30,6 +31,7 @@ export function Dialog({
   footer,
   maxWidthClassName = 'max-w-3xl',
   contentClassName,
+  allowOverflow = false,
   showCloseButton = true,
   closeOnBackdrop = true,
 }: DialogProps) {
@@ -102,7 +104,8 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         className={joinClasses(
-          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-background)',
+          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col rounded-2xl border border-(--color-accent)/45 bg-(--color-background)',
+          allowOverflow ? 'overflow-visible' : 'overflow-hidden',
           isVisible ? 'dialog-surface-open' : 'dialog-surface-closed',
           maxWidthClassName,
         )}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { DropdownSelect } from '../../../components/ui/DropdownSelect.tsx'
+import { FileUploadDropzone } from '../../../components/ui/FileUploadDropzone.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import {
   getResumeStep,
@@ -11,11 +12,13 @@ import {
 import {
   useAddKycDocumentMutation,
   useAddKycPersonMutation,
+  useCreateKycDocumentUploadUrlMutation,
   useSubmitKycMutation,
   useUpsertKycBusinessMutation,
 } from '../hooks/useKycMutations.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import { useKycDocumentsQuery, useKycPersonsQuery } from '../hooks/useKycQueries.ts'
+import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
 
 interface KycActivationModalProps {
   isOpen: boolean
@@ -98,6 +101,14 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
+function toTitleCaseFromSnake(value: string) {
+  return value
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
 const requiredInputErrorClassName =
   'border-rose-400 focus:border-rose-500 focus:ring-rose-300/40'
 
@@ -139,9 +150,12 @@ export function KycActivationModal({
     address?: boolean
   }>({})
   const [documentFieldErrors, setDocumentFieldErrors] = useState<{
-    fileReference?: boolean
+    selectedFile?: boolean
   }>({})
   const [selectedPhoneCode, setSelectedPhoneCode] = useState('+880')
+  const [selectedDocumentFile, setSelectedDocumentFile] = useState<File | null>(null)
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false)
+  const [reviewDocumentNames, setReviewDocumentNames] = useState<string[]>([])
 
   const [businessForm, setBusinessForm] = useState({
     legalName: '',
@@ -170,7 +184,6 @@ export function KycActivationModal({
 
   const [documentForm, setDocumentForm] = useState({
     documentType: 'registration_certificate',
-    fileReference: '',
     documentNumber: '',
     merchantPersonId: '',
   })
@@ -178,6 +191,7 @@ export function KycActivationModal({
   const businessMutation = useUpsertKycBusinessMutation()
   const addPersonMutation = useAddKycPersonMutation()
   const addDocumentMutation = useAddKycDocumentMutation()
+  const createDocumentUploadUrlMutation = useCreateKycDocumentUploadUrlMutation()
   const submitKycMutation = useSubmitKycMutation()
   const personsQuery = useKycPersonsQuery(isOpen)
   const documentsQuery = useKycDocumentsQuery(isOpen)
@@ -188,7 +202,7 @@ export function KycActivationModal({
       return
     }
     setActiveStep(getResumeStep(merchantProgress))
-  }, [isOpen, merchantProgress])
+  }, [isOpen, merchantId])
 
   useEffect(() => {
     if (!isOpen) {
@@ -229,7 +243,7 @@ export function KycActivationModal({
     merchantProgress?.lastSuccessfulStep === 'submit' ||
     activeStep === 'persons'
   const canAccessDocuments =
-    merchantProgress?.lastSuccessfulStep === 'business' ||
+    personCount > 0 ||
     merchantProgress?.lastSuccessfulStep === 'persons' ||
     merchantProgress?.lastSuccessfulStep === 'documents' ||
     merchantProgress?.lastSuccessfulStep === 'submit' ||
@@ -258,6 +272,10 @@ export function KycActivationModal({
   const nextStepIndex = stepOrder.indexOf(activeStep) + 1
   const nextStep = nextStepIndex < stepOrder.length ? stepOrder[nextStepIndex] : null
   const canMoveNext = nextStep ? availableSteps.includes(nextStep) : false
+  const isAddingDocumentPending =
+    addDocumentMutation.isPending ||
+    createDocumentUploadUrlMutation.isPending ||
+    isUploadingDocument
 
   async function handleBusinessSubmit() {
     setBusinessError(null)
@@ -339,6 +357,7 @@ export function KycActivationModal({
         ownershipPercentage: '',
       }))
       setPersonFieldErrors({})
+      setActiveStep('documents')
     } catch (error) {
       setPersonError(
         error instanceof Error ? error.message : 'Unable to add person right now.',
@@ -349,7 +368,7 @@ export function KycActivationModal({
   async function handleAddDocument() {
     setDocumentError(null)
     const nextDocumentFieldErrors = {
-      fileReference: documentForm.fileReference.trim().length === 0,
+      selectedFile: !selectedDocumentFile,
     }
     setDocumentFieldErrors(nextDocumentFieldErrors)
 
@@ -358,21 +377,44 @@ export function KycActivationModal({
       return
     }
 
+    if (!selectedDocumentFile) {
+      setDocumentError('Please select a file to upload.')
+      return
+    }
+
     try {
+      const uploadUrlData = await createDocumentUploadUrlMutation.mutateAsync({
+        documentType: documentForm.documentType,
+        filename: selectedDocumentFile.name,
+        contentType: selectedDocumentFile.type || undefined,
+        merchantPersonId: documentForm.merchantPersonId.trim() || undefined,
+      })
+
+      setIsUploadingDocument(true)
+      await uploadDocumentToSignedUrl({
+        bucket: uploadUrlData.bucket,
+        path: uploadUrlData.path,
+        uploadToken: uploadUrlData.uploadToken,
+        file: selectedDocumentFile,
+      })
+      setIsUploadingDocument(false)
+
       await addDocumentMutation.mutateAsync({
         documentType: documentForm.documentType,
-        fileReference: documentForm.fileReference.trim(),
+        fileReference: uploadUrlData.fileReference,
         documentNumber: documentForm.documentNumber.trim() || undefined,
         merchantPersonId: documentForm.merchantPersonId.trim() || undefined,
       })
+      setReviewDocumentNames((previous) => [...previous, selectedDocumentFile.name])
       markStepSuccessful(merchantId, 'documents')
       setDocumentForm((previous) => ({
         ...previous,
-        fileReference: '',
         documentNumber: '',
       }))
+      setSelectedDocumentFile(null)
       setDocumentFieldErrors({})
     } catch (error) {
+      setIsUploadingDocument(false)
       setDocumentError(
         error instanceof Error ? error.message : 'Unable to add document right now.',
       )
@@ -383,6 +425,10 @@ export function KycActivationModal({
     setSubmitError(null)
     if (!merchantProgress?.lastSuccessfulStep) {
       setSubmitError('Complete the business profile step first.')
+      return
+    }
+    if (personCount <= 0) {
+      setSubmitError('Add at least one person before submitting KYC.')
       return
     }
     if (documentCount <= 0) {
@@ -399,6 +445,16 @@ export function KycActivationModal({
       )
     }
   }
+
+  const reviewPersonNames = (personsQuery.data?.items ?? []).map(
+    (person) => person.fullName,
+  )
+  const reviewDocumentLabels =
+    reviewDocumentNames.length > 0
+      ? reviewDocumentNames
+      : (documentsQuery.data?.items ?? []).map((document) =>
+          toTitleCaseFromSnake(document.documentType),
+        )
 
   return (
     <Dialog
@@ -434,6 +490,18 @@ export function KycActivationModal({
                   <LoadingButtonLabel label="Saving..." />
                 ) : (
                   'Save and continue'
+                )}
+              </Button>
+            ) : activeStep === 'submit' && !isSubmitted ? (
+              <Button
+                onClick={handleSubmitKyc}
+                disabled={submitKycMutation.isPending}
+                className="px-4"
+              >
+                {submitKycMutation.isPending ? (
+                  <LoadingButtonLabel label="Submitting..." />
+                ) : (
+                  'Submit KYC'
                 )}
               </Button>
             ) : nextStep ? (
@@ -739,7 +807,7 @@ export function KycActivationModal({
                 </h3>
                 <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
                   Add key individuals responsible for operations and ownership.
-                  This step is optional and can be skipped.
+                  Include at least one person to continue.
                 </p>
               </div>
 
@@ -1012,30 +1080,22 @@ export function KycActivationModal({
                 </label>
                 <label className="space-y-1 sm:col-span-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
-                    File reference *
+                    Upload file *
                   </span>
-                  <Input
-                    placeholder="s3://bucket/path/file.pdf"
-                    value={documentForm.fileReference}
-                    onChange={(event) =>
-                      {
-                        setDocumentForm((previous) => ({
+                  <FileUploadDropzone
+                    selectedFile={selectedDocumentFile}
+                    onFileChange={(nextFile) => {
+                      setSelectedDocumentFile(nextFile)
+                      if (documentFieldErrors.selectedFile) {
+                        setDocumentFieldErrors((previous) => ({
                           ...previous,
-                          fileReference: event.target.value,
+                          selectedFile: false,
                         }))
-                        if (documentFieldErrors.fileReference) {
-                          setDocumentFieldErrors((previous) => ({
-                            ...previous,
-                            fileReference: false,
-                          }))
-                        }
                       }
-                    }
-                    className={
-                      documentFieldErrors.fileReference
-                        ? requiredInputErrorClassName
-                        : undefined
-                    }
+                    }}
+                    accept=".pdf,.png,.jpg,.jpeg,.webp"
+                    error={Boolean(documentFieldErrors.selectedFile)}
+                    helperText="Accepted formats: PDF, PNG, JPG, JPEG, WEBP"
                   />
                 </label>
                 <label className="space-y-1 sm:col-span-2">
@@ -1058,11 +1118,13 @@ export function KycActivationModal({
               <div className="flex items-center gap-2">
                 <Button
                   onClick={handleAddDocument}
-                  disabled={addDocumentMutation.isPending}
+                  disabled={isAddingDocumentPending}
                   className="px-4"
                 >
-                  {addDocumentMutation.isPending ? (
-                    <LoadingButtonLabel label="Adding..." />
+                  {isAddingDocumentPending ? (
+                    <LoadingButtonLabel
+                      label={isUploadingDocument ? 'Uploading...' : 'Adding...'}
+                    />
                   ) : (
                     'Add document'
                   )}
@@ -1115,50 +1177,51 @@ export function KycActivationModal({
                 </p>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3">
                 <div className="rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-3">
                   <p className="text-xs uppercase tracking-wide text-(--color-secondary)">
-                    Business
+                    Persons ({personCount})
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-(--color-foreground)">
-                    {merchantProgress?.lastSuccessfulStep ? 'Saved' : 'Pending'}
-                  </p>
+                  {reviewPersonNames.length > 0 ? (
+                    <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                      {reviewPersonNames.map((name, index) => (
+                        <li key={`${name}-${index}`} className="truncate">
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+                      No person added yet.
+                    </p>
+                  )}
                 </div>
+
                 <div className="rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-3">
                   <p className="text-xs uppercase tracking-wide text-(--color-secondary)">
-                    Persons
+                    Documents ({documentCount})
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-(--color-foreground)">
-                    {personCount} added
-                  </p>
-                </div>
-                <div className="rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-3">
-                  <p className="text-xs uppercase tracking-wide text-(--color-secondary)">
-                    Documents
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-(--color-foreground)">
-                    {documentCount} added
-                  </p>
+                  {reviewDocumentLabels.length > 0 ? (
+                    <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                      {reviewDocumentLabels.map((label, index) => (
+                        <li key={`${label}-${index}`} className="truncate">
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+                      No document added yet.
+                    </p>
+                  )}
                 </div>
               </div>
 
               {isSubmitted ? (
-                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 [font-family:var(--font-body)] text-sm text-amber-800">
+                <div className="rounded-lg border border-(--color-primary)/35 bg-(--color-primary) p-3 [font-family:var(--font-body)] text-sm text-(--color-background)">
                   Pending verification. Your KYC submission is under review.
                 </div>
-              ) : (
-                <Button
-                  onClick={handleSubmitKyc}
-                  disabled={submitKycMutation.isPending}
-                  className="px-4"
-                >
-                  {submitKycMutation.isPending ? (
-                    <LoadingButtonLabel label="Submitting..." />
-                  ) : (
-                    'Submit KYC'
-                  )}
-                </Button>
-              )}
+              ) : null}
 
               {submitError ? <p className="text-sm text-rose-600">{submitError}</p> : null}
             </section>

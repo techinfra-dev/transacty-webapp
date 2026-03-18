@@ -88,7 +88,7 @@ export function DropdownSelect({
         <div
           role="listbox"
           aria-label={ariaLabel}
-          className={`absolute left-0 z-30 w-full min-w-40 overflow-hidden rounded-lg border border-(--color-accent)/45 bg-(--color-card) py-1 ${
+          className={`absolute left-0 z-130 w-full min-w-40 overflow-hidden rounded-lg border border-(--color-accent)/45 bg-(--color-card) py-1 ${
             menuPlacement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
           }`}
         >
