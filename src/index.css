@@ -102,12 +102,75 @@ body {
   animation: settings-tab-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.dialog-root-open {
+  pointer-events: auto;
+}
+
+.dialog-root-closed {
+  pointer-events: none;
+}
+
+.dialog-backdrop {
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dialog-backdrop-open {
+  opacity: 1;
+  animation: dialog-backdrop-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dialog-backdrop-closed {
+  opacity: 0;
+}
+
+.dialog-surface {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition:
+    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dialog-surface-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.dialog-surface-open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: dialog-surface-in 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dialog-surface-closed {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0) scale(0.985);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-form-enter,
   .app-shell > *,
   .app-shell > * :where(section, article, header, form, table, ul, ol, nav, aside),
   .toast-enter,
-  .settings-tab-enter {
+  .settings-tab-enter,
+  .dialog-backdrop,
+  .dialog-surface {
     animation: none;
+    transition: none;
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from './Button.tsx'
 
@@ -19,6 +19,8 @@ function joinClasses(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(' ')
 }
 
+const DIALOG_ANIMATION_DURATION_MS = 240
+
 export function Dialog({
   isOpen,
   onClose,
@@ -31,8 +33,28 @@ export function Dialog({
   showCloseButton = true,
   closeOnBackdrop = true,
 }: DialogProps) {
+  const [isRendered, setIsRendered] = useState(isOpen)
+  const [isVisible, setIsVisible] = useState(isOpen)
+
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setIsRendered(true)
+      window.requestAnimationFrame(() => {
+        setIsVisible(true)
+      })
+      return
+    }
+
+    setIsVisible(false)
+    const timeoutId = window.setTimeout(() => {
+      setIsRendered(false)
+    }, DIALOG_ANIMATION_DURATION_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isRendered) {
       return
     }
 
@@ -50,17 +72,25 @@ export function Dialog({
       window.removeEventListener('keydown', onEscape)
       document.body.style.overflow = previousBodyOverflow
     }
-  }, [isOpen, onClose])
+  }, [isRendered, onClose])
 
-  if (!isOpen) {
+  if (!isRendered) {
     return null
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-110 grid place-items-center p-4">
+    <div
+      className={joinClasses(
+        'fixed inset-0 z-110 grid place-items-center p-4',
+        isVisible ? 'dialog-root-open' : 'dialog-root-closed',
+      )}
+    >
       <button
         type="button"
-        className="absolute inset-0 bg-(--color-primary)/60"
+        className={joinClasses(
+          'dialog-backdrop absolute inset-0 bg-(--color-primary)/60',
+          isVisible ? 'dialog-backdrop-open' : 'dialog-backdrop-closed',
+        )}
         aria-label="Close dialog"
         onClick={() => {
           if (closeOnBackdrop) {
@@ -72,7 +102,8 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         className={joinClasses(
-          'relative z-120 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-background)',
+          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-background)',
+          isVisible ? 'dialog-surface-open' : 'dialog-surface-closed',
           maxWidthClassName,
         )}
       >
