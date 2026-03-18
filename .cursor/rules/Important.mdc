@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+---
+
+## Tech Stack Rules:
+1. **Routing**: Use @tanstack/react-router. Always use file-based routing in `src/routes/`.
+2. **Data Fetching**: Use @tanstack/react-query for all server state. NEVER use useEffect for fetching.
+3. **HTTP Client**: Use the centralized Axios instance in `src/api/axiosInstance.ts`.
+4. **Validation**: Use Zod for all form schemas and API response validation.
+5. **State Management**: Use Zustand for global UI state (sidebar, theme, user session). Keep it minimal.
+6. **Styling**: Use Tailwind CSS.
+
+## Implementation Workflow:
+- When creating a new feature (e.g., "payouts"), create a folder in `src/features/payouts/`.
+- Logic should be split: `components/`, `hooks/` (for queries/mutations), and `services/` (for axios calls).
+- Pages must be defined in `features/x/pages/` and then imported into `src/routes/`.
+- Ensure all API responses are parsed with `.parse()` or `.safeParse()` using Zod schemas to ensure type safety.
+- Always use TypeScript `interface` or `type` generated from Zod schemas.

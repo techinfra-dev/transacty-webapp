@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+
+src/
+├── api/              # Axios instances, global interceptors, and base configurations
+├── assets/           # Global static files (logos, fonts)
+├── components/       # Shared UI components (Button, Input, Modal - often via shadcn)
+├── config/           # Environment variables and global constants
+├── features/         # THE CORE: Domain-specific logic (Self-contained modules)
+│   ├── auth/         # Login, MFA, Password Reset
+│   ├── dashboard/    # Overview charts, summary statistics
+│   ├── payments/     # Transactions list, payment links, checkout logic
+│   └── payouts/      # Bank transfers, recipient management, bulk uploads
+├── hooks/            # Global reusable hooks (useMediaQuery, useDebounce)
+├── layouts/          # Persistent UI wrappers (DashboardLayout, AuthLayout)
+├── routes/           # TanStack Router file-based tree
+├── store/            # Zustand global stores (UI state, user session)
+├── types/            # Global TypeScript interfaces and Zod schemas
+└── utils/            # Helper functions (currency formatting, date parsing)

@@ -1,0 +1,67 @@
+---
+alwaysApply: true
+---
+
+# n23 Brand Guidelines for Cursor/UI Development
+
+This document defines the strict visual and technical rules for the **n23** brand identity. Use these parameters to ensure all generated UI components, CSS, and layouts are on-brand.
+
+---
+
+## 1. Brand Essence
+* [cite_start]**Tagline:** "Empowering Digital Horizons"[cite: 13, 15].
+* [cite_start]**Core Mission:** Driving innovation through technology, connecting ideas, data, and systems to create scalable solutions[cite: 15, 16].
+* [cite_start]**Tone:** Professional, innovative, future-ready, and intentional[cite: 16, 34, 78].
+
+---
+
+## 2. Color Palette
+Use these exact hex codes for all UI elements.
+
+### Primary Colors
+* [cite_start]**Obsidian Brown:** `#0F0700`[cite: 90].
+    * [cite_start]*Description:* A nearly black, ultra-deep brown; moody and grounded[cite: 86, 87].
+* [cite_start]**Slate Steel:** `#566167`[cite: 93].
+    * [cite_start]*Description:* A muted, bluish-grey; cool and industrial[cite: 88, 89].
+
+### Secondary Colors
+* [cite_start]**Ash Graphite:** `#464644`[cite: 110].
+    * [cite_start]*Description:* A dark, warm grey with greenish undertones; stable and earthy[cite: 101, 103, 104].
+* [cite_start]**Muted Clay:** `#9D8F82`[cite: 111].
+    * [cite_start]*Description:* A soft, beige-brown; warm, organic, and natural[cite: 106, 108].
+* [cite_start]**Ivory Dust:** `#F3E8D6`[cite: 112].
+    * [cite_start]*Description:* A very light cream; airy, clean, and refined[cite: 107, 109].
+
+---
+
+## 3. Typography
+[cite_start]The brand utilizes two specific geometric sans-serif fonts to balance technical precision with approachability[cite: 128, 129].
+
+### [cite_start]Primary Font: **Space Grotesk** [cite: 127]
+* [cite_start]**Usage:** All primary headings and high-level titles[cite: 124, 128].
+* [cite_start]**Reasoning:** Modern, geometric design that aligns with technical innovation[cite: 128].
+
+### [cite_start]Secondary Font: **Manrope** [cite: 135]
+* [cite_start]**Usage:** Subheadings and all body copy[cite: 132, 137].
+* [cite_start]**Reasoning:** Minimalist structure that maintains readability and professional clarity in digital applications[cite: 137, 138].
+
+---
+
+## 4. Logo & Layout Rules
+* [cite_start]**Safe Space:** Always maintain a minimum "safe zone" of **81.04px** around the logo to ensure visibility and impact[cite: 37, 38, 40].
+* [cite_start]**Minimum Scaling:** The logo must never be scaled smaller than **136.5 x 147.58 px** to preserve legibility[cite: 56, 58].
+* [cite_start]**Visual Motif:** Use the repeating background pattern (derived from the core logo shape) to add depth and organic rhythm to large surfaces[cite: 67, 68, 69].
+* **Prohibitions:**
+    * [cite_start]Do not outline the logo[cite: 44].
+    * [cite_start]Do not apply gradients, shadows, or effects[cite: 49].
+    * [cite_start]Do not stretch or rotate the logo[cite: 46, 47].
+
+---
+
+## 5. UI Implementation Guide
+* [cite_start]**Contrast:** Use **Ivory Dust** for backgrounds or text to provide a clean, airy contrast against **Obsidian Brown**[cite: 99, 100].
+* [cite_start]**Spacing:** UI should feel "structured yet organic," reflecting the brand's ability to decode complexity into connected solutions[cite: 33, 69].
+* [cite_start]**Components:** Buttons and containers should prioritize "clean lines" and "subtle rounded forms" as seen in the primary typography[cite: 129].
+
+
+Evey page and the components ahould load in with an animation to give the pages life
