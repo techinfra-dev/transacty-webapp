@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
@@ -18,6 +19,7 @@ function maskBalance(formattedMoney: string) {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate()
   const areBalancesHidden = useUiPreferencesStore(
     (state) => state.areBalancesHidden,
   )
@@ -94,7 +96,12 @@ export function DashboardPage() {
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
 
-          <Button className="h-10 px-3 text-xs">Request payout</Button>
+          <Button
+            className="h-10 px-3 text-xs"
+            onClick={() => navigate({ to: '/dashboard/payouts' })}
+          >
+            Request payout
+          </Button>
         </div>
       </header>
 
