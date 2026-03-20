@@ -14,7 +14,7 @@ export const transactionItemSchema = z.object({
   type: transactionTypeSchema,
   status: transactionStatusSchema,
   amount: z.string(),
-  paidAmount: z.string().optional(),
+  paidAmount: z.string().nullable().optional(),
   platformOrderId: z.string().nullable().optional(),
   customerWalletId: z.string().nullable().optional(),
   refundOfTransactionId: z.string().nullable().optional(),
