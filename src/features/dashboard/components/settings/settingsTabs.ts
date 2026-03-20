@@ -70,4 +70,4 @@ export const tabContent: Record<
   },
 }
 
-export const DEVELOPER_DOCS_URL = 'https://docs.transcaty.com'
+export const DEVELOPER_DOCS_URL = 'https://docs.transacty.ai'
