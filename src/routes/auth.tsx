@@ -14,6 +14,12 @@ function resolveAuthHeading(pathname: string) {
       subtitle: 'Enter your email to receive a reset link',
     }
   }
+  if (pathname === '/reset-password') {
+    return {
+      title: 'Reset password',
+      subtitle: 'Choose a new password for your account',
+    }
+  }
   return {
     title: 'Sign in',
     subtitle: 'Login to your account',

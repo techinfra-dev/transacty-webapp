@@ -1,4 +1,4 @@
-import type { AuthResponse } from './authSchemas.ts'
+import type { AuthSessionResponse } from './authSchemas.ts'
 
 const AUTH_TOKEN_KEY = 'transcaty.auth.token'
 const AUTH_USER_KEY = 'transcaty.auth.user'
@@ -17,7 +17,7 @@ function notifyAuthSessionUpdated() {
   window.dispatchEvent(new Event(AUTH_SESSION_UPDATED_EVENT))
 }
 
-export function storeAuthSession(payload: AuthResponse) {
+export function storeAuthSession(payload: AuthSessionResponse) {
   sessionStorage.setItem(AUTH_TOKEN_KEY, payload.token)
   sessionStorage.setItem(
     AUTH_USER_KEY,

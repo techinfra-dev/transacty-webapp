@@ -3,13 +3,23 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { Toast } from '../../../components/ui/Toast.tsx'
-import { useLoginMutation } from '../hooks/useAuthMutations.ts'
+import {
+  useLoginMutation,
+  useMfaVerifyMutation,
+} from '../hooks/useAuthMutations.ts'
+
+type LoginStep = 'credentials' | 'mfa'
 
 export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [step, setStep] = useState<LoginStep>('credentials')
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [mfaEmailHint, setMfaEmailHint] = useState<string | null>(null)
+
   const navigate = useNavigate()
   const loginMutation = useLoginMutation()
+  const mfaVerifyMutation = useMfaVerifyMutation()
 
   const handleLogin: NonNullable<ComponentProps<'form'>['onSubmit']> = async (
     event,
@@ -23,10 +33,18 @@ export function LoginPage() {
     const formData = new FormData(event.currentTarget)
 
     try {
-      await loginMutation.mutateAsync({
+      const result = await loginMutation.mutateAsync({
         email: String(formData.get('email') ?? ''),
         password: String(formData.get('password') ?? ''),
       })
+
+      if ('requiresMfa' in result && result.requiresMfa) {
+        setMfaToken(result.mfaToken)
+        setMfaEmailHint(result.email)
+        setStep('mfa')
+        return
+      }
+
       await navigate({ to: '/dashboard' })
     } catch (error) {
       setErrorMessage(
@@ -37,73 +55,189 @@ export function LoginPage() {
     }
   }
 
+  const handleMfaVerify: NonNullable<ComponentProps<'form'>['onSubmit']> = async (
+    event,
+  ) => {
+    event.preventDefault()
+    if (mfaVerifyMutation.isPending || !mfaToken) {
+      return
+    }
+
+    setErrorMessage(null)
+    const formData = new FormData(event.currentTarget)
+
+    try {
+      await mfaVerifyMutation.mutateAsync({
+        mfaToken,
+        code: String(formData.get('code') ?? ''),
+      })
+      await navigate({ to: '/dashboard' })
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to verify your code. Please try again.',
+      )
+    }
+  }
+
+  const isBusy = loginMutation.isPending || mfaVerifyMutation.isPending
+
   return (
     <>
-      <form className="space-y-5" onSubmit={handleLogin}>
-      <div className="space-y-1.5">
-        <label htmlFor="email" className="[font-family:var(--font-body)] text-sm font-medium">
-          Email
-        </label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="you@company.com"
-        />
-      </div>
+      {step === 'credentials' ? (
+        <form
+          key="credentials"
+          className="auth-form-enter space-y-5"
+          onSubmit={handleLogin}
+        >
+          <div className="space-y-1.5">
+            <label
+              htmlFor="email"
+              className="[font-family:var(--font-body)] text-sm font-medium"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+            />
+          </div>
 
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label htmlFor="password" className="[font-family:var(--font-body)] text-sm font-medium">
-            Password
-          </label>
-          <Link
-            to="/forgot-password"
-            className="[font-family:var(--font-body)] text-xs text-(--color-secondary) transition hover:text-(--color-foreground)"
-          >
-            Forgot password?
-          </Link>
-        </div>
-        <div className="relative">
-          <Input
-            id="password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Enter your password"
-            className="pr-12"
-          />
-          <Button
-            variant="ghost"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs hover:bg-transparent"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? 'Hide' : 'Show'}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="[font-family:var(--font-body)] text-sm font-medium"
+              >
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="[font-family:var(--font-body)] text-xs text-(--color-secondary) transition hover:text-(--color-foreground)"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                className="pr-12"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs hover:bg-transparent"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isBusy}>
+            {loginMutation.isPending ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
+                Logging in...
+              </span>
+            ) : (
+              'Login'
+            )}
           </Button>
-        </div>
-      </div>
 
-      <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-        {loginMutation.isPending ? (
-          <span className="inline-flex items-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
-            Logging in...
-          </span>
-        ) : (
-          'Login'
-        )}
-      </Button>
+          <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+            Don&apos;t have an account?{' '}
+            <Link
+              to="/signup"
+              className="font-semibold text-(--color-foreground)"
+            >
+              Create one
+            </Link>
+          </p>
+        </form>
+      ) : (
+        <form
+          key="mfa"
+          className="auth-form-enter space-y-5"
+          onSubmit={handleMfaVerify}
+        >
+          <div className="space-y-1">
+            <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">
+              Two-factor authentication is enabled for{' '}
+              <span className="font-medium text-(--color-foreground)">
+                {mfaEmailHint ?? 'your account'}
+              </span>
+              . Open your authenticator app and enter the 6-digit code.
+            </p>
+          </div>
 
-        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className="font-semibold text-(--color-foreground)">
-            Create one
-          </Link>
-        </p>
-      </form>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="code"
+              className="[font-family:var(--font-body)] text-sm font-medium"
+            >
+              Authentication code
+            </label>
+            <Input
+              id="code"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={12}
+              placeholder="000000"
+              aria-describedby="mfa-code-hint"
+            />
+            <p
+              id="mfa-code-hint"
+              className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
+            >
+              Enter the 6-digit code from your authenticator app.
+            </p>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isBusy}>
+            {mfaVerifyMutation.isPending ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
+                Verifying...
+              </span>
+            ) : (
+              'Verify and continue'
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            disabled={isBusy}
+            onClick={() => {
+              setStep('credentials')
+              setMfaToken(null)
+              setMfaEmailHint(null)
+              setErrorMessage(null)
+            }}
+          >
+            Back to sign in
+          </Button>
+        </form>
+      )}
 
       {errorMessage ? (
-        <Toast message={errorMessage} variant="error" onClose={() => setErrorMessage(null)} />
+        <Toast
+          message={errorMessage}
+          variant="error"
+          onClose={() => setErrorMessage(null)}
+        />
       ) : null}
     </>
   )

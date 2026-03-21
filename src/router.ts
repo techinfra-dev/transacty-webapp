@@ -5,6 +5,7 @@ import { Route as authRoute } from './routes/auth.tsx'
 import { Route as loginRoute } from './routes/login.tsx'
 import { Route as signupRoute } from './routes/signup.tsx'
 import { Route as forgotPasswordRoute } from './routes/forgot-password.tsx'
+import { Route as resetPasswordRoute } from './routes/reset-password.tsx'
 import { Route as dashboardRoute } from './routes/dashboard.tsx'
 import { Route as dashboardIndexRoute } from './routes/dashboard.index.tsx'
 import { Route as dashboardTransactionsRoute } from './routes/dashboard.transactions.tsx'
@@ -24,6 +25,7 @@ const authRouteTree = authRoute.addChildren([
   loginRoute,
   signupRoute,
   forgotPasswordRoute,
+  resetPasswordRoute,
 ])
 
 const routeTree = rootRoute.addChildren([
