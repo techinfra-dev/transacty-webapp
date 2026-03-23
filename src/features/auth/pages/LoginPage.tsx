@@ -2,6 +2,7 @@ import { useState, type ComponentProps } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
+import { OtpInput } from '../../../components/ui/OtpInput.tsx'
 import { Toast } from '../../../components/ui/Toast.tsx'
 import {
   useLoginMutation,
@@ -16,6 +17,7 @@ export function LoginPage() {
   const [step, setStep] = useState<LoginStep>('credentials')
   const [mfaToken, setMfaToken] = useState<string | null>(null)
   const [mfaEmailHint, setMfaEmailHint] = useState<string | null>(null)
+  const [mfaCode, setMfaCode] = useState('')
 
   const navigate = useNavigate()
   const loginMutation = useLoginMutation()
@@ -41,6 +43,7 @@ export function LoginPage() {
       if ('requiresMfa' in result && result.requiresMfa) {
         setMfaToken(result.mfaToken)
         setMfaEmailHint(result.email)
+        setMfaCode('')
         setStep('mfa')
         return
       }
@@ -64,12 +67,11 @@ export function LoginPage() {
     }
 
     setErrorMessage(null)
-    const formData = new FormData(event.currentTarget)
 
     try {
       await mfaVerifyMutation.mutateAsync({
         mfaToken,
-        code: String(formData.get('code') ?? ''),
+        code: mfaCode,
       })
       await navigate({ to: '/dashboard' })
     } catch (error) {
@@ -180,20 +182,16 @@ export function LoginPage() {
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label
-              htmlFor="code"
-              className="[font-family:var(--font-body)] text-sm font-medium"
-            >
+          <div className="space-y-3">
+            <p className="[font-family:var(--font-body)] text-sm font-medium text-(--color-foreground)">
               Authentication code
-            </label>
-            <Input
-              id="code"
-              name="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={12}
-              placeholder="000000"
+            </p>
+            <OtpInput
+              value={mfaCode}
+              onChange={setMfaCode}
+              disabled={isBusy}
+              autoFocus
+              aria-label="6-digit authentication code"
               aria-describedby="mfa-code-hint"
             />
             <p
@@ -204,7 +202,11 @@ export function LoginPage() {
             </p>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isBusy}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isBusy || mfaCode.length !== 6}
+          >
             {mfaVerifyMutation.isPending ? (
               <span className="inline-flex items-center gap-2">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
@@ -224,6 +226,7 @@ export function LoginPage() {
               setStep('credentials')
               setMfaToken(null)
               setMfaEmailHint(null)
+              setMfaCode('')
               setErrorMessage(null)
             }}
           >

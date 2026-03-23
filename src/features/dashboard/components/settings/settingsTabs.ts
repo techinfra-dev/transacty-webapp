@@ -1,5 +1,6 @@
 export type SettingsTabId =
   | 'profile'
+  | 'security'
   | 'business-preference'
   | 'settlement-accounts'
   | 'team'
@@ -15,6 +16,7 @@ export interface SettingsTab {
 
 export const accountTabs: SettingsTab[] = [
   { id: 'profile', label: 'Profile' },
+  { id: 'security', label: 'Security' },
   { id: 'team', label: 'Directors' },
   { id: 'whitelisted-ip-addresses', label: 'Whitelisted IP addresses' },
 ]
@@ -32,6 +34,11 @@ export const tabContent: Record<
     title: 'Profile',
     description:
       'Manage your business profile details, legal business name, and primary contact email.',
+  },
+  security: {
+    title: 'Security',
+    description:
+      'Protect your account with multi-factor authentication enrollment and verification controls.',
   },
   'business-preference': {
     title: 'Business preference',

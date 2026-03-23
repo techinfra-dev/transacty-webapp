@@ -234,7 +234,13 @@ export function ProfileSettingsContent() {
             <span className="inline-flex rounded-full bg-(--color-accent)/20 px-2.5 py-1 [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
               API keys {profile.canCreateApiKeys ? 'enabled' : 'restricted'}
             </span>
+            <span className="inline-flex rounded-full bg-(--color-accent)/20 px-2.5 py-1 [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
+              MFA {profile.mfaEnabled ? 'enabled' : 'disabled'}
+            </span>
           </div>
+          <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+            Manage MFA setup and disable actions in the Security tab.
+          </p>
         </section>
       </section>
     </div>

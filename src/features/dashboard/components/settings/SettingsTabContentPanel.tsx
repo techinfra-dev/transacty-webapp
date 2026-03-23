@@ -1,6 +1,7 @@
 import { tabContent, type SettingsTabId } from './settingsTabs.ts'
 import { ApiKeysSettingsContent } from './ApiKeysSettingsContent.tsx'
 import { ProfileSettingsContent } from './ProfileSettingsContent.tsx'
+import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
 
 interface SettingsTabContentPanelProps {
@@ -28,6 +29,17 @@ export function SettingsTabContentPanel({
         className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
       >
         <ApiKeysSettingsContent />
+      </article>
+    )
+  }
+
+  if (activeTab === 'security') {
+    return (
+      <article
+        key={activeTab}
+        className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
+      >
+        <SecuritySettingsContent />
       </article>
     )
   }

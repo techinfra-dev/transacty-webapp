@@ -19,6 +19,8 @@ export const profileResponseSchema = z.object({
   businessProfile: businessProfileSchema.nullable(),
   personsCount: z.number(),
   documentsCount: z.number(),
+  mfaEnabled: z.boolean(),
+  mfaPendingSetup: z.boolean(),
 })
 
 export const updateProfileRequestSchema = z.object({
