@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="base" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0b0e"/>
+      <stop offset="45%" stop-color="#12141a"/>
+      <stop offset="100%" stop-color="#0d0e12"/>
+    </linearGradient>
+    <linearGradient id="ribbonCopper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6b3d2e" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#c58b6b" stop-opacity="0.75"/>
+      <stop offset="70%" stop-color="#8b5a45" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#3d2520" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="ribbonSilver" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3d4349" stop-opacity="0.65"/>
+      <stop offset="45%" stop-color="#9aa3b0" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#2a2e35" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#c58b6b" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#0a0b0e" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soften" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="18"/>
+    </filter>
+    <filter id="mist" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="28" result="m"/>
+      <feMerge>
+        <feMergeNode in="m"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.5"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#base)"/>
+  <!-- Ambient copper glow -->
+  <ellipse cx="420" cy="180" rx="280" ry="200" fill="url(#ribbonCopper)" filter="url(#mist)" opacity="0.45"/>
+  <ellipse cx="80" cy="620" rx="260" ry="220" fill="url(#ribbonCopper)" filter="url(#mist)" opacity="0.35"/>
+  <!-- Silver wave band -->
+  <path
+    fill="url(#ribbonSilver)"
+    filter="url(#soften)"
+    opacity="0.85"
+    d="M-40 220 C120 140 200 380 380 300 S620 120 640 280 L640 420 C480 520 340 360 160 440 S-20 520 -40 380 Z"
+  />
+  <!-- Copper ribbon -->
+  <path
+    fill="url(#ribbonCopper)"
+    filter="url(#soften)"
+    opacity="0.72"
+    d="M-20 480 C140 400 260 560 420 460 S580 300 620 420 L620 680 C420 760 280 640 120 720 S-40 700 -20 560 Z"
+  />
+  <!-- Upper silver curve -->
+  <path
+    fill="url(#ribbonSilver)"
+    filter="url(#soften)"
+    opacity="0.55"
+    d="M0 80 C180 20 320 200 520 100 S600 -40 600 120 L600 260 C400 320 200 140 0 220 Z"
+  />
+  <!-- Foreground copper sweep -->
+  <path
+    fill="url(#ribbonCopper)"
+    filter="url(#soften)"
+    opacity="0.5"
+    d="M0 640 C200 560 360 780 600 680 L600 900 L0 900 Z"
+  />
+  <!-- Top sheen -->
+  <rect width="600" height="400" fill="url(#sheen)"/>
+  <!-- Subtle vignette -->
+  <rect width="600" height="900" fill="url(#vignette)"/>
+</svg>

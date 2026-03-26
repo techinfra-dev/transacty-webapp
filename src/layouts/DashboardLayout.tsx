@@ -94,13 +94,6 @@ function SidebarItemIcon({
   )
 }
 
-function toCapitalizedWord(value: string) {
-  if (!value) {
-    return value
-  }
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
-}
-
 export function DashboardLayout() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [authUser, setAuthUser] = useState(() => getAuthUser())
@@ -109,10 +102,6 @@ export function DashboardLayout() {
   const closeKycDialog = useKycDialogStore((state) => state.closeDialog)
   const navigate = useNavigate()
   const profileQuery = useProfileQuery(Boolean(authUser))
-  const sidebarTitle = (authUser?.merchantName || 'Transcaty').toUpperCase()
-  const sidebarSubtitle = authUser?.role
-    ? `${toCapitalizedWord(authUser.role)} workspace`
-    : 'Merchant workspace'
   const hasSubmittedBusinessProfile =
     profileQuery.data?.businessProfile?.status === 'submitted'
   const isKycPending = profileQuery.data?.kycStatus === 'pending'
@@ -151,16 +140,22 @@ export function DashboardLayout() {
   return (
     <section className="h-screen bg-(--color-background)">
       <div className="grid h-full lg:grid-cols-[260px_1fr]">
-        <aside className="hidden h-full border-r border-(--color-accent)/35 bg-(--color-primary) text-(--color-background) lg:block">
+        <aside className="hidden h-full border-r border-(--color-accent)/35 bg-[#35383F] text-(--color-background) lg:block">
           <div className="flex h-full flex-col p-5">
-            <div className="bg-(--color-background)/10 px-4 py-3">
-              <p className="[font-family:var(--font-display)] text-lg font-semibold">
-                {sidebarTitle}
-              </p>
-              <p className="mt-1 [font-family:var(--font-body)] text-xs text-(--color-background)/80">
-                {sidebarSubtitle}
-              </p>
-            </div>
+            <Link
+              to="/dashboard"
+              aria-label="Go to dashboard home"
+              className="mb-3 inline-flex max-w-full shrink-0 rounded-md outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-(--color-background)/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#35383F]"
+            >
+              <img
+                src="/TRENSACTY-LOGO-IVORY-DUST.png"
+                alt="Transacty"
+                width={220}
+                height={48}
+                className="h-9 w-auto max-w-full object-contain object-left md:h-10"
+                decoding="async"
+              />
+            </Link>
 
             <nav className="mt-6 space-y-5">
               {menuSections.map((section) => (
@@ -174,7 +169,7 @@ export function DashboardLayout() {
                         key={item.to}
                         to={item.to}
                         activeOptions={{ exact: item.to === '/dashboard' }}
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 [font-family:var(--font-body)] text-sm transition text-(--color-background)/85 hover:bg-(--color-background)/12"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 [font-family:var(--font-body)] text-sm text-(--color-background)/85 transition hover:bg-(--color-background)/12"
                         activeProps={{
                           className:
                             'bg-(--color-background)/20 font-semibold text-(--color-background)',
@@ -220,7 +215,7 @@ export function DashboardLayout() {
           </div>
         </aside>
 
-        <main className="h-full overflow-y-auto p-5 md:p-7">
+        <main className="h-full min-h-0 overflow-y-auto bg-white p-5 md:p-8">
           {showKycPendingBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
               <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">

@@ -40,9 +40,12 @@ export function SignUpPage() {
 
   return (
     <>
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit}>
         <div className="space-y-1.5">
-          <label htmlFor="businessName" className="[font-family:var(--font-body)] text-sm font-medium">
+          <label
+            htmlFor="businessName"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
+          >
             Business name
           </label>
           <Input
@@ -54,7 +57,10 @@ export function SignUpPage() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="[font-family:var(--font-body)] text-sm font-medium">
+          <label
+            htmlFor="email"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
+          >
             Email
           </label>
           <Input
@@ -66,7 +72,10 @@ export function SignUpPage() {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className="[font-family:var(--font-body)] text-sm font-medium">
+          <label
+            htmlFor="password"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
+          >
             Password
           </label>
           <Input
@@ -88,9 +97,12 @@ export function SignUpPage() {
           )}
         </Button>
 
-        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-[#566167]">
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-(--color-foreground)">
+          <Link
+            to="/login"
+            className="font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
+          >
             Sign in
           </Link>
         </p>

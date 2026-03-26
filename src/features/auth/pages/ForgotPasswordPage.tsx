@@ -42,7 +42,7 @@ export function ForgotPasswordPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="email"
-            className="[font-family:var(--font-body)] text-sm font-medium"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
           >
             Email
           </label>
@@ -66,9 +66,12 @@ export function ForgotPasswordPage() {
           )}
         </Button>
 
-        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-[#566167]">
           Remember your password?{' '}
-          <Link to="/login" className="font-semibold text-(--color-foreground)">
+          <Link
+            to="/login"
+            className="font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
+          >
             Sign in
           </Link>
         </p>

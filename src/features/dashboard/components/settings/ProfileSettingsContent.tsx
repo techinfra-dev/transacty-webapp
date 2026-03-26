@@ -1,18 +1,14 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Button } from '../../../../components/ui/Button.tsx'
+import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { updateAuthSessionUser } from '../../../auth/services/authSession.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 import { useUpdateProfileMutation } from '../../hooks/useUpdateProfileMutation.ts'
+import { SettingsCard } from './SettingsCard.tsx'
 
-function statusClassName(status: 'pending' | 'verified' | 'rejected') {
-  if (status === 'verified') {
-    return 'bg-emerald-100 text-emerald-700'
-  }
-  if (status === 'rejected') {
-    return 'bg-rose-100 text-rose-700'
-  }
-  return 'bg-amber-100 text-amber-700'
+function fieldLabelClass() {
+  return '[font-family:var(--font-body)] text-xs font-semibold text-[#566167]'
 }
 
 function toTitleCaseFromSnake(value: string) {
@@ -23,25 +19,27 @@ function toTitleCaseFromSnake(value: string) {
     .join(' ')
 }
 
-function ProfileField({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="[font-family:var(--font-body)] text-sm text-(--color-foreground)">
-        {label}
-      </p>
-      <div className="mt-1.5 rounded-lg border border-(--color-accent)/35 bg-(--color-card) px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-        {value}
-      </div>
-    </div>
-  )
+function KycStatusPill({
+  children,
+  variant,
+}: {
+  children: ReactNode
+  variant: 'success' | 'muted'
+}) {
+  const base =
+    'inline-flex rounded-full px-2.5 py-1 [font-family:var(--font-body)] text-xs font-semibold capitalize'
+  if (variant === 'success') {
+    return (
+      <span className={`${base} bg-[#3D6B4F] text-white`}>{children}</span>
+    )
+  }
+  return <span className={`${base} bg-[#9D8F82] text-white`}>{children}</span>
 }
 
 export function ProfileSettingsContent() {
   const [isMerchantIdCopied, setIsMerchantIdCopied] = useState(false)
-  const [isEditingBusinessName, setIsEditingBusinessName] = useState(false)
   const [businessNameDraft, setBusinessNameDraft] = useState('')
   const [updateError, setUpdateError] = useState<string | null>(null)
-  const businessNameInputRef = useRef<HTMLInputElement | null>(null)
   const profileQuery = useProfileQuery(true)
   const updateProfileMutation = useUpdateProfileMutation()
 
@@ -51,16 +49,9 @@ export function ProfileSettingsContent() {
     }
   }, [profileQuery.data?.businessName])
 
-  useEffect(() => {
-    if (isEditingBusinessName) {
-      businessNameInputRef.current?.focus()
-      businessNameInputRef.current?.select()
-    }
-  }, [isEditingBusinessName])
-
   if (profileQuery.isPending) {
     return (
-      <div className="flex h-full min-h-[260px] items-center justify-center">
+      <div className="flex min-h-[320px] items-center justify-center py-12">
         <LoadingSpinner label="Loading profile..." />
       </div>
     )
@@ -86,10 +77,9 @@ export function ProfileSettingsContent() {
     }
   }
 
-  const submitBusinessNameUpdate = async () => {
+  const saveBusinessNameIfChanged = async () => {
     const nextBusinessName = businessNameDraft.trim()
     if (!nextBusinessName || nextBusinessName === profile.businessName) {
-      setIsEditingBusinessName(false)
       setBusinessNameDraft(profile.businessName)
       return
     }
@@ -98,151 +88,154 @@ export function ProfileSettingsContent() {
     try {
       await updateProfileMutation.mutateAsync({ businessName: nextBusinessName })
       updateAuthSessionUser({ merchantName: nextBusinessName })
-      setIsEditingBusinessName(false)
     } catch (error) {
       setUpdateError(
         error instanceof Error
           ? error.message
           : 'Unable to update business name right now.',
       )
-    }
-  }
-
-  const handleBusinessNameKeyDown = async (
-    event: KeyboardEvent<HTMLInputElement>,
-  ) => {
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      await submitBusinessNameUpdate()
-      return
-    }
-    if (event.key === 'Escape') {
-      setIsEditingBusinessName(false)
       setBusinessNameDraft(profile.businessName)
     }
   }
 
-  return (
-    <div className="space-y-7">
-      <section>
-        <h3 className="[font-family:var(--font-display)] text-xl font-semibold text-(--color-foreground)">
-          Profile
-        </h3>
-        <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          Personal and business account details.
-        </p>
-      </section>
+  const kycVerified = profile.kycStatus === 'verified'
+  const apiKeysPositive = profile.canCreateApiKeys
+  const mfaDisabled = !profile.mfaEnabled
 
-      <section className="grid items-start gap-4 lg:grid-cols-[2fr_1fr]">
-        <section className="space-y-3">
-          <h4 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
-            Personal Information
-          </h4>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="[font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                Business name
-              </p>
-              <input
-                ref={businessNameInputRef}
-                value={businessNameDraft}
-                onChange={(event) => setBusinessNameDraft(event.target.value)}
-                onBlur={() => {
-                  if (isEditingBusinessName && !updateProfileMutation.isPending) {
-                    setIsEditingBusinessName(false)
-                    setBusinessNameDraft(profile.businessName)
-                  }
-                }}
-                onKeyDown={handleBusinessNameKeyDown}
-                disabled={!isEditingBusinessName || updateProfileMutation.isPending}
-                className={`mt-1.5 h-11 w-full rounded-lg border border-(--color-accent)/35 px-3 [font-family:var(--font-body)] text-sm text-(--color-foreground) outline-none transition ${
-                  isEditingBusinessName
-                    ? 'bg-(--color-card) focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20'
-                    : 'bg-(--color-card)/80'
-                } ${updateProfileMutation.isPending ? 'opacity-65' : ''}`}
-              />
-              <button
-                type="button"
-                className="mt-1 inline-flex cursor-pointer [font-family:var(--font-body)] text-sm text-blue-700 hover:underline"
-                onClick={() => {
-                  setUpdateError(null)
-                  setIsEditingBusinessName(true)
-                }}
-                disabled={updateProfileMutation.isPending}
-              >
-                Edit information
-              </button>
+  return (
+    <div className="space-y-6">
+      <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
+        Profile
+      </h1>
+
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,300px)] lg:gap-8">
+        <div className="min-w-0 space-y-6">
+          <SettingsCard title="Personal Information">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <label className={fieldLabelClass()} htmlFor="settings-business-name">
+                  Business name
+                </label>
+                <Input
+                  id="settings-business-name"
+                  value={businessNameDraft}
+                  onChange={(event) => setBusinessNameDraft(event.target.value)}
+                  onBlur={() => {
+                    void saveBusinessNameIfChanged()
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.currentTarget.blur()
+                    }
+                  }}
+                  disabled={updateProfileMutation.isPending}
+                  className="mt-1.5 border-[#D4CFC7] bg-white focus:border-[#0F0700]"
+                />
+              </div>
+
+              <div>
+                <p className={fieldLabelClass()}>Email address</p>
+                <Input
+                  readOnly
+                  value={profile.email}
+                  tabIndex={-1}
+                  className="mt-1.5 cursor-default border-[#D4CFC7] bg-white"
+                />
+              </div>
+
+              <div>
+                <p className={fieldLabelClass()}>Role</p>
+                <Input
+                  readOnly
+                  value={profile.role}
+                  tabIndex={-1}
+                  className="mt-1.5 cursor-default border-[#E8E4DE] bg-[#ECEAE8] text-[#464644]"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <p className={`shrink-0 ${fieldLabelClass()}`}>Merchant ID</p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 w-full shrink-0 rounded-lg border border-[#D4CFC7] bg-white px-4 text-sm font-semibold text-[#0F0700]! hover:bg-[#F7F4EF] sm:w-auto"
+                    onClick={handleCopyMerchantId}
+                  >
+                    {isMerchantIdCopied ? 'Copied' : 'Copy merchant ID'}
+                  </Button>
+                </div>
+              </div>
             </div>
-            <ProfileField label="Email address" value={profile.email} />
-            <ProfileField label="Role" value={profile.role} />
-            <div>
-              <p className="[font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                Merchant ID
+
+            {updateError ? (
+              <p className="[font-family:var(--font-body)] text-sm text-rose-600">
+                {updateError}
               </p>
-              <Button
-                variant="ghost"
-                className="mt-1.5 h-11 w-full border border-(--color-accent)/45 px-3 text-sm text-(--color-foreground)! hover:bg-(--color-card) hover:text-(--color-foreground)!"
-                onClick={handleCopyMerchantId}
-              >
-                {isMerchantIdCopied ? 'Copied' : 'Copy merchant ID'}
-              </Button>
-            </div>
-          </div>
-          {updateError ? (
-            <p className="[font-family:var(--font-body)] text-sm text-rose-600">
-              {updateError}
-            </p>
-          ) : null}
+            ) : null}
+          </SettingsCard>
 
           {profile.businessProfile ? (
-            <section className="space-y-3 border-t border-(--color-accent)/25 pt-2">
-              <h4 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
-                Business profile
-              </h4>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ProfileField
-                  label="Business type"
-                  value={toTitleCaseFromSnake(profile.businessProfile.businessType)}
-                />
-                <ProfileField
-                  label="Legal name"
-                  value={profile.businessProfile.legalName}
-                />
-                {profile.businessProfile.tradingName ? (
-                  <ProfileField
-                    label="Trading name"
-                    value={profile.businessProfile.tradingName}
+            <SettingsCard title="Business profile">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className={fieldLabelClass()}>Business type</p>
+                  <Input
+                    readOnly
+                    value={toTitleCaseFromSnake(profile.businessProfile.businessType)}
+                    tabIndex={-1}
+                    className="mt-1.5 cursor-default border-[#D4CFC7] bg-white"
                   />
-                ) : null}
+                </div>
+                <div>
+                  <p className={fieldLabelClass()}>Legal name</p>
+                  <Input
+                    readOnly
+                    value={profile.businessProfile.legalName}
+                    tabIndex={-1}
+                    className="mt-1.5 cursor-default border-[#D4CFC7] bg-white"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <p className={fieldLabelClass()}>Trading name</p>
+                  <Input
+                    readOnly
+                    value={profile.businessProfile.tradingName || '—'}
+                    tabIndex={-1}
+                    className="mt-1.5 cursor-default border-[#D4CFC7] bg-white"
+                  />
+                </div>
               </div>
-            </section>
+            </SettingsCard>
           ) : null}
-        </section>
+        </div>
 
-        <section className="space-y-3">
-          <h4 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
-            KYC Status
-          </h4>
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 [font-family:var(--font-body)] text-sm font-semibold ${statusClassName(
-                profile.kycStatus,
-              )}`}
-            >
-              {profile.kycStatus}
-            </span>
-            <span className="inline-flex rounded-full bg-(--color-accent)/20 px-2.5 py-1 [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-              API keys {profile.canCreateApiKeys ? 'enabled' : 'restricted'}
-            </span>
-            <span className="inline-flex rounded-full bg-(--color-accent)/20 px-2.5 py-1 [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-              MFA {profile.mfaEnabled ? 'enabled' : 'disabled'}
-            </span>
+        <aside className="min-w-0 lg:sticky lg:top-4">
+          <div className="overflow-hidden rounded-lg border border-[#E0DCD6] bg-[#FAF8F5] shadow-[0_1px_2px_rgba(15,7,0,0.04)]">
+            <div className="border-b border-[#E8E2DA] bg-[#F3E8D6] px-4 py-2.5">
+              <h3 className="[font-family:var(--font-display)] text-sm font-semibold text-[#0F0700]">
+                KYC Status
+              </h3>
+            </div>
+            <div className="space-y-3 p-4 md:p-5">
+              <div className="flex flex-wrap gap-2">
+                <KycStatusPill variant={kycVerified ? 'success' : 'muted'}>
+                  {profile.kycStatus}
+                </KycStatusPill>
+                <KycStatusPill variant={apiKeysPositive ? 'success' : 'muted'}>
+                  API keys {apiKeysPositive ? 'enabled' : 'restricted'}
+                </KycStatusPill>
+                <KycStatusPill variant={mfaDisabled ? 'muted' : 'success'}>
+                  MFA {profile.mfaEnabled ? 'enabled' : 'disabled'}
+                </KycStatusPill>
+              </div>
+              <p className="[font-family:var(--font-body)] text-xs leading-relaxed text-[#566167]">
+                Manage MFA setup and disable actions in the Security tab.
+              </p>
+            </div>
           </div>
-          <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-            Manage MFA setup and disable actions in the Security tab.
-          </p>
-        </section>
-      </section>
+        </aside>
+      </div>
     </div>
   )
 }

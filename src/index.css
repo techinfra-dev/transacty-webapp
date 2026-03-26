@@ -92,6 +92,13 @@ body {
   animation: app-component-enter 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Sticky sidebars: skip enter animation so transform does not fight position:sticky */
+.app-shell aside[data-payout-pinned] {
+  animation: none !important;
+  will-change: auto;
+  transform: none;
+}
+
 .toast-enter {
   animation: toast-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -100,6 +107,66 @@ body {
   will-change: transform, opacity;
   backface-visibility: hidden;
   animation: settings-tab-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Auth split layout (login / signup): charcoal + terracotta + cream card */
+@keyframes auth-banner-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(-12px, 8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.auth-banner-enter {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  animation: auth-banner-enter 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-split-surface label {
+  color: #2d3237;
+}
+
+.auth-split-surface input.h-11 {
+  border-color: #2d3237;
+  background-color: #ffffff;
+}
+
+.auth-split-surface input.h-11:focus {
+  border-color: #c58b6b;
+  box-shadow: 0 0 0 2px rgba(197, 139, 107, 0.35);
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+.auth-split-surface [role='group'] input:not([type='hidden']) {
+  border-color: #2d3237;
+  background-color: #ffffff;
+}
+
+.auth-split-surface [role='group'] input:not([type='hidden']):focus {
+  border-color: #c58b6b;
+  box-shadow: 0 0 0 2px rgba(197, 139, 107, 0.32);
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+.auth-split-surface form button[type='submit'] {
+  background-color: #2d3237;
+  color: #ffffff;
+}
+
+.auth-split-surface form button[type='submit']:hover:not(:disabled) {
+  background-color: #3a4046;
+}
+
+.auth-split-surface form button[type='submit'] .animate-spin {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
 }
 
 .dialog-root-open {
@@ -163,6 +230,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .auth-banner-enter,
   .auth-form-enter,
   .app-shell > *,
   .app-shell > * :where(section, article, header, form, table, ul, ol, nav, aside),

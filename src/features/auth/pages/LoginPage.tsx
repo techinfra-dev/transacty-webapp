@@ -96,7 +96,7 @@ export function LoginPage() {
           <div className="space-y-1.5">
             <label
               htmlFor="email"
-              className="[font-family:var(--font-body)] text-sm font-medium"
+              className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
             >
               Email
             </label>
@@ -105,7 +105,7 @@ export function LoginPage() {
               name="email"
               type="email"
               autoComplete="email"
-              placeholder="you@company.com"
+              placeholder="Enter your email"
             />
           </div>
 
@@ -113,13 +113,13 @@ export function LoginPage() {
             <div className="flex items-center justify-between">
               <label
                 htmlFor="password"
-                className="[font-family:var(--font-body)] text-sm font-medium"
+                className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
               >
                 Password
               </label>
               <Link
                 to="/forgot-password"
-                className="[font-family:var(--font-body)] text-xs text-(--color-secondary) transition hover:text-(--color-foreground)"
+                className="[font-family:var(--font-body)] text-xs font-medium text-[#c58b6b] transition hover:text-[#a97659]"
               >
                 Forgot password?
               </Link>
@@ -137,7 +137,7 @@ export function LoginPage() {
                 type="button"
                 variant="ghost"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs hover:bg-transparent"
+                className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs text-[#566167] hover:bg-transparent hover:text-[#2d3237]"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? 'Hide' : 'Show'}
@@ -156,11 +156,11 @@ export function LoginPage() {
             )}
           </Button>
 
-          <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+          <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-[#566167]">
             Don&apos;t have an account?{' '}
             <Link
               to="/signup"
-              className="font-semibold text-(--color-foreground)"
+              className="font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
             >
               Create one
             </Link>

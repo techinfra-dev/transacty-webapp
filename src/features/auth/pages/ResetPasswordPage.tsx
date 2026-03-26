@@ -62,13 +62,16 @@ export function ResetPasswordPage() {
         </p>
         <Button
           type="button"
-          className="w-full"
+          className="w-full bg-[#2d3237]! text-white! hover:bg-[#3a4046]!"
           onClick={() => void navigate({ to: '/forgot-password' })}
         >
           Forgot password
         </Button>
-        <p className="text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          <Link to="/login" className="font-semibold text-(--color-foreground)">
+        <p className="text-center [font-family:var(--font-body)] text-sm text-[#566167]">
+          <Link
+            to="/login"
+            className="font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
+          >
             Back to sign in
           </Link>
         </p>
@@ -82,7 +85,7 @@ export function ResetPasswordPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="password"
-            className="[font-family:var(--font-body)] text-sm font-medium"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
           >
             New password
           </label>
@@ -102,7 +105,7 @@ export function ResetPasswordPage() {
               type="button"
               variant="ghost"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs hover:bg-transparent"
+              className="absolute inset-y-0 right-0 h-auto cursor-pointer rounded-none bg-transparent px-3 text-xs text-[#566167] hover:bg-transparent hover:text-[#2d3237]"
               aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
               {showPassword ? 'Hide' : 'Show'}
@@ -113,7 +116,7 @@ export function ResetPasswordPage() {
         <div className="space-y-1.5">
           <label
             htmlFor="confirmPassword"
-            className="[font-family:var(--font-body)] text-sm font-medium"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
           >
             Confirm new password
           </label>
@@ -140,8 +143,11 @@ export function ResetPasswordPage() {
           )}
         </Button>
 
-        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          <Link to="/login" className="font-semibold text-(--color-foreground)">
+        <p className="pt-1 text-center [font-family:var(--font-body)] text-sm text-[#566167]">
+          <Link
+            to="/login"
+            className="font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
+          >
             Back to sign in
           </Link>
         </p>

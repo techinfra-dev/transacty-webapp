@@ -9,12 +9,12 @@ import type {
 
 function statusClassName(status: TransactionStatus) {
   if (status === 'success') {
-    return 'bg-emerald-100 text-emerald-700'
+    return 'bg-[#9FBA9A] text-black'
   }
   if (status === 'pending') {
     return 'bg-amber-100 text-amber-700'
   }
-  return 'bg-rose-100 text-rose-700'
+  return 'bg-[#E39E9C] text-black'
 }
 
 function directionAccentClass(type: TransactionType) {
@@ -40,6 +40,11 @@ function formatMoney(amountText: string) {
   })}`
 }
 
+/** Keeps "01:05 PM" on one line (space before AM/PM is non-breaking). */
+function withNoBreakBeforeAmPm(time: string) {
+  return time.replace(/ ([AP]M)$/i, '\u00A0$1')
+}
+
 function formatDateTime(isoDate: string) {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) {
@@ -51,10 +56,12 @@ function formatDateTime(isoDate: string) {
       day: 'numeric',
       year: 'numeric',
     }),
-    timeText: date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
+    timeText: withNoBreakBeforeAmPm(
+      date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    ),
   }
 }
 
@@ -66,21 +73,22 @@ export function DashboardActivityPanel() {
   const displayedActivities = transactionsQuery.data?.items ?? []
 
   return (
-    <section className="rounded-2xl border border-(--color-accent)/45 bg-(--color-card) p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="[font-family:var(--font-display)] text-xl font-semibold text-(--color-foreground)">
+    <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="[font-family:var(--font-display)] text-lg font-semibold text-[#0F0700] md:text-xl">
           Recent activity
         </h2>
         <Link
           to="/dashboard/transactions"
-          className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-secondary) hover:text-(--color-foreground)"
+          className="[font-family:var(--font-body)] text-sm font-medium text-[#566167] underline-offset-2 hover:text-[#0F0700] hover:underline"
         >
           View all
         </Link>
       </div>
 
-      <div className="hidden grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] gap-3 border-b border-(--color-accent)/35 px-5 py-3 [font-family:var(--font-body)] text-[11px] font-semibold uppercase tracking-wide text-(--color-secondary) lg:grid">
-        <p>Transaction</p>
+      <section className="overflow-hidden rounded-xl border border-[#E0DBD2] bg-white shadow-[0_1px_3px_rgba(15,7,0,0.06)]">
+        <div className="hidden grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] gap-3 border-b border-[#E5E0D6] bg-[#F0EDE6] px-5 py-3 [font-family:var(--font-body)] text-[11px] font-semibold uppercase tracking-wide text-[#566167] lg:grid">
+        <p>Transaction ID</p>
         <p>Customer</p>
         <p>Method</p>
         <p>Amount</p>
@@ -89,7 +97,7 @@ export function DashboardActivityPanel() {
         <p>Date</p>
       </div>
 
-      <div className="max-h-[420px] overflow-y-auto">
+      <div className="max-h-[420px] overflow-y-auto bg-white">
         {transactionsQuery.isPending ? (
           <div className="flex min-h-[180px] items-center justify-center">
             <LoadingSpinner label="Loading activity..." />
@@ -99,7 +107,7 @@ export function DashboardActivityPanel() {
             Unable to load activity right now.
           </div>
         ) : displayedActivities.length === 0 ? (
-          <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+          <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-[#566167]">
             No recent activity found.
           </div>
         ) : (
@@ -111,7 +119,7 @@ export function DashboardActivityPanel() {
             return (
               <article
                 key={activity.id}
-                className="grid gap-2 border-b border-(--color-accent)/25 px-5 py-3 last:border-b-0 lg:grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] lg:items-center lg:gap-3"
+                className="grid gap-2 border-b border-[#EDE8E0] bg-white px-5 py-3 transition-colors duration-150 ease-out last:border-b-0 hover:bg-[#F2EFE8] focus-within:bg-[#F2EFE8] lg:grid-cols-[132px_1.8fr_124px_108px_124px_108px_138px] lg:items-center lg:gap-3"
               >
             <div className="grid grid-cols-[auto_1fr_auto] gap-3 lg:hidden">
               <div
@@ -135,9 +143,9 @@ export function DashboardActivityPanel() {
                 <p className="truncate [font-family:var(--font-body)] text-[11px] text-(--color-secondary)">
                   {activity.customerWalletId || 'General ledger'}
                 </p>
-                <p className="mt-0.5 [font-family:var(--font-body)] text-[11px] text-(--color-secondary)">
+                <p className="mt-0.5 whitespace-nowrap [font-family:var(--font-body)] text-[11px] text-(--color-secondary)">
                   {dateText}
-                  {timeText ? `, ${timeText}` : ''}
+                  {timeText ? `,\u00A0${timeText}` : ''}
                 </p>
 
                 <div className="mt-1 flex flex-wrap items-center gap-2.5 [font-family:var(--font-body)] text-[10px] text-(--color-secondary)">
@@ -178,7 +186,7 @@ export function DashboardActivityPanel() {
               </div>
             </div>
 
-            <p className="hidden [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground) lg:block">
+            <p className="hidden max-w-[132px] truncate [font-family:var(--font-body)] text-sm font-medium text-[#0F0700] lg:block">
               {activity.id}
             </p>
 
@@ -218,15 +226,16 @@ export function DashboardActivityPanel() {
               </span>
             </div>
 
-            <p className="hidden [font-family:var(--font-body)] text-xs text-(--color-secondary) lg:block">
+            <p className="hidden whitespace-nowrap [font-family:var(--font-body)] text-xs text-(--color-secondary) lg:block">
               {dateText}
-              {timeText ? ` ${timeText}` : ''}
+              {timeText ? `\u00A0${timeText}` : ''}
             </p>
           </article>
             )
           })
         )}
       </div>
-    </section>
+      </section>
+    </>
   )
 }

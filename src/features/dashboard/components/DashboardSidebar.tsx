@@ -20,8 +20,16 @@ const sidebarSections: SidebarSection[] = [
 
 export function DashboardSidebar() {
   return (
-    <aside className="hidden h-full border-r border-(--color-accent)/35 bg-(--color-primary) text-(--color-background) lg:block">
+    <aside className="hidden h-full border-r border-(--color-accent)/35 bg-[#35383F] text-(--color-background) lg:block">
       <div className="flex h-full flex-col p-5">
+        <img
+          src="/TRENSACTY-LOGO-IVORY-DUST.png"
+          alt="Transacty"
+          width={220}
+          height={48}
+          className="mb-3 h-9 w-auto max-w-full object-contain object-left md:h-10"
+          decoding="async"
+        />
         <div className="rounded-xl border border-(--color-background)/20 bg-(--color-background)/10 px-4 py-3">
           <p className="[font-family:var(--font-display)] text-lg font-semibold">
             Transcaty
@@ -43,7 +51,7 @@ export function DashboardSidebar() {
                     key={item}
                     className={`rounded-lg px-3 py-2 [font-family:var(--font-body)] text-sm transition ${
                       section.title === 'Overview' && index === 0
-                        ? 'bg-(--color-background)/20 font-semibold'
+                        ? 'bg-(--color-background)/20 font-semibold text-(--color-background)'
                         : 'text-(--color-background)/85 hover:bg-(--color-background)/12'
                     }`}
                   >

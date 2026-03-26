@@ -51,7 +51,7 @@ export const tabContent: Record<
       'Connect and manage the bank accounts used for payout settlements and reconciliations.',
   },
   team: {
-    title: 'Team',
+    title: 'Directors',
     description:
       'Invite teammates, assign workspace access, and control who can operate transactions or settings.',
   },

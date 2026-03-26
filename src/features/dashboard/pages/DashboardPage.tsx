@@ -60,44 +60,61 @@ export function DashboardPage() {
       ]
     : []
 
+  const outlineBtn =
+    'h-10! border! border-solid! border-[#D4CFC4]! bg-white! px-3 text-xs font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!'
+
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="[font-family:var(--font-display)] text-3xl font-semibold text-(--color-foreground)">
-            Dashboard
+          <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
+            Merchant Insights Dashboard
           </h1>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+          <p className="mt-1.5 max-w-xl [font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
             Monitor transactions, customers, and payouts at a glance.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
-            className="h-10 border border-(--color-accent)/45 px-3 text-xs"
+            className={outlineBtn}
             onClick={() => balanceQuery.refetch()}
             disabled={balanceQuery.isRefetching}
           >
             {balanceQuery.isRefetching ? (
               <span className="inline-flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-secondary)/35 border-t-(--color-secondary)" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#566167]/35 border-t-[#566167]" />
                 Refreshing...
               </span>
             ) : (
-              'Refresh balances'
+              <span className="inline-flex items-center gap-1.5">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4 shrink-0 text-[#566167]"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh balances
+              </span>
             )}
           </Button>
           <Button
             variant="ghost"
-            className="h-10 border border-(--color-accent)/45 px-3 text-xs"
+            className={outlineBtn}
             onClick={toggleBalancesVisibility}
           >
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
 
           <Button
-            className="h-10 px-3 text-xs"
+            className="h-10! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-3 text-xs font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!"
             onClick={() => navigate({ to: '/dashboard/payouts' })}
           >
             Request payout
@@ -106,7 +123,7 @@ export function DashboardPage() {
       </header>
 
       {balanceQuery.isPending ? (
-        <section className="flex min-h-[160px] items-center justify-center rounded-xl border border-(--color-accent)/45 bg-(--color-card)">
+        <section className="flex min-h-[160px] items-center justify-center rounded-xl border border-[#E5E0D6] bg-[#EFEBE3]">
           <LoadingSpinner label="Loading balances..." />
         </section>
       ) : balanceQuery.isError || !balanceData ? (
@@ -116,19 +133,23 @@ export function DashboardPage() {
           </p>
         </section>
       ) : (
-        <section className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
-          {statCards.map((card) => (
-            <DashboardStatCard
-              key={card.title}
-              title={card.title}
-              value={areBalancesHidden ? maskBalance(card.value) : card.value}
-              note={card.note}
-            />
-          ))}
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {statCards.map((card, index) => {
+            const icons = ['wallet', 'check', 'clock', 'bank'] as const
+            return (
+              <DashboardStatCard
+                key={card.title}
+                title={card.title}
+                value={areBalancesHidden ? maskBalance(card.value) : card.value}
+                note={card.note}
+                icon={icons[index] ?? 'wallet'}
+              />
+            )
+          })}
         </section>
       )}
 
-      <section className="mt-6">
+      <section className="mt-8">
         <DashboardActivityPanel />
       </section>
     </>

@@ -4,6 +4,11 @@ import { ProfileSettingsContent } from './ProfileSettingsContent.tsx'
 import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
 
+const panelShell =
+  'settings-tab-enter min-h-[min(420px,70vh)] rounded-xl border border-[#E0DCD6] bg-[#FAF8F5] p-5 shadow-sm md:p-6'
+
+const profileShell = 'settings-tab-enter min-h-[min(420px,70vh)]'
+
 interface SettingsTabContentPanelProps {
   activeTab: SettingsTabId
 }
@@ -13,10 +18,7 @@ export function SettingsTabContentPanel({
 }: SettingsTabContentPanelProps) {
   if (activeTab === 'profile') {
     return (
-      <article
-        key={activeTab}
-        className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
-      >
+      <article key={activeTab} className={profileShell}>
         <ProfileSettingsContent />
       </article>
     )
@@ -24,10 +26,7 @@ export function SettingsTabContentPanel({
 
   if (activeTab === 'api-keys') {
     return (
-      <article
-        key={activeTab}
-        className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
-      >
+      <article key={activeTab} className={panelShell}>
         <ApiKeysSettingsContent />
       </article>
     )
@@ -35,10 +34,7 @@ export function SettingsTabContentPanel({
 
   if (activeTab === 'security') {
     return (
-      <article
-        key={activeTab}
-        className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
-      >
+      <article key={activeTab} className={panelShell}>
         <SecuritySettingsContent />
       </article>
     )
@@ -46,10 +42,7 @@ export function SettingsTabContentPanel({
 
   if (activeTab === 'team') {
     return (
-      <article
-        key={activeTab}
-        className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
-      >
+      <article key={activeTab} className={panelShell}>
         <TeamSettingsContent />
       </article>
     )
@@ -58,14 +51,11 @@ export function SettingsTabContentPanel({
   const currentTabContent = tabContent[activeTab]
 
   return (
-    <article
-      key={activeTab}
-      className="settings-tab-enter h-full rounded-xl bg-(--color-background)/30 p-4 md:p-5"
-    >
-      <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
+    <article key={activeTab} className={panelShell}>
+      <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
         {currentTabContent.title}
-      </h2>
-      <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+      </h1>
+      <p className="mt-2 max-w-2xl [font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
         {currentTabContent.description}
       </p>
     </article>
