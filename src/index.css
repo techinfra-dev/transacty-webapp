@@ -229,6 +229,49 @@ body {
   transform: translate3d(0, 12px, 0) scale(0.985);
 }
 
+.dialog-surface label span {
+  color: #475467 !important;
+}
+
+.dialog-surface input:not([type='hidden']) {
+  border-color: #d0d5dd !important;
+  background-color: #ffffff !important;
+  color: #101828 !important;
+}
+
+.dialog-surface input:not([type='hidden']):focus {
+  border-color: #98a2b3;
+  box-shadow: 0 0 0 3px rgba(152, 162, 179, 0.25);
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+.dialog-surface button[data-variant='ghost']:not([data-dialog-close='true']) {
+  border: 1px solid #eaecf0 !important;
+  background-color: #F2EFEA !important;
+  color: #344054 !important;
+}
+
+.dialog-surface
+  button[data-variant='ghost']:not([data-dialog-close='true']):hover:not(:disabled) {
+  border-color: #d0d5dd !important;
+  background-color: #ebe6de !important;
+  color: #1d2939 !important;
+}
+
+.dialog-action-row {
+  margin-top: 0.75rem;
+}
+
+.dialog-surface button[data-variant='primary'] {
+  background-color: #393E44 !important;
+  color: #ffffff !important;
+}
+
+.dialog-surface button[data-variant='primary']:hover:not(:disabled) {
+  background-color: #2f3439 !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auth-banner-enter,
   .auth-form-enter,

@@ -8,7 +8,7 @@ import {
   type CreatePayoutPayload,
   type CreatePayoutResponse,
 } from '../services/payoutsSchemas.ts'
-import { initialPayoutPayload, minimumPayoutAmount, payoutSelectFieldClass } from '../components/payouts/payoutConstants.ts'
+import { initialPayoutPayload, minimumPayoutAmount } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
 
 export function usePayoutFlow() {
@@ -197,6 +197,5 @@ export function usePayoutFlow() {
     handleCreatePayout,
     handleNextStep,
     handleResetFlow,
-    selectFieldClass: payoutSelectFieldClass,
   }
 }

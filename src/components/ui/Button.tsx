@@ -27,6 +27,7 @@ export function Button({
   return (
     <button
       type={type}
+      data-variant={variant}
       className={joinClasses(baseClassName, variantClassName, className)}
       {...props}
     />

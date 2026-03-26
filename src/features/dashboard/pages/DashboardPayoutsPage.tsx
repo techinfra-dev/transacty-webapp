@@ -44,7 +44,6 @@ export function DashboardPayoutsPage() {
                   currency={flow.currency}
                   payoutLimits={flow.payoutLimits}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
-                  selectFieldClass={flow.selectFieldClass}
                   updateBeneficiaryField={flow.updateBeneficiaryField}
                   updateCardHolderField={flow.updateCardHolderField}
                   clientError={flow.clientError}

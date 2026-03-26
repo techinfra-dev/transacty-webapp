@@ -424,17 +424,17 @@ export function DashboardCustomersPage() {
         description="Create a new customer wallet."
         maxWidthClassName="max-w-lg"
         footer={
-          <div className="flex items-center justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="ghost"
-              className="px-4"
+              className="h-10 w-full px-4 text-xs"
               onClick={() => setIsCreateDialogOpen(false)}
               disabled={createCustomerMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              className="px-4"
+              className="h-10 w-full px-4 text-xs"
               onClick={handleCreateCustomer}
               disabled={createCustomerMutation.isPending}
             >
@@ -542,17 +542,17 @@ export function DashboardCustomersPage() {
         maxWidthClassName="max-w-lg min-h-[380px]"
         contentClassName="overflow-visible"
         footer={
-          <div className="flex items-center justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="ghost"
-              className="px-4"
+              className="h-10 w-full px-4 text-xs"
               onClick={() => setCustomerForStatusUpdate(null)}
               disabled={updateCustomerStatusMutation.isPending}
             >
               Cancel
             </Button>
             <Button
-              className="px-4"
+              className="h-10 w-full px-4 text-xs"
               onClick={handleUpdateCustomerStatus}
               disabled={updateCustomerStatusMutation.isPending}
             >

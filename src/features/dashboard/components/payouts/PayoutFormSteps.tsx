@@ -1,4 +1,5 @@
 import { Input } from '../../../../components/ui/Input.tsx'
+import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import type { BalanceResponse } from '../../services/balanceSchemas.ts'
 import type { BeneficiaryAccountInfo, CardHolderInfo, CreatePayoutPayload } from '../../services/payoutsSchemas.ts'
 import {
@@ -17,7 +18,6 @@ interface PayoutFormStepsProps {
   currency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
   effectiveMinimumAmount: number
-  selectFieldClass: string
   updateBeneficiaryField: (field: keyof BeneficiaryAccountInfo, value: string) => void
   updateCardHolderField: (field: keyof CardHolderInfo, value: string) => void
   clientError: string | null
@@ -31,12 +31,25 @@ export function PayoutFormSteps({
   currency,
   payoutLimits,
   effectiveMinimumAmount,
-  selectFieldClass,
   updateBeneficiaryField,
   updateCardHolderField,
   clientError,
   mutationErrorMessage,
 }: PayoutFormStepsProps) {
+  const environmentOptions = [
+    { label: 'Test', value: 'test' },
+    { label: 'Live', value: 'live' },
+  ]
+  const currencyOptions = [{ label: currencyOptionLabel(currency), value: currency }]
+  const paymentMethodOptions = payoutMethodOptions.map((methodOption) => ({
+    label: methodOption,
+    value: methodOption,
+  }))
+  const paymentMethodOptionsWithPlaceholder = [
+    { label: 'Select payment method', value: '' },
+    ...paymentMethodOptions,
+  ]
+
   return (
     <div className={payoutFormCardClass}>
       {step === 1 ? (
@@ -51,30 +64,29 @@ export function PayoutFormSteps({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1.5">
               <span className={payoutFieldLabelClass}>Environment</span>
-              <select
+              <DropdownSelect
+                ariaLabel="Payout environment"
+                options={environmentOptions}
                 value={payload.environment}
-                onChange={(event) =>
+                onChange={(nextValue) =>
                   setPayload((previousPayload) => ({
                     ...previousPayload,
-                    environment: event.target.value === 'live' ? 'live' : 'test',
+                    environment: nextValue === 'live' ? 'live' : 'test',
                   }))
                 }
-                className={selectFieldClass}
-              >
-                <option value="test">Test</option>
-                <option value="live">Live</option>
-              </select>
+                className="w-full"
+              />
             </label>
             <label className="space-y-1.5">
               <span className={payoutFieldLabelClass}>Currency</span>
-              <select
+              <DropdownSelect
+                ariaLabel="Payout currency (from account)"
+                options={currencyOptions}
                 disabled
                 value={currency}
-                aria-label="Payout currency (from account)"
-                className={`${selectFieldClass} cursor-not-allowed bg-[#EFEBE3] text-[#566167]`}
-              >
-                <option value={currency}>{currencyOptionLabel(currency)}</option>
-              </select>
+                onChange={() => {}}
+                className="w-full"
+              />
             </label>
           </div>
 
@@ -128,10 +140,11 @@ export function PayoutFormSteps({
             />
             <label className="space-y-1.5 sm:col-span-2">
               <span className={payoutFieldLabelClass}>Payment method</span>
-              <select
+              <DropdownSelect
+                ariaLabel="Select payment method"
+                options={paymentMethodOptionsWithPlaceholder}
                 value={payload.benificiaryAccountInfo.orgCode}
-                onChange={(event) => {
-                  const selectedMethod = event.target.value
+                onChange={(selectedMethod) => {
                   setPayload((previousPayload) => ({
                     ...previousPayload,
                     benificiaryAccountInfo: {
@@ -142,17 +155,8 @@ export function PayoutFormSteps({
                     },
                   }))
                 }}
-                className={selectFieldClass}
-              >
-                <option value="" disabled>
-                  Select payment method
-                </option>
-                {payoutMethodOptions.map((methodOption) => (
-                  <option key={methodOption} value={methodOption}>
-                    {methodOption}
-                  </option>
-                ))}
-              </select>
+                className="w-full"
+              />
             </label>
           </div>
         </div>

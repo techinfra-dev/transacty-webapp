@@ -90,9 +90,10 @@ export function Dialog({
       <button
         type="button"
         className={joinClasses(
-          'dialog-backdrop absolute inset-0 bg-(--color-primary)/60',
+          'dialog-backdrop absolute inset-0',
           isVisible ? 'dialog-backdrop-open' : 'dialog-backdrop-closed',
         )}
+        style={{ backgroundColor: 'rgba(15, 7, 0, 0.32)' }}
         aria-label="Close dialog"
         onClick={() => {
           if (closeOnBackdrop) {
@@ -104,28 +105,47 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         className={joinClasses(
-          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col rounded-2xl border border-(--color-accent)/45 bg-(--color-background)',
+          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col rounded-2xl',
           allowOverflow ? 'overflow-visible' : 'overflow-hidden',
           isVisible ? 'dialog-surface-open' : 'dialog-surface-closed',
           maxWidthClassName,
         )}
+        style={{
+          border: '1px solid #E6E7EA',
+          backgroundColor: '#FFFFFF',
+          boxShadow: '0 24px 60px rgba(15, 7, 0, 0.16)',
+        }}
       >
         {title || description || showCloseButton ? (
-          <header className="flex items-start justify-between gap-4 border-b border-(--color-accent)/35 px-5 py-4">
+          <header
+            className="flex items-start justify-between gap-4 px-5 py-4"
+            style={{ borderBottom: '1px solid #ECEDEF' }}
+          >
             <div>
               {title ? (
-                <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
+                <h2
+                  className="[font-family:var(--font-display)] text-[22px] leading-tight font-semibold"
+                  style={{ color: '#101828' }}
+                >
                   {title}
                 </h2>
               ) : null}
               {description ? (
-                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+                <p
+                  className="mt-1 [font-family:var(--font-body)] text-sm"
+                  style={{ color: '#667085' }}
+                >
                   {description}
                 </p>
               ) : null}
             </div>
             {showCloseButton ? (
-              <Button variant="ghost" className="h-9 px-2.5 text-sm" onClick={onClose}>
+              <Button
+                variant="ghost"
+                data-dialog-close="true"
+                className="h-8 rounded-md px-2 text-[#667085] hover:bg-[#F2F4F7] hover:text-[#344054]"
+                onClick={onClose}
+              >
                 <span className="sr-only">Close</span>
                 <svg
                   viewBox="0 0 20 20"
@@ -144,7 +164,7 @@ export function Dialog({
         </div>
 
         {footer ? (
-          <footer className="border-t border-(--color-accent)/35 px-5 py-3">
+          <footer className="px-5 pb-3 pt-4" style={{ borderTop: '1px solid #ECEDEF' }}>
             {footer}
           </footer>
         ) : null}

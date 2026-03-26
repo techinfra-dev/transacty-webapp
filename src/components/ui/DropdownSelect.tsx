@@ -12,6 +12,7 @@ interface DropdownSelectProps {
   ariaLabel: string
   className?: string
   menuPlacement?: 'bottom' | 'top'
+  disabled?: boolean
 }
 
 function joinClasses(...classNames: Array<string | undefined>) {
@@ -25,6 +26,7 @@ export function DropdownSelect({
   ariaLabel,
   className,
   menuPlacement = 'bottom',
+  disabled = false,
 }: DropdownSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -66,8 +68,17 @@ export function DropdownSelect({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="h-10 min-w-40 cursor-pointer rounded-lg border border-(--color-accent)/45 bg-(--color-card) px-3 [font-family:var(--font-body)] text-left text-xs font-semibold text-(--color-foreground) outline-none transition hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20"
-        onClick={() => setIsOpen((previousValue) => !previousValue)}
+        disabled={disabled}
+        className={`h-10 min-w-40 rounded-lg border px-3 [font-family:var(--font-body)] text-left text-xs font-semibold outline-none transition ${
+          disabled
+            ? 'cursor-not-allowed border-(--color-accent)/35 bg-(--color-background) text-(--color-secondary)'
+            : 'cursor-pointer border-(--color-accent)/45 bg-(--color-card) text-(--color-foreground) hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20'
+        }`}
+        onClick={() => {
+          if (!disabled) {
+            setIsOpen((previousValue) => !previousValue)
+          }
+        }}
       >
         <span className="inline-flex w-full items-center justify-between gap-2">
           <span>{selectedOption.label}</span>
@@ -84,7 +95,7 @@ export function DropdownSelect({
         </span>
       </button>
 
-      {isOpen ? (
+      {isOpen && !disabled ? (
         <div
           role="listbox"
           aria-label={ariaLabel}

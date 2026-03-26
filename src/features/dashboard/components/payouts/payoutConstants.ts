@@ -25,9 +25,6 @@ export const payoutOutlineBtnClass =
 export const payoutPrimaryBtnClass =
   'h-9! min-h-0! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-5 text-[11px] font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!'
 
-export const payoutSelectFieldClass =
-  'h-10 w-full cursor-pointer rounded-lg border border-[#B8B2A8] bg-white px-2.5 [font-family:var(--font-body)] text-[13px] text-[#0F0700] outline-none transition focus:border-[#0F0700] focus:ring-2 focus:ring-[#0F0700]/15'
-
 export const payoutMethodOptions = ['BKASH', 'NAGAD', 'UPAY'] as const
 export const minimumPayoutAmount = 200
 

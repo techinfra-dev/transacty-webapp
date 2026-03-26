@@ -105,17 +105,17 @@ export function RefundTransactionDialog({
           </p>
         ) : null}
 
-        <div className="flex justify-end gap-2">
+        <div className="dialog-action-row mt-3 grid grid-cols-2 gap-2">
           <Button
             type="button"
             variant="ghost"
-            className="h-10 border border-(--color-accent)/45 px-3 text-xs"
+            className="h-10 w-full px-3 text-xs"
             onClick={onClose}
             disabled={mutation.isPending}
           >
             Cancel
           </Button>
-          <Button type="submit" className="h-10 px-3 text-xs" disabled={mutation.isPending}>
+          <Button type="submit" className="h-10 w-full px-3 text-xs" disabled={mutation.isPending}>
             {mutation.isPending ? 'Creating...' : 'Create refund'}
           </Button>
         </div>
