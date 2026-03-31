@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import {
   createCustomer,
   getCustomer,
@@ -17,9 +18,11 @@ export function useCustomersListQuery(params: {
   offset: number
   status?: CustomerStatus
 }) {
+  const environment = usePortalEnvironmentStore((state) => state.environment)
+
   return useQuery({
-    queryKey: ['customers-list', params],
-    queryFn: () => listCustomers(params),
+    queryKey: ['customers-list', environment, params],
+    queryFn: () => listCustomers({ ...params, environment }),
     placeholderData: (previousData) => previousData,
   })
 }
@@ -27,7 +30,11 @@ export function useCustomersListQuery(params: {
 export function useCreateCustomerMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: CreateCustomerPayload) => createCustomer(payload),
+    mutationFn: (payload: Omit<CreateCustomerPayload, 'environment'>) =>
+      createCustomer({
+        ...payload,
+        environment: usePortalEnvironmentStore.getState().environment,
+      }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['customers-list'] })
     },
@@ -35,9 +42,11 @@ export function useCreateCustomerMutation() {
 }
 
 export function useCustomerDetailQuery(customerId: string | null, enabled = true) {
+  const environment = usePortalEnvironmentStore((state) => state.environment)
+
   return useQuery({
-    queryKey: ['customer-detail', customerId],
-    queryFn: () => getCustomer(customerId as string),
+    queryKey: ['customer-detail', environment, customerId],
+    queryFn: () => getCustomer(customerId as string, environment),
     enabled: Boolean(customerId) && enabled,
   })
 }
@@ -48,12 +57,18 @@ export function useUpdateCustomerStatusMutation() {
     mutationFn: (params: {
       customerId: string
       payload: UpdateCustomerStatusPayload
-    }) => updateCustomerStatus(params),
+    }) =>
+      updateCustomerStatus({
+        customerId: params.customerId,
+        environment: usePortalEnvironmentStore.getState().environment,
+        payload: params.payload,
+      }),
     onSuccess: async (_data, variables) => {
+      const environment = usePortalEnvironmentStore.getState().environment
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['customers-list'] }),
         queryClient.invalidateQueries({
-          queryKey: ['customer-detail', variables.customerId],
+          queryKey: ['customer-detail', environment, variables.customerId],
         }),
       ])
     },
@@ -65,11 +80,14 @@ export function useCustomerTransactionsQuery(
   params: { limit: number; offset: number },
   enabled = true,
 ) {
+  const environment = usePortalEnvironmentStore((state) => state.environment)
+
   return useQuery({
-    queryKey: ['customer-transactions', customerId, params],
+    queryKey: ['customer-transactions', environment, customerId, params],
     queryFn: () =>
       listCustomerTransactions({
         customerId: customerId as string,
+        environment,
         limit: params.limit,
         offset: params.offset,
       }),

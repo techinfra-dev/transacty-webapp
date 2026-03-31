@@ -128,6 +128,16 @@ export function ApiKeysSettingsContent() {
           <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
             Manage your generated API keys for backend integration.
           </p>
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 [font-family:var(--font-body)] text-xs leading-snug text-amber-950">
+            <p className="font-semibold text-amber-900">Using test vs live keys</p>
+            <p className="mt-1 text-amber-900/90">
+              Create and store two keys: one with environment{' '}
+              <span className="font-semibold">test</span> (sandbox and test wallet
+              history) and one with{' '}
+              <span className="font-semibold">live</span> (production and live wallet
+              history). Match the key to the environment you are calling.
+            </p>
+          </div>
         </div>
         {isKycVerified ? (
           <Button

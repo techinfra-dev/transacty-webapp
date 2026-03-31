@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
+import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createCustomerPayloadSchema,
   customerItemSchema,
@@ -47,6 +48,7 @@ function getAuthHeader() {
 }
 
 export async function listCustomers(params: {
+  environment: PortalEnvironment
   limit: number
   offset: number
   status?: CustomerStatus
@@ -74,10 +76,14 @@ export async function createCustomer(payload: CreateCustomerPayload) {
   }
 }
 
-export async function getCustomer(customerId: string) {
+export async function getCustomer(
+  customerId: string,
+  environment: PortalEnvironment,
+) {
   try {
     const response = await axiosInstance.get(`me/customers/${customerId}`, {
       headers: getAuthHeader(),
+      params: { environment },
     })
     return customerItemSchema.parse(response.data)
   } catch (error) {
@@ -87,6 +93,7 @@ export async function getCustomer(customerId: string) {
 
 export async function updateCustomerStatus(params: {
   customerId: string
+  environment: PortalEnvironment
   payload: UpdateCustomerStatusPayload
 }) {
   try {
@@ -96,6 +103,7 @@ export async function updateCustomerStatus(params: {
       validatedPayload,
       {
         headers: getAuthHeader(),
+        params: { environment: params.environment },
       },
     )
     return updateCustomerStatusResponseSchema.parse(response.data)
@@ -106,6 +114,7 @@ export async function updateCustomerStatus(params: {
 
 export async function listCustomerTransactions(params: {
   customerId: string
+  environment: PortalEnvironment
   limit: number
   offset: number
 }) {
@@ -115,6 +124,7 @@ export async function listCustomerTransactions(params: {
       {
         headers: getAuthHeader(),
         params: {
+          environment: params.environment,
           limit: params.limit,
           offset: params.offset,
         },

@@ -1,4 +1,5 @@
-import type { BeneficiaryAccountInfo, CardHolderInfo, CreatePayoutPayload } from '../../services/payoutsSchemas.ts'
+import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
+import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 
 export const payoutStepItems = [
   { id: 1, label: 'Amount' },
@@ -43,8 +44,7 @@ const initialCardHolderInfo: CardHolderInfo = {
   phone: '',
 }
 
-export const initialPayoutPayload: CreatePayoutPayload = {
-  environment: 'test',
+export const initialPayoutPayload: PayoutFormPayload = {
   amount: '',
   benificiaryAccountInfo: initialBeneficiaryAccountInfo,
   cardHolderInfo: initialCardHolderInfo,

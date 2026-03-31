@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import {
   createRefund,
   createTransfer,
@@ -19,9 +20,11 @@ export function useTransactionsListQuery(params: {
   limit: number
   offset: number
 }) {
+  const environment = usePortalEnvironmentStore((state) => state.environment)
+
   return useQuery({
-    queryKey: ['transactions-list', params],
-    queryFn: () => listTransactions(params),
+    queryKey: ['transactions-list', environment, params],
+    queryFn: () => listTransactions({ ...params, environment }),
     placeholderData: (previousData) => previousData,
   })
 }
@@ -30,9 +33,11 @@ export function useTransactionDetailQuery(
   transactionId: string | null,
   enabled = true,
 ) {
+  const environment = usePortalEnvironmentStore((state) => state.environment)
+
   return useQuery({
-    queryKey: ['transaction-detail', transactionId],
-    queryFn: () => getTransaction(transactionId as string),
+    queryKey: ['transaction-detail', environment, transactionId],
+    queryFn: () => getTransaction(transactionId as string, environment),
     enabled: Boolean(transactionId) && enabled,
   })
 }
@@ -40,9 +45,16 @@ export function useTransactionDetailQuery(
 export function useCreateTransferMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: CreateTransferPayload) => createTransfer(payload),
+    mutationFn: (payload: Omit<CreateTransferPayload, 'environment'>) =>
+      createTransfer({
+        ...payload,
+        environment: usePortalEnvironmentStore.getState().environment,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['transactions-list'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
+      ])
     },
   })
 }
@@ -50,9 +62,16 @@ export function useCreateTransferMutation() {
 export function useCreateRefundMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: CreateRefundPayload) => createRefund(payload),
+    mutationFn: (payload: Omit<CreateRefundPayload, 'environment'>) =>
+      createRefund({
+        ...payload,
+        environment: usePortalEnvironmentStore.getState().environment,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['transactions-list'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
+      ])
     },
   })
 }

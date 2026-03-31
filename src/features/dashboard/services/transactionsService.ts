@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
+import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createRefundPayloadSchema,
   createTransferPayloadSchema,
@@ -45,6 +46,7 @@ function getAuthHeader() {
 }
 
 export async function listTransactions(params: {
+  environment: PortalEnvironment
   type?: TransactionType
   status?: TransactionStatus
   customerId?: string
@@ -62,10 +64,14 @@ export async function listTransactions(params: {
   }
 }
 
-export async function getTransaction(transactionId: string) {
+export async function getTransaction(
+  transactionId: string,
+  environment: PortalEnvironment,
+) {
   try {
     const response = await axiosInstance.get(`me/transactions/${transactionId}`, {
       headers: getAuthHeader(),
+      params: { environment },
     })
     return transactionDetailSchema.parse(response.data)
   } catch (error) {

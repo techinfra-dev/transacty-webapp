@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, Outlet, useNavigate } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button.tsx'
+import { Dialog } from '../components/ui/Dialog.tsx'
+import { TestModeBanner } from '../components/ui/TestModeBanner.tsx'
 import { logout } from '../features/auth/services/authService.ts'
 import { useProfileQuery } from '../features/dashboard/hooks/useProfileQuery.ts'
 import { KycActivationModal } from '../features/kyc/components/KycActivationModal.tsx'
@@ -10,6 +13,13 @@ import {
   getAuthUser,
   subscribeToAuthSessionUpdates,
 } from '../features/auth/services/authSession.ts'
+import {
+  hydratePortalEnvironmentForUser,
+  usePortalEnvironmentStore,
+} from '../store/portalEnvironmentStore.ts'
+import type { PortalEnvironment } from '../types/portalEnvironment.ts'
+import { useInactivityLogout } from '../hooks/useInactivityLogout.ts'
+import { invalidatePortalQueries } from '../utils/invalidatePortalQueries.ts'
 
 interface MenuItem {
   label: string
@@ -24,6 +34,52 @@ interface MenuItem {
 interface MenuSection {
   title: string
   items: MenuItem[]
+}
+
+function PortalEnvironmentSegmentedControl({
+  portalEnvironment,
+  onRequestEnvironment,
+  className,
+}: {
+  portalEnvironment: PortalEnvironment
+  onRequestEnvironment: (next: PortalEnvironment) => void
+  className?: string
+}) {
+  return (
+    <div
+      className={className}
+      role="group"
+      aria-label="Portal environment"
+    >
+      <p className="mb-1.5 px-1 [font-family:var(--font-body)] text-xs uppercase tracking-wide text-(--color-background)/60">
+        Environment
+      </p>
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-(--color-background)/20 p-1">
+        <button
+          type="button"
+          onClick={() => onRequestEnvironment('test')}
+          className={`rounded-md px-2 py-2 [font-family:var(--font-body)] text-xs font-semibold transition ${
+            portalEnvironment === 'test'
+              ? 'bg-(--color-background) text-[#35383F]'
+              : 'text-(--color-background)/80 hover:bg-(--color-background)/10'
+          }`}
+        >
+          Test
+        </button>
+        <button
+          type="button"
+          onClick={() => onRequestEnvironment('live')}
+          className={`rounded-md px-2 py-2 [font-family:var(--font-body)] text-xs font-semibold transition ${
+            portalEnvironment === 'live'
+              ? 'bg-(--color-background) text-[#35383F]'
+              : 'text-(--color-background)/80 hover:bg-(--color-background)/10'
+          }`}
+        >
+          Live
+        </button>
+      </div>
+    </div>
+  )
 }
 
 const menuSections: MenuSection[] = [
@@ -95,7 +151,15 @@ function SidebarItemIcon({
 }
 
 export function DashboardLayout() {
+  const queryClient = useQueryClient()
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
+  const setPortalEnvironment = usePortalEnvironmentStore(
+    (state) => state.setEnvironment,
+  )
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isLiveSwitchConfirmOpen, setIsLiveSwitchConfirmOpen] = useState(false)
+  const [pendingEnvironment, setPendingEnvironment] =
+    useState<PortalEnvironment | null>(null)
   const [authUser, setAuthUser] = useState(() => getAuthUser())
   const isKycModalOpen = useKycDialogStore((state) => state.isOpen)
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
@@ -120,6 +184,26 @@ export function DashboardLayout() {
     return unsubscribe
   }, [])
 
+  useLayoutEffect(() => {
+    hydratePortalEnvironmentForUser(authUser?.merchantId ?? null)
+  }, [authUser?.merchantId])
+
+  function requestPortalEnvironment(next: PortalEnvironment) {
+    if (next === 'live' && portalEnvironment === 'test') {
+      setPendingEnvironment('live')
+      setIsLiveSwitchConfirmOpen(true)
+      return
+    }
+    void applyPortalEnvironment(next)
+  }
+
+  async function applyPortalEnvironment(next: PortalEnvironment) {
+    setIsLiveSwitchConfirmOpen(false)
+    setPendingEnvironment(null)
+    setPortalEnvironment(next)
+    await invalidatePortalQueries(queryClient)
+  }
+
   const handleLogout = async () => {
     if (isLoggingOut) {
       return
@@ -136,6 +220,18 @@ export function DashboardLayout() {
       setIsLoggingOut(false)
     }
   }
+
+  const handleLogoutRef = useRef(handleLogout)
+  handleLogoutRef.current = handleLogout
+
+  const {
+    isWarningOpen: isInactivityLogoutWarningOpen,
+    secondsLeft: inactivitySecondsLeft,
+    cancelWarning: cancelInactivityLogout,
+  } = useInactivityLogout({
+    enabled: Boolean(authUser) && !isLoggingOut,
+    onLogout: () => void handleLogoutRef.current(),
+  })
 
   return (
     <section className="h-screen bg-(--color-background)">
@@ -186,7 +282,11 @@ export function DashboardLayout() {
               ))}
             </nav>
 
-            <div className="mt-auto pt-5">
+            <div className="mt-auto flex flex-col gap-3 pt-5">
+              <PortalEnvironmentSegmentedControl
+                portalEnvironment={portalEnvironment}
+                onRequestEnvironment={requestPortalEnvironment}
+              />
               <Button
                 variant="ghost"
                 className="w-full border border-(--color-background)/25 text-(--color-background)! hover:bg-(--color-background)/12 hover:text-(--color-background)!"
@@ -215,7 +315,9 @@ export function DashboardLayout() {
           </div>
         </aside>
 
-        <main className="h-full min-h-0 overflow-y-auto bg-white p-5 md:p-8">
+        <main
+          className={`h-full min-h-0 overflow-y-auto bg-white p-5 md:p-8 ${portalEnvironment === 'test' ? 'pb-28' : ''}`}
+        >
           {showKycPendingBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
               <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">
@@ -266,6 +368,67 @@ export function DashboardLayout() {
           onClose={closeKycDialog}
         />
       ) : null}
+
+      {portalEnvironment === 'test' ? <TestModeBanner /> : null}
+
+      <Dialog
+        isOpen={isInactivityLogoutWarningOpen}
+        onClose={cancelInactivityLogout}
+        title="Logging out"
+        description={`You have been inactive. Signing out in ${inactivitySecondsLeft} second${inactivitySecondsLeft === 1 ? '' : 's'} for your security.`}
+        maxWidthClassName="max-w-md"
+        showCloseButton={false}
+        closeOnBackdrop={false}
+        footer={
+          <div className="dialog-action-row flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 px-4 text-xs"
+              onClick={cancelInactivityLogout}
+            >
+              Stay signed in
+            </Button>
+          </div>
+        }
+      />
+
+      <Dialog
+        isOpen={isLiveSwitchConfirmOpen}
+        onClose={() => {
+          setIsLiveSwitchConfirmOpen(false)
+          setPendingEnvironment(null)
+        }}
+        title="Switch to live environment?"
+        description="The dashboard will load production data: live balances, customers, and transactions. You can switch back to test anytime."
+        maxWidthClassName="max-w-md"
+        footer={
+          <div className="dialog-action-row grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full px-3 text-xs"
+              onClick={() => {
+                setIsLiveSwitchConfirmOpen(false)
+                setPendingEnvironment(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-10 w-full px-3 text-xs"
+              onClick={() => {
+                if (pendingEnvironment === 'live') {
+                  void applyPortalEnvironment('live')
+                }
+              }}
+            >
+              Use live data
+            </Button>
+          </div>
+        }
+      />
     </section>
   )
 }

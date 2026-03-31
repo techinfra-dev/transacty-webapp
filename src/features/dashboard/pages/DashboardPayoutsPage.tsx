@@ -1,3 +1,5 @@
+import { Button } from '../../../components/ui/Button.tsx'
+import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
 import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
 import { PayoutPinnedSummary } from '../components/payouts/PayoutPinnedSummary.tsx'
@@ -13,6 +15,9 @@ export function DashboardPayoutsPage() {
       {flow.step === 4 ? (
         <PayoutSuccessView
           formattedPreviewAmount={flow.formattedPreviewAmount}
+          environment={
+            flow.createdPayout?.environment ?? flow.portalEnvironment
+          }
           payload={flow.payload}
           createdTransactionId={flow.createdTransactionId}
           onCreateAnother={flow.handleResetFlow}
@@ -68,6 +73,7 @@ export function DashboardPayoutsPage() {
 
               <div className="min-w-0 lg:pt-10">
                 <PayoutPinnedSummary
+                  environment={flow.portalEnvironment}
                   payload={flow.payload}
                   formattedPreviewAmount={flow.formattedPreviewAmount}
                   hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
@@ -78,6 +84,39 @@ export function DashboardPayoutsPage() {
           </div>
         </>
       )}
+
+      <Dialog
+        isOpen={flow.isLivePayoutConfirmOpen}
+        onClose={() => {
+          if (!flow.createPayoutMutation.isPending) {
+            flow.setIsLivePayoutConfirmOpen(false)
+          }
+        }}
+        title="Confirm live payout"
+        description="You are about to submit a real payout in the live environment. This may move real funds."
+        maxWidthClassName="max-w-md"
+        footer={
+          <div className="dialog-action-row grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full px-3 text-xs"
+              disabled={flow.createPayoutMutation.isPending}
+              onClick={() => flow.setIsLivePayoutConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-10 w-full px-3 text-xs"
+              disabled={flow.createPayoutMutation.isPending}
+              onClick={() => void flow.executeCreatePayout()}
+            >
+              {flow.createPayoutMutation.isPending ? 'Submitting...' : 'Confirm payout'}
+            </Button>
+          </div>
+        }
+      />
     </section>
   )
 }

@@ -16,6 +16,7 @@ type TransactionsTableSectionProps = {
   onPageSizeChange: (value: number) => void
   onPreviousPage: () => void
   onNextPage: () => void
+  isLiveEnvironment: boolean
 }
 
 export function TransactionsTableSection({
@@ -31,6 +32,7 @@ export function TransactionsTableSection({
   onPageSizeChange,
   onPreviousPage,
   onNextPage,
+  isLiveEnvironment,
 }: TransactionsTableSectionProps) {
   return (
     <section className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-card)">
@@ -50,6 +52,7 @@ export function TransactionsTableSection({
           transactionsQuery={transactionsQuery}
           filteredTransactions={filteredTransactions}
           onViewTransaction={onViewTransaction}
+          isLiveEnvironment={isLiveEnvironment}
         />
       </div>
 

@@ -16,7 +16,12 @@ type RefundTransactionDialogProps = {
   onRefundOfTransactionIdChange: (value: string) => void
   reason: string
   onReasonChange: (value: string) => void
-  mutation: UseMutationResult<unknown, Error, CreateRefundPayload, unknown>
+  mutation: UseMutationResult<
+    unknown,
+    Error,
+    Omit<CreateRefundPayload, 'environment'>,
+    unknown
+  >
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 

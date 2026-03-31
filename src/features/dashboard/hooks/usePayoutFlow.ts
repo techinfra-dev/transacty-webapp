@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { useBalanceQuery } from './useBalanceQuery.ts'
 import { useCreatePayoutMutation } from './usePayoutMutations.ts'
 import {
@@ -8,14 +9,17 @@ import {
   type CreatePayoutPayload,
   type CreatePayoutResponse,
 } from '../services/payoutsSchemas.ts'
+import type { PayoutFormPayload } from '../services/payoutFormTypes.ts'
 import { initialPayoutPayload, minimumPayoutAmount } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
 
 export function usePayoutFlow() {
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [step, setStep] = useState(1)
   const [clientError, setClientError] = useState<string | null>(null)
   const [createdPayout, setCreatedPayout] = useState<CreatePayoutResponse | null>(null)
-  const [payload, setPayload] = useState<CreatePayoutPayload>(initialPayoutPayload)
+  const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
+  const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
   const createPayoutMutation = useCreatePayoutMutation()
   const balanceQuery = useBalanceQuery(true)
 
@@ -118,7 +122,7 @@ export function usePayoutFlow() {
     return null
   }
 
-  async function handleCreatePayout() {
+  function handleCreatePayout() {
     setClientError(null)
     const validationError = validateCurrentStep()
     if (validationError) {
@@ -126,8 +130,20 @@ export function usePayoutFlow() {
       return
     }
 
+    if (portalEnvironment === 'live') {
+      setIsLivePayoutConfirmOpen(true)
+      return
+    }
+
+    void executeCreatePayout()
+  }
+
+  async function executeCreatePayout() {
+    setIsLivePayoutConfirmOpen(false)
+
     const normalizedPayload: CreatePayoutPayload = {
       ...payload,
+      environment: portalEnvironment,
       amount: payload.amount.trim(),
       benificiaryAccountInfo: {
         number: payload.benificiaryAccountInfo.number.trim(),
@@ -173,6 +189,7 @@ export function usePayoutFlow() {
     setStep(1)
     setClientError(null)
     setCreatedPayout(null)
+    setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
   }
 
@@ -195,7 +212,11 @@ export function usePayoutFlow() {
     updateBeneficiaryField,
     updateCardHolderField,
     handleCreatePayout,
+    executeCreatePayout,
+    isLivePayoutConfirmOpen,
+    setIsLivePayoutConfirmOpen,
     handleNextStep,
     handleResetFlow,
+    portalEnvironment,
   }
 }

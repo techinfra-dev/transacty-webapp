@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const portalEnvironmentSchema = z.enum(['test', 'live'])
+
 export const transactionTypeSchema = z.enum([
   'payin',
   'payout',
@@ -36,12 +38,14 @@ export const transactionDetailSchema = transactionItemSchema
   .passthrough()
 
 export const createTransferPayloadSchema = z.object({
+  environment: portalEnvironmentSchema,
   customerWalletId: z.string().min(1),
   amount: z.string().min(1),
   reason: z.string().min(1).optional(),
 })
 
 export const createRefundPayloadSchema = z.object({
+  environment: portalEnvironmentSchema,
   customerWalletId: z.string().min(1),
   amount: z.string().min(1),
   refundOfTransactionId: z.string().min(1),

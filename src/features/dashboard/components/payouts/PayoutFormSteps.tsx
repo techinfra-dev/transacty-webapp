@@ -1,7 +1,8 @@
 import { Input } from '../../../../components/ui/Input.tsx'
 import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import type { BalanceResponse } from '../../services/balanceSchemas.ts'
-import type { BeneficiaryAccountInfo, CardHolderInfo, CreatePayoutPayload } from '../../services/payoutsSchemas.ts'
+import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
+import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
   minimumPayoutAmount,
   payoutFieldLabelClass,
@@ -13,8 +14,8 @@ import { currencyOptionLabel, formatPayoutMoney } from './payoutFormatters.ts'
 
 interface PayoutFormStepsProps {
   step: number
-  payload: CreatePayoutPayload
-  setPayload: React.Dispatch<React.SetStateAction<CreatePayoutPayload>>
+  payload: PayoutFormPayload
+  setPayload: React.Dispatch<React.SetStateAction<PayoutFormPayload>>
   currency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
   effectiveMinimumAmount: number
@@ -36,10 +37,6 @@ export function PayoutFormSteps({
   clientError,
   mutationErrorMessage,
 }: PayoutFormStepsProps) {
-  const environmentOptions = [
-    { label: 'Test', value: 'test' },
-    { label: 'Live', value: 'live' },
-  ]
   const currencyOptions = [{ label: currencyOptionLabel(currency), value: currency }]
   const paymentMethodOptions = payoutMethodOptions.map((methodOption) => ({
     label: methodOption,
@@ -61,34 +58,17 @@ export function PayoutFormSteps({
             <div className="mt-2 border-b border-[#C9C2B8]" />
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1.5">
-              <span className={payoutFieldLabelClass}>Environment</span>
-              <DropdownSelect
-                ariaLabel="Payout environment"
-                options={environmentOptions}
-                value={payload.environment}
-                onChange={(nextValue) =>
-                  setPayload((previousPayload) => ({
-                    ...previousPayload,
-                    environment: nextValue === 'live' ? 'live' : 'test',
-                  }))
-                }
-                className="w-full"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className={payoutFieldLabelClass}>Currency</span>
-              <DropdownSelect
-                ariaLabel="Payout currency (from account)"
-                options={currencyOptions}
-                disabled
-                value={currency}
-                onChange={() => {}}
-                className="w-full"
-              />
-            </label>
-          </div>
+          <label className="block space-y-1.5">
+            <span className={payoutFieldLabelClass}>Currency</span>
+            <DropdownSelect
+              ariaLabel="Payout currency (from account)"
+              options={currencyOptions}
+              disabled
+              value={currency}
+              onChange={() => {}}
+              className="w-full max-w-md"
+            />
+          </label>
 
           <label className="block space-y-1.5">
             <span className={payoutFieldLabelClass}>Amount</span>

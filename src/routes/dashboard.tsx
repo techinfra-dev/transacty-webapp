@@ -1,6 +1,10 @@
 import { createRoute, redirect } from '@tanstack/react-router'
-import { isAuthenticated } from '../features/auth/services/authSession.ts'
+import {
+  getAuthUser,
+  isAuthenticated,
+} from '../features/auth/services/authSession.ts'
 import { DashboardLayout } from '../layouts/DashboardLayout.tsx'
+import { hydratePortalEnvironmentForUser } from '../store/portalEnvironmentStore.ts'
 import { Route as rootRoute } from './__root.tsx'
 
 export const Route = createRoute({
@@ -10,6 +14,7 @@ export const Route = createRoute({
     if (!isAuthenticated()) {
       throw redirect({ to: '/login' })
     }
+    hydratePortalEnvironmentForUser(getAuthUser()?.merchantId ?? null)
   },
   component: DashboardLayout,
 })

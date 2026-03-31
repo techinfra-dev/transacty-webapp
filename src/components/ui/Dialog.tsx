@@ -5,7 +5,7 @@ import { Button } from './Button.tsx'
 interface DialogProps {
   isOpen: boolean
   onClose: () => void
-  children: ReactNode
+  children?: ReactNode
   title?: string
   description?: string
   footer?: ReactNode
@@ -159,9 +159,16 @@ export function Dialog({
           </header>
         ) : null}
 
-        <div className={joinClasses('min-h-0 flex-1 overflow-y-auto px-5 py-4', contentClassName)}>
-          {children}
-        </div>
+        {children != null ? (
+          <div
+            className={joinClasses(
+              'min-h-0 flex-1 overflow-y-auto px-5 py-4',
+              contentClassName,
+            )}
+          >
+            {children}
+          </div>
+        ) : null}
 
         {footer ? (
           <footer className="px-5 pb-3 pt-4" style={{ borderTop: '1px solid #ECEDEF' }}>

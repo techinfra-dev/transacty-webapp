@@ -7,12 +7,14 @@ type TransactionsListBodyProps = {
   transactionsQuery: UseQueryResult<TransactionsListResponse, Error>
   filteredTransactions: TransactionItem[]
   onViewTransaction: (id: string) => void
+  isLiveEnvironment: boolean
 }
 
 export function TransactionsListBody({
   transactionsQuery,
   filteredTransactions,
   onViewTransaction,
+  isLiveEnvironment,
 }: TransactionsListBodyProps) {
   if (transactionsQuery.isPending) {
     return (
@@ -31,9 +33,18 @@ export function TransactionsListBody({
   }
 
   if (filteredTransactions.length === 0) {
+    const serverTotal = transactionsQuery.data?.total ?? 0
+    const emptyLive =
+      isLiveEnvironment &&
+      serverTotal === 0 &&
+      !transactionsQuery.isPending &&
+      !transactionsQuery.isError
+
     return (
       <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-        No transactions found for the selected filters.
+        {emptyLive
+          ? 'No live transactions yet.'
+          : 'No transactions found for the selected filters.'}
       </div>
     )
   }

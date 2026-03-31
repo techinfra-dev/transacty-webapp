@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { DropdownSelect } from '../../../components/ui/DropdownSelect.tsx'
@@ -96,6 +97,7 @@ function LoadingButtonLabel({ label }: { label: string }) {
 }
 
 export function DashboardCustomersPage() {
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [statusFilter, setStatusFilter] = useState('all')
   const [pageSize, setPageSize] = useState(20)
 
@@ -292,7 +294,9 @@ export function DashboardCustomersPage() {
             </div>
           ) : customersData.items.length === 0 ? (
             <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-              No customers found for the selected filter.
+              {portalEnvironment === 'live'
+                ? 'No live customers yet.'
+                : 'No customers found for the selected filter.'}
             </div>
           ) : (
             customersData.items.map((customer) => (

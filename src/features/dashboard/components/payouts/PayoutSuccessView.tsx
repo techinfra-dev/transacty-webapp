@@ -1,15 +1,18 @@
 import { Button } from '../../../../components/ui/Button.tsx'
-import type { CreatePayoutPayload } from '../../services/payoutsSchemas.ts'
+import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
+import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 
 interface PayoutSuccessViewProps {
   formattedPreviewAmount: string
-  payload: CreatePayoutPayload
+  environment: PortalEnvironment
+  payload: PayoutFormPayload
   createdTransactionId: string | undefined
   onCreateAnother: () => void
 }
 
 export function PayoutSuccessView({
   formattedPreviewAmount,
+  environment,
   payload,
   createdTransactionId,
   onCreateAnother,
@@ -34,7 +37,7 @@ export function PayoutSuccessView({
           <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">
             Environment:{' '}
             <span className="font-semibold uppercase text-(--color-foreground)">
-              {payload.environment}
+              {environment}
             </span>
           </p>
           <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">

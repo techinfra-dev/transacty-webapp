@@ -14,7 +14,12 @@ type TransferTransactionDialogProps = {
   onAmountChange: (value: string) => void
   reason: string
   onReasonChange: (value: string) => void
-  mutation: UseMutationResult<unknown, Error, CreateTransferPayload, unknown>
+  mutation: UseMutationResult<
+    unknown,
+    Error,
+    Omit<CreateTransferPayload, 'environment'>,
+    unknown
+  >
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
 }
 

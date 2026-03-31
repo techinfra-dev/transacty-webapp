@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import {
   useCreateRefundMutation,
   useCreateTransferMutation,
@@ -11,6 +12,7 @@ import type {
 } from '../services/transactionsSchemas.ts'
 
 export function useTransactionsPage() {
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [query, setQuery] = useState('')
   const [selectedMethod, setSelectedMethod] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -32,6 +34,9 @@ export function useTransactionsPage() {
   const [refundOfTransactionId, setRefundOfTransactionId] = useState('')
   const [refundReason, setRefundReason] = useState('')
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
+  const [liveMoneyConfirm, setLiveMoneyConfirm] = useState<
+    null | 'transfer' | 'refund'
+  >(null)
   const filterMenuRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedCustomerId = customerIdFilter.trim()
@@ -111,8 +116,17 @@ export function useTransactionsPage() {
     }
   }, [])
 
-  async function handleTransferSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleTransferSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (portalEnvironment === 'live') {
+      setLiveMoneyConfirm('transfer')
+      return
+    }
+    void executeTransfer()
+  }
+
+  async function executeTransfer() {
+    setLiveMoneyConfirm(null)
     try {
       await createTransferMutation.mutateAsync({
         customerWalletId: transferCustomerWalletId.trim(),
@@ -128,8 +142,17 @@ export function useTransactionsPage() {
     }
   }
 
-  async function handleRefundSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleRefundSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (portalEnvironment === 'live') {
+      setLiveMoneyConfirm('refund')
+      return
+    }
+    void executeRefund()
+  }
+
+  async function executeRefund() {
+    setLiveMoneyConfirm(null)
     try {
       await createRefundMutation.mutateAsync({
         customerWalletId: refundCustomerWalletId.trim(),
@@ -202,5 +225,10 @@ export function useTransactionsPage() {
     endItem,
     handleTransferSubmit,
     handleRefundSubmit,
+    executeTransfer,
+    executeRefund,
+    liveMoneyConfirm,
+    setLiveMoneyConfirm,
+    portalEnvironment,
   }
 }

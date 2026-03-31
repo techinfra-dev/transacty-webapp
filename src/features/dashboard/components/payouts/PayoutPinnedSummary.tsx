@@ -1,15 +1,18 @@
-import type { CreatePayoutPayload } from '../../services/payoutsSchemas.ts'
+import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
+import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import { payoutSurface } from './payoutConstants.ts'
 import { PayoutSummarySkeleton } from './PayoutSummarySkeleton.tsx'
 
 interface PayoutPinnedSummaryProps {
-  payload: CreatePayoutPayload
+  environment: PortalEnvironment
+  payload: PayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
 }
 
 export function PayoutPinnedSummary({
+  environment,
   payload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
@@ -41,7 +44,7 @@ export function PayoutPinnedSummary({
             Environment
           </p>
           <p className="mt-1 [font-family:var(--font-body)] text-sm font-semibold uppercase text-(--color-foreground)">
-            {payload.environment}
+            {environment}
           </p>
         </div>
 

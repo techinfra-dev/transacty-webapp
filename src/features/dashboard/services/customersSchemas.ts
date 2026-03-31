@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const portalEnvironmentSchema = z.enum(['test', 'live'])
+
 export const customerStatusSchema = z.enum([
   'active',
   'frozen',
@@ -24,6 +26,7 @@ export const customersListResponseSchema = z.object({
 })
 
 export const createCustomerPayloadSchema = z.object({
+  environment: portalEnvironmentSchema,
   label: z.string().min(1).optional(),
 })
 
