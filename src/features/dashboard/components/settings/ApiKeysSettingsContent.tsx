@@ -1,20 +1,16 @@
 import { useState } from 'react'
 import { Button } from '../../../../components/ui/Button.tsx'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
-import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
+import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
 import {
   useApiKeysQuery,
   useCreateApiKeyMutation,
   useRevokeApiKeyMutation,
 } from '../../hooks/useApiKeysQuery.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
-import type {
-  ApiKeyEnvironment,
-  ApiKeyItem,
-  CreateApiKeyResponse,
-} from '../../services/apiKeysSchemas.ts'
+import type { ApiKeyItem, CreateApiKeyResponse } from '../../services/apiKeysSchemas.ts'
 
 function formatCreatedAt(isoDate: string) {
   const timestamp = new Date(isoDate)
@@ -45,13 +41,11 @@ function parseScopes(scopes: string) {
 }
 
 export function ApiKeysSettingsContent() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [selectedEnvironment, setSelectedEnvironment] =
-    useState<ApiKeyEnvironment>('test')
   const [createdApiKey, setCreatedApiKey] = useState<CreateApiKeyResponse | null>(null)
   const [copiedField, setCopiedField] = useState<'apiKey' | 'secret' | null>(null)
   const [keyForRevoke, setKeyForRevoke] = useState<ApiKeyItem | null>(null)
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const profileQuery = useProfileQuery(true)
   const isKycVerified = profileQuery.data?.kycStatus === 'verified'
   const isKycPendingVerification =
@@ -72,11 +66,6 @@ export function ApiKeysSettingsContent() {
     }
   }
 
-  const environmentOptions = [
-    { value: 'test', label: 'Test' },
-    { value: 'live', label: 'Live' },
-  ]
-
   async function handleCopyValue(
     value: string,
     field: 'apiKey' | 'secret',
@@ -93,10 +82,9 @@ export function ApiKeysSettingsContent() {
   async function handleCreateApiKey() {
     try {
       const response = await createApiKeyMutation.mutateAsync({
-        environment: selectedEnvironment,
+        environment: portalEnvironment,
       })
       setCreatedApiKey(response)
-      setIsCreateDialogOpen(false)
     } catch {
       // Error shown inline
     }
@@ -128,23 +116,14 @@ export function ApiKeysSettingsContent() {
           <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
             Manage your generated API keys for backend integration.
           </p>
-          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 [font-family:var(--font-body)] text-xs leading-snug text-amber-950">
-            <p className="font-semibold text-amber-900">Using test vs live keys</p>
-            <p className="mt-1 text-amber-900/90">
-              Create and store two keys: one with environment{' '}
-              <span className="font-semibold">test</span> (sandbox and test wallet
-              history) and one with{' '}
-              <span className="font-semibold">live</span> (production and live wallet
-              history). Match the key to the environment you are calling.
-            </p>
-          </div>
         </div>
         {isKycVerified ? (
           <Button
             className="h-10 px-3 text-xs"
-            onClick={() => setIsCreateDialogOpen(true)}
+            onClick={handleCreateApiKey}
+            disabled={createApiKeyMutation.isPending}
           >
-            Create API key
+            {createApiKeyMutation.isPending ? 'Creating...' : 'Create API key'}
           </Button>
         ) : null}
       </section>
@@ -190,7 +169,7 @@ export function ApiKeysSettingsContent() {
           No API keys found for this workspace.
         </section>
       ) : (
-        <section className="min-h-0 flex-1 overflow-hidden rounded-lg border border-(--color-accent)/35 bg-(--color-card)">
+        <section className="flex min-h-0 max-h-[520px] flex-1 flex-col overflow-hidden rounded-lg border border-(--color-accent)/35 bg-(--color-card)">
           <div className="grid grid-cols-[1.2fr_0.8fr_1.6fr_0.8fr_1fr_56px] gap-2 border-b border-(--color-accent)/35 px-3 py-2 [font-family:var(--font-body)] text-[11px] uppercase tracking-wide text-(--color-secondary)">
             <p>Key</p>
             <p>Env</p>
@@ -199,7 +178,7 @@ export function ApiKeysSettingsContent() {
             <p>Created</p>
             <p className="text-right">Action</p>
           </div>
-          <div className="max-h-full overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {apiKeysQuery.data.items.map((item) => (
               <div
                 key={item.id}
@@ -240,57 +219,6 @@ export function ApiKeysSettingsContent() {
           </div>
         </section>
       )}
-
-      <Dialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => {
-          if (!createApiKeyMutation.isPending) {
-            setIsCreateDialogOpen(false)
-          }
-        }}
-        title="Create API key"
-        description="Choose environment and generate a new key pair."
-        maxWidthClassName="max-w-md min-h-[420px]"
-        contentClassName="overflow-visible"
-        allowOverflow
-        footer={
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              className="px-4"
-              onClick={() => setIsCreateDialogOpen(false)}
-              disabled={createApiKeyMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="px-4"
-              onClick={handleCreateApiKey}
-              disabled={createApiKeyMutation.isPending}
-            >
-              {createApiKeyMutation.isPending ? 'Creating...' : 'Create key'}
-            </Button>
-          </div>
-        }
-      >
-        <label className="space-y-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
-            Environment
-          </span>
-          <DropdownSelect
-            ariaLabel="Select key environment"
-            options={environmentOptions}
-            value={selectedEnvironment}
-            onChange={(value) => setSelectedEnvironment(value as ApiKeyEnvironment)}
-            className="w-full"
-          />
-        </label>
-        {createApiKeyMutation.isError ? (
-          <p className="mt-3 [font-family:var(--font-body)] text-sm text-rose-600">
-            {createApiKeyMutation.error.message}
-          </p>
-        ) : null}
-      </Dialog>
 
       <Dialog
         isOpen={Boolean(createdApiKey)}
