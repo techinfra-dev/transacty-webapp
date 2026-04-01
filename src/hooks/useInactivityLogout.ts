@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 const ACTIVITY_THROTTLE_MS = 1000
 
-export const DEFAULT_INACTIVITY_IDLE_MS = 5 * 60 * 1000
+export const DEFAULT_INACTIVITY_IDLE_MS = 10 * 60 * 1000
 export const DEFAULT_INACTIVITY_WARNING_SECONDS = 10
 
 type Phase = 'active' | 'warning'
