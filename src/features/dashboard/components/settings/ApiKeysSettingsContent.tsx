@@ -119,11 +119,22 @@ export function ApiKeysSettingsContent() {
         </div>
         {isKycVerified ? (
           <Button
-            className="h-10 px-3 text-xs"
+            className="inline-flex h-10 items-center justify-center gap-2 px-3 text-xs"
             onClick={handleCreateApiKey}
             disabled={createApiKeyMutation.isPending}
+            aria-busy={createApiKeyMutation.isPending}
           >
-            {createApiKeyMutation.isPending ? 'Creating...' : 'Create API key'}
+            {createApiKeyMutation.isPending ? (
+              <>
+                <span
+                  className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--color-background)/35 border-t-(--color-background)"
+                  aria-hidden
+                />
+                Creating...
+              </>
+            ) : (
+              'Create API key'
+            )}
           </Button>
         ) : null}
       </section>
@@ -203,16 +214,22 @@ export function ApiKeysSettingsContent() {
                   {formatCreatedAt(item.createdAt)}
                 </p>
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    aria-label="Revoke API key"
-                    className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-rose-300 bg-rose-50 text-rose-600 transition hover:border-rose-400 hover:bg-rose-100 hover:text-rose-700"
-                    onClick={() => setKeyForRevoke(item)}
-                  >
-                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden="true">
-                      <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
-                    </svg>
-                  </button>
+                  {item.status.toLowerCase() === 'revoked' ? null : (
+                    <button
+                      type="button"
+                      aria-label="Revoke API key"
+                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-rose-300 bg-rose-50 text-rose-600 transition hover:border-rose-400 hover:bg-rose-100 hover:text-rose-700"
+                      onClick={() => setKeyForRevoke(item)}
+                    >
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="h-3.5 w-3.5 fill-current"
+                        aria-hidden="true"
+                      >
+                        <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -300,11 +317,22 @@ export function ApiKeysSettingsContent() {
               Cancel
             </Button>
             <Button
-              className="px-4"
+              className="inline-flex items-center justify-center gap-2 px-4"
               onClick={handleConfirmRevoke}
               disabled={revokeApiKeyMutation.isPending}
+              aria-busy={revokeApiKeyMutation.isPending}
             >
-              {revokeApiKeyMutation.isPending ? 'Revoking...' : 'Revoke key'}
+              {revokeApiKeyMutation.isPending ? (
+                <>
+                  <span
+                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--color-background)/35 border-t-(--color-background)"
+                    aria-hidden
+                  />
+                  Revoking...
+                </>
+              ) : (
+                'Revoke key'
+              )}
             </Button>
           </div>
         }
