@@ -39,12 +39,15 @@ interface MenuSection {
 function PortalEnvironmentSegmentedControl({
   portalEnvironment,
   onRequestEnvironment,
+  isKycVerified,
   className,
 }: {
   portalEnvironment: PortalEnvironment
   onRequestEnvironment: (next: PortalEnvironment) => void
+  isKycVerified: boolean
   className?: string
 }) {
+  const liveSwitchBlocked = !isKycVerified && portalEnvironment !== 'live'
   return (
     <div
       className={className}
@@ -68,12 +71,18 @@ function PortalEnvironmentSegmentedControl({
         </button>
         <button
           type="button"
+          title={
+            liveSwitchBlocked
+              ? 'Complete KYC verification to use the live environment'
+              : undefined
+          }
+          disabled={liveSwitchBlocked}
           onClick={() => onRequestEnvironment('live')}
           className={`rounded-md px-2 py-2 [font-family:var(--font-body)] text-xs font-semibold transition ${
             portalEnvironment === 'live'
               ? 'bg-(--color-background) text-[#35383F]'
               : 'text-(--color-background)/80 hover:bg-(--color-background)/10'
-          }`}
+          } ${liveSwitchBlocked ? 'cursor-not-allowed opacity-45 hover:bg-transparent' : ''}`}
         >
           Live
         </button>
@@ -188,7 +197,37 @@ export function DashboardLayout() {
     hydratePortalEnvironmentForUser(authUser?.merchantId ?? null)
   }, [authUser?.merchantId])
 
+  useEffect(() => {
+    if (!authUser?.merchantId) {
+      return
+    }
+    if (profileQuery.isPending || profileQuery.isError || !profileQuery.data) {
+      return
+    }
+    if (profileQuery.data.kycStatus === 'verified') {
+      return
+    }
+    if (portalEnvironment !== 'live') {
+      return
+    }
+    setIsLiveSwitchConfirmOpen(false)
+    setPendingEnvironment(null)
+    setPortalEnvironment('test')
+    void invalidatePortalQueries(queryClient)
+  }, [
+    authUser?.merchantId,
+    profileQuery.isPending,
+    profileQuery.isError,
+    profileQuery.data?.kycStatus,
+    portalEnvironment,
+    queryClient,
+    setPortalEnvironment,
+  ])
+
   function requestPortalEnvironment(next: PortalEnvironment) {
+    if (next === 'live' && !isKycVerified) {
+      return
+    }
     if (next === 'live' && portalEnvironment === 'test') {
       setPendingEnvironment('live')
       setIsLiveSwitchConfirmOpen(true)
@@ -286,6 +325,7 @@ export function DashboardLayout() {
               <PortalEnvironmentSegmentedControl
                 portalEnvironment={portalEnvironment}
                 onRequestEnvironment={requestPortalEnvironment}
+                isKycVerified={isKycVerified}
               />
               <Button
                 variant="ghost"

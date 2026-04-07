@@ -5,6 +5,35 @@ import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { DashboardActivityPanel } from '../components/DashboardActivityPanel.tsx'
 import { DashboardStatCard } from '../components/DashboardStatCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { useProfileQuery } from '../hooks/useProfileQuery.ts'
+
+function MerchantKycBadge({
+  kycStatus,
+}: {
+  kycStatus: 'pending' | 'verified' | 'rejected' | undefined
+}) {
+  const base =
+    'inline-flex shrink-0 items-center rounded-full px-2.5 py-1 [font-family:var(--font-body)] text-xs font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
+  if (kycStatus === undefined) {
+    return (
+      <span
+        className={`${base} bg-[#E8E4DE] text-[#566167]`}
+        aria-hidden
+      >
+        …
+      </span>
+    )
+  }
+  if (kycStatus === 'verified') {
+    return (
+      <span className={`${base} bg-[#3D6B4F] text-white`}>
+        Verified merchant
+      </span>
+    )
+  }
+  const label = kycStatus === 'pending' ? 'KYC pending' : 'KYC rejected'
+  return <span className={`${base} bg-[#9D8F82] text-white`}>{label}</span>
+}
 
 function formatMoney(currency: string, amount: number) {
   return `${currency} ${amount.toLocaleString('en-US', {
@@ -27,6 +56,7 @@ export function DashboardPage() {
     (state) => state.toggleBalancesVisibility,
   )
   const balanceQuery = useBalanceQuery(true)
+  const profileQuery = useProfileQuery(true)
 
   const balanceData = balanceQuery.data
   const statCards = balanceData
@@ -67,9 +97,12 @@ export function DashboardPage() {
     <>
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
-            Merchant Insights Dashboard
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
+              Merchant Insights Dashboard
+            </h1>
+            <MerchantKycBadge kycStatus={profileQuery.data?.kycStatus} />
+          </div>
           <p className="mt-1.5 max-w-xl [font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
             Monitor transactions, customers, and payouts at a glance.
           </p>
