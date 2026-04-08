@@ -3,6 +3,7 @@ import { ApiKeysSettingsContent } from './ApiKeysSettingsContent.tsx'
 import { ProfileSettingsContent } from './ProfileSettingsContent.tsx'
 import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
+import { WebhooksSettingsContent } from './WebhooksSettingsContent.tsx'
 
 const panelShell =
   'settings-tab-enter min-h-[min(420px,70vh)] rounded-xl border border-[#E0DCD6] bg-[#FAF8F5] p-5 shadow-sm md:p-6'
@@ -28,6 +29,14 @@ export function SettingsTabContentPanel({
     return (
       <article key={activeTab} className={panelShell}>
         <ApiKeysSettingsContent />
+      </article>
+    )
+  }
+
+  if (activeTab === 'webhooks') {
+    return (
+      <article key={activeTab} className={panelShell}>
+        <WebhooksSettingsContent />
       </article>
     )
   }
