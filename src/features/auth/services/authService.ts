@@ -6,6 +6,7 @@ import {
   authSessionResponseSchema,
   forgotPasswordRequestSchema,
   forgotPasswordResponseSchema,
+  getLoginFormErrorMessage,
   loginRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
@@ -33,9 +34,12 @@ function getApiErrorMessage(error: unknown) {
 }
 
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
+  const parsed = loginRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(getLoginFormErrorMessage(payload, parsed.error))
+  }
   try {
-    const validatedPayload = loginRequestSchema.parse(payload)
-    const response = await axiosInstance.post('auth/login', validatedPayload)
+    const response = await axiosInstance.post('auth/login', parsed.data)
     return loginResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error))

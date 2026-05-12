@@ -11,6 +11,34 @@ export const loginRequestSchema = z.object({
   password: z.string().min(8).max(128),
 })
 
+/** User-facing copy for login form / client validation (before or instead of API). */
+export function getLoginFormErrorMessage(
+  input: { email: string; password: string },
+  error: z.ZodError,
+): string {
+  const email = input.email.trim()
+  const password = input.password
+  if (!email && !password) {
+    return 'Please enter your email and password.'
+  }
+  if (!email) {
+    return 'Please enter your email address.'
+  }
+  if (!password) {
+    return 'Please enter your password.'
+  }
+  const first = error.issues[0]
+  if (first?.path[0] === 'email') {
+    return 'Please enter a valid email address.'
+  }
+  if (first?.path[0] === 'password') {
+    return 'Password must be at least 8 characters.'
+  }
+  return (
+    first?.message ?? 'Please check your email and password and try again.'
+  )
+}
+
 export const merchantSchema = z.object({
   name: z.string().min(1),
   status: z.string().min(1),

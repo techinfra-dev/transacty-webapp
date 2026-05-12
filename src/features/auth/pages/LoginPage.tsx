@@ -8,6 +8,10 @@ import {
   useLoginMutation,
   useMfaVerifyMutation,
 } from '../hooks/useAuthMutations.ts'
+import {
+  getLoginFormErrorMessage,
+  loginRequestSchema,
+} from '../services/authSchemas.ts'
 
 type LoginStep = 'credentials' | 'mfa'
 
@@ -33,12 +37,19 @@ export function LoginPage() {
 
     setErrorMessage(null)
     const formData = new FormData(event.currentTarget)
+    const credentials = {
+      email: String(formData.get('email') ?? ''),
+      password: String(formData.get('password') ?? ''),
+    }
+
+    const parsed = loginRequestSchema.safeParse(credentials)
+    if (!parsed.success) {
+      setErrorMessage(getLoginFormErrorMessage(credentials, parsed.error))
+      return
+    }
 
     try {
-      const result = await loginMutation.mutateAsync({
-        email: String(formData.get('email') ?? ''),
-        password: String(formData.get('password') ?? ''),
-      })
+      const result = await loginMutation.mutateAsync(parsed.data)
 
       if ('requiresMfa' in result && result.requiresMfa) {
         setMfaToken(result.mfaToken)
