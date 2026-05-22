@@ -9,7 +9,6 @@ type RefundTransactionDialogProps = {
   isOpen: boolean
   onClose: () => void
   customerWalletId: string
-  onCustomerWalletIdChange: (value: string) => void
   amount: string
   onAmountChange: (value: string) => void
   refundOfTransactionId: string
@@ -29,7 +28,6 @@ export function RefundTransactionDialog({
   isOpen,
   onClose,
   customerWalletId,
-  onCustomerWalletIdChange,
   amount,
   onAmountChange,
   refundOfTransactionId,
@@ -48,22 +46,11 @@ export function RefundTransactionDialog({
         }
       }}
       title="Create refund"
-      description="Return money to a customer wallet."
+      description="Return money for this customer."
       maxWidthClassName="max-w-md"
     >
       <form className="space-y-3" onSubmit={onSubmit}>
-        <label className="space-y-1">
-          <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">
-            Customer wallet ID
-          </span>
-          <Input
-            value={customerWalletId}
-            onChange={(event) => onCustomerWalletIdChange(event.target.value)}
-            required
-            className="h-10 bg-(--color-card)"
-            placeholder="Wallet UUID"
-          />
-        </label>
+        <input type="hidden" name="customerWalletId" value={customerWalletId} readOnly />
 
         <label className="space-y-1">
           <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">

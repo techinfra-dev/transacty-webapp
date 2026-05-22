@@ -1,18 +1,12 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
-import {
-  useCreateRefundMutation,
-  useCreateTransferMutation,
-  useTransactionDetailQuery,
-  useTransactionsListQuery,
-} from './useTransactionsQueries.ts'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
+import { useTransactionsListQuery } from './useTransactionsQueries.ts'
 import type {
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
 
 export function useTransactionsPage() {
-  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [query, setQuery] = useState('')
   const [selectedMethod, setSelectedMethod] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
@@ -24,19 +18,20 @@ export function useTransactionsPage() {
   const [appliedEndDate, setAppliedEndDate] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [isTransferDialogOpen, setIsTransferDialogOpen] = useState(false)
-  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false)
-  const [transferCustomerWalletId, setTransferCustomerWalletId] = useState('')
-  const [transferAmount, setTransferAmount] = useState('')
-  const [transferReason, setTransferReason] = useState('')
-  const [refundCustomerWalletId, setRefundCustomerWalletId] = useState('')
-  const [refundAmount, setRefundAmount] = useState('')
-  const [refundOfTransactionId, setRefundOfTransactionId] = useState('')
-  const [refundReason, setRefundReason] = useState('')
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
-  const [liveMoneyConfirm, setLiveMoneyConfirm] = useState<
-    null | 'transfer' | 'refund'
-  >(null)
+  const openTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.openTransactionDetail,
+  )
+  const closeTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.closeTransactionDetail,
+  )
+
+  function setSelectedTransactionId(id: string | null) {
+    if (id === null) {
+      closeTransactionDetail()
+    } else {
+      openTransactionDetail(id)
+    }
+  }
   const filterMenuRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedCustomerId = customerIdFilter.trim()
@@ -56,10 +51,6 @@ export function useTransactionsPage() {
     limit: pageSize,
     offset,
   })
-  const createTransferMutation = useCreateTransferMutation()
-  const createRefundMutation = useCreateRefundMutation()
-  const transactionDetailQuery = useTransactionDetailQuery(selectedTransactionId)
-
   const filteredTransactions = useMemo(
     () =>
       (transactionsQuery.data?.items ?? []).filter((transaction) => {
@@ -116,60 +107,6 @@ export function useTransactionsPage() {
     }
   }, [])
 
-  function handleTransferSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (portalEnvironment === 'live') {
-      setLiveMoneyConfirm('transfer')
-      return
-    }
-    void executeTransfer()
-  }
-
-  async function executeTransfer() {
-    setLiveMoneyConfirm(null)
-    try {
-      await createTransferMutation.mutateAsync({
-        customerWalletId: transferCustomerWalletId.trim(),
-        amount: transferAmount.trim(),
-        reason: transferReason.trim().length > 0 ? transferReason.trim() : undefined,
-      })
-      setTransferCustomerWalletId('')
-      setTransferAmount('')
-      setTransferReason('')
-      setIsTransferDialogOpen(false)
-    } catch {
-      // Error is rendered by mutation state.
-    }
-  }
-
-  function handleRefundSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (portalEnvironment === 'live') {
-      setLiveMoneyConfirm('refund')
-      return
-    }
-    void executeRefund()
-  }
-
-  async function executeRefund() {
-    setLiveMoneyConfirm(null)
-    try {
-      await createRefundMutation.mutateAsync({
-        customerWalletId: refundCustomerWalletId.trim(),
-        amount: refundAmount.trim(),
-        refundOfTransactionId: refundOfTransactionId.trim(),
-        reason: refundReason.trim().length > 0 ? refundReason.trim() : undefined,
-      })
-      setRefundCustomerWalletId('')
-      setRefundAmount('')
-      setRefundOfTransactionId('')
-      setRefundReason('')
-      setIsRefundDialogOpen(false)
-    } catch {
-      // Error is rendered by mutation state.
-    }
-  }
-
   return {
     query,
     setQuery,
@@ -193,42 +130,13 @@ export function useTransactionsPage() {
     setCurrentPage,
     pageSize,
     setPageSize,
-    isTransferDialogOpen,
-    setIsTransferDialogOpen,
-    isRefundDialogOpen,
-    setIsRefundDialogOpen,
-    transferCustomerWalletId,
-    setTransferCustomerWalletId,
-    transferAmount,
-    setTransferAmount,
-    transferReason,
-    setTransferReason,
-    refundCustomerWalletId,
-    setRefundCustomerWalletId,
-    refundAmount,
-    setRefundAmount,
-    refundOfTransactionId,
-    setRefundOfTransactionId,
-    refundReason,
-    setRefundReason,
-    selectedTransactionId,
     setSelectedTransactionId,
     filterMenuRef,
     transactionsQuery,
-    createTransferMutation,
-    createRefundMutation,
-    transactionDetailQuery,
     filteredTransactions,
     totalItems,
     totalPages,
     startItem,
     endItem,
-    handleTransferSubmit,
-    handleRefundSubmit,
-    executeTransfer,
-    executeRefund,
-    liveMoneyConfirm,
-    setLiveMoneyConfirm,
-    portalEnvironment,
   }
 }

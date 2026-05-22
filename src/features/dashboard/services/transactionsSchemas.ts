@@ -22,6 +22,7 @@ export const transactionItemSchema = z.object({
   refundOfTransactionId: z.string().nullable().optional(),
   createdAt: z.string().min(1),
   completedAt: z.string().nullable().optional(),
+  currency: z.string().min(1).optional(),
 })
 
 export const transactionsListResponseSchema = z.object({

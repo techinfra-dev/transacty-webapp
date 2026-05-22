@@ -26,8 +26,6 @@ type TransactionsPageHeaderProps = {
   onTempEndDateChange: (value: string) => void
   onResetDateFilters: () => void
   onApplyDateFilters: () => void
-  onOpenTransfer: () => void
-  onOpenRefund: () => void
 }
 
 export function TransactionsPageHeader({
@@ -49,8 +47,6 @@ export function TransactionsPageHeader({
   onTempEndDateChange,
   onResetDateFilters,
   onApplyDateFilters,
-  onOpenTransfer,
-  onOpenRefund,
 }: TransactionsPageHeaderProps) {
   return (
     <header className="relative z-20 rounded-xl border border-(--color-accent)/45 bg-(--color-card) p-4">
@@ -64,20 +60,6 @@ export function TransactionsPageHeader({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            className="h-9! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-3 text-xs font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!"
-            onClick={onOpenTransfer}
-          >
-            Create transfer
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-9! border! border-solid! border-[#35383F]! bg-[#35383F]! px-3 text-xs font-semibold text-[#F3E8D6]! hover:bg-[#3d4247]!"
-            onClick={onOpenRefund}
-          >
-            Create refund
-          </Button>
           <div ref={filterMenuRef} className="relative">
             <button
               type="button"

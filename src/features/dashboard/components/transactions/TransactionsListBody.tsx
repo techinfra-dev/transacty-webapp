@@ -6,15 +6,16 @@ import { TransactionRow } from './TransactionRow.tsx'
 type TransactionsListBodyProps = {
   transactionsQuery: UseQueryResult<TransactionsListResponse, Error>
   filteredTransactions: TransactionItem[]
-  onViewTransaction: (id: string) => void
   isLiveEnvironment: boolean
+  /** When the list is empty after load, show this instead of the default filter copy. */
+  emptyListMessage?: string
 }
 
 export function TransactionsListBody({
   transactionsQuery,
   filteredTransactions,
-  onViewTransaction,
   isLiveEnvironment,
+  emptyListMessage,
 }: TransactionsListBodyProps) {
   if (transactionsQuery.isPending) {
     return (
@@ -33,6 +34,13 @@ export function TransactionsListBody({
   }
 
   if (filteredTransactions.length === 0) {
+    if (emptyListMessage) {
+      return (
+        <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
+          {emptyListMessage}
+        </div>
+      )
+    }
     const serverTotal = transactionsQuery.data?.total ?? 0
     const emptyLive =
       isLiveEnvironment &&
@@ -52,11 +60,7 @@ export function TransactionsListBody({
   return (
     <>
       {filteredTransactions.map((transaction) => (
-        <TransactionRow
-          key={transaction.id}
-          transaction={transaction}
-          onView={() => onViewTransaction(transaction.id)}
-        />
+        <TransactionRow key={transaction.id} transaction={transaction} />
       ))}
     </>
   )

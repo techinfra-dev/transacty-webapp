@@ -1,10 +1,12 @@
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { DashboardActivityPanel } from '../components/DashboardActivityPanel.tsx'
-import { DashboardStatCard } from '../components/DashboardStatCard.tsx'
-import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { DashboardWalletDistributionChart } from '../components/DashboardWalletDistributionChart.tsx'
+import { DashboardAddWalletCard } from '../components/DashboardAddWalletCard.tsx'
+import { DashboardWalletCard } from '../components/DashboardWalletCard.tsx'
+import { DashboardWalletsSkeleton } from '../components/DashboardWalletsSkeleton.tsx'
+import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 
 function MerchantKycBadge({
@@ -13,7 +15,7 @@ function MerchantKycBadge({
   kycStatus: 'pending' | 'verified' | 'rejected' | undefined
 }) {
   const base =
-    'inline-flex shrink-0 items-center rounded-full px-2.5 py-1 [font-family:var(--font-body)] text-xs font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
+    'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[10.5px] font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
   if (kycStatus === undefined) {
     return (
       <span
@@ -55,76 +57,46 @@ export function DashboardPage() {
   const toggleBalancesVisibility = useUiPreferencesStore(
     (state) => state.toggleBalancesVisibility,
   )
-  const balanceQuery = useBalanceQuery(true)
+  const walletsQuery = useMerchantWalletsQuery(true)
   const profileQuery = useProfileQuery(true)
 
-  const balanceData = balanceQuery.data
-  const statCards = balanceData
-    ? [
-        {
-          title: 'Total Balance',
-          value: formatMoney(balanceData.currency, Number(balanceData.balance)),
-          note: 'Overall wallet balance',
-        },
-        {
-          title: 'Available Balance',
-          value: formatMoney(
-            balanceData.currency,
-            Number(balanceData.availableBalance),
-          ),
-          note: 'Ready for payout',
-        },
-        {
-          title: 'Pending Balance',
-          value: formatMoney(
-            balanceData.currency,
-            Number(balanceData.pendingBalance),
-          ),
-          note: 'Awaiting settlement',
-        },
-        {
-          title: 'Payout Limit (max)',
-          value: formatMoney(balanceData.currency, balanceData.limits.payout.max),
-          note: `Min ${formatMoney(balanceData.currency, balanceData.limits.payout.min)}`,
-        },
-      ]
-    : []
+  const wallets = walletsQuery.data?.items ?? null
 
   const outlineBtn =
-    'h-10! border! border-solid! border-[#D4CFC4]! bg-white! px-3 text-xs font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!'
+    'h-[34px]! min-h-0! border! border-solid! border-[#D4CFC4]! bg-white! px-2.5 text-[11.5px] font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!'
 
   return (
     <>
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] md:text-3xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="[font-family:var(--font-display)] text-[21px] font-semibold tracking-tight text-[#0F0700] md:text-[25px]">
               Merchant Insights Dashboard
             </h1>
             <MerchantKycBadge kycStatus={profileQuery.data?.kycStatus} />
           </div>
-          <p className="mt-1.5 max-w-xl [font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
+          <p className="mt-1 max-w-xl [font-family:var(--font-body)] text-[12.5px] leading-relaxed text-[#566167]">
             Monitor transactions, customers, and payouts at a glance.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Button
             variant="ghost"
             className={outlineBtn}
-            onClick={() => balanceQuery.refetch()}
-            disabled={balanceQuery.isRefetching}
+            onClick={() => walletsQuery.refetch()}
+            disabled={walletsQuery.isRefetching}
           >
-            {balanceQuery.isRefetching ? (
+            {walletsQuery.isRefetching ? (
               <span className="inline-flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#566167]/35 border-t-[#566167]" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#566167]/35 border-t-[#566167]" />
                 Refreshing...
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 shrink-0 text-[#566167]"
+                  className="h-3.5 w-3.5 shrink-0 text-[#566167]"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
@@ -147,7 +119,7 @@ export function DashboardPage() {
           </Button>
 
           <Button
-            className="h-10! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-3 text-xs font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!"
+            className="h-[34px]! min-h-0! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-2.5 text-[11.5px] font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!"
             onClick={() => navigate({ to: '/dashboard/payouts' })}
           >
             Request payout
@@ -155,35 +127,45 @@ export function DashboardPage() {
         </div>
       </header>
 
-      {balanceQuery.isPending ? (
-        <section className="flex min-h-[160px] items-center justify-center rounded-xl border border-[#E5E0D6] bg-[#EFEBE3]">
-          <LoadingSpinner label="Loading balances..." />
-        </section>
-      ) : balanceQuery.isError || !balanceData ? (
+      {walletsQuery.isPending ? (
+        <DashboardWalletsSkeleton />
+      ) : walletsQuery.isError || wallets === null ? (
         <section className="rounded-xl border border-rose-200 bg-rose-50 p-4">
           <p className="[font-family:var(--font-body)] text-sm text-rose-700">
-            Unable to load balances right now.
+            Unable to load merchant wallets right now.
+          </p>
+        </section>
+      ) : wallets.length === 0 ? (
+        <section className="rounded-xl border border-[#E5E0D6] bg-[#EFEBE3] p-4">
+          <p className="[font-family:var(--font-body)] text-sm text-[#566167]">
+            No active merchant wallets for this environment.
           </p>
         </section>
       ) : (
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {statCards.map((card, index) => {
-            const icons = ['wallet', 'check', 'clock', 'bank'] as const
+        <section className="dashboard-wallets-grid">
+          {wallets.map((wallet) => {
+            const amount = Number(wallet.balance)
+            const safeAmount = Number.isFinite(amount) ? amount : 0
+            const formatted = formatMoney(wallet.currency, safeAmount)
             return (
-              <DashboardStatCard
-                key={card.title}
-                title={card.title}
-                value={areBalancesHidden ? maskBalance(card.value) : card.value}
-                note={card.note}
-                icon={icons[index] ?? 'wallet'}
+              <DashboardWalletCard
+                key={wallet.id}
+                walletId={wallet.id}
+                currency={wallet.currency}
+                displayValue={
+                  areBalancesHidden ? maskBalance(formatted) : formatted
+                }
+                statusLabel={wallet.status}
               />
             )
           })}
+          <DashboardAddWalletCard />
         </section>
       )}
 
-      <section className="mt-8">
+      <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">
         <DashboardActivityPanel />
+        <DashboardWalletDistributionChart />
       </section>
     </>
   )

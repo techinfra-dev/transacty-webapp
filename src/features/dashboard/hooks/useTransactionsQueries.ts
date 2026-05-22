@@ -54,6 +54,7 @@ export function useCreateTransferMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
         queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
+        queryClient.invalidateQueries({ queryKey: ['merchant-wallets'] }),
       ])
     },
   })
@@ -71,6 +72,7 @@ export function useCreateRefundMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
         queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
+        queryClient.invalidateQueries({ queryKey: ['merchant-wallets'] }),
       ])
     },
   })

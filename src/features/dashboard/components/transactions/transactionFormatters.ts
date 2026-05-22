@@ -10,6 +10,13 @@ export function getStatusClassName(status: TransactionStatus) {
   return 'bg-[#E39E9C] text-black'
 }
 
+/** Ledger-style pills for dashboard recent transactions table */
+export function getLedgerStatusPillClass(status: TransactionStatus) {
+  if (status === 'success') return 'dashboard-pill dashboard-pill-succ'
+  if (status === 'pending') return 'dashboard-pill dashboard-pill-pend'
+  return 'dashboard-pill dashboard-pill-fail'
+}
+
 export function toTitleCase(value: string) {
   return value
     .split('_')
@@ -18,10 +25,11 @@ export function toTitleCase(value: string) {
     .join(' ')
 }
 
-export function formatTransactionMoney(amountText: string) {
+export function formatTransactionMoney(amountText: string, currency = 'BDT') {
   const amountNumber = Number(amountText)
   const amount = Number.isFinite(amountNumber) ? amountNumber : 0
-  return `BDT ${amount.toLocaleString('en-US', {
+  const code = currency.trim().toUpperCase() || 'BDT'
+  return `${code} ${amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`

@@ -31,16 +31,18 @@ export function AuthSplitLayout({
           </div>
         </aside>
 
-        <div className="relative h-full overflow-y-auto bg-[#ffffff]">
-          <img
-            src="/TRANSACTY-LOGO-OBSIDIAN-BROWN.png"
-            alt="Transacty"
-            width={352}
-            height={80}
-            className="absolute left-2 top-2 z-10 block h-16 w-auto max-w-[min(90%,440px)] object-contain object-left pointer-events-none md:h-20"
-            decoding="async"
-          />
-          <div className="flex min-h-full items-center justify-center px-6 py-8 md:px-10">
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-[#ffffff]">
+          <header className="flex shrink-0 items-center border-b border-[#E8E8E8] px-5 py-3 md:px-6">
+            <img
+              src="/TRANSACTY-LOGO-OBSIDIAN-BROWN.png"
+              alt="Transacty"
+              width={220}
+              height={48}
+              className="h-8 w-auto max-w-[140px] object-contain object-left md:h-9 md:max-w-[160px]"
+              decoding="async"
+            />
+          </header>
+          <div className="flex min-h-0 flex-1 items-center justify-center px-5 py-6 md:px-8 md:py-8">
             <div className="auth-split-surface auth-form-enter w-full max-w-[400px] space-y-4 rounded-xl border border-[#2d3237]/12 bg-[#f9f8f4] p-5 shadow-[0_8px_30px_-12px_rgba(45,50,55,0.18)] md:p-6">
               <header className="space-y-0.5">
                 <p className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#2d3237]">

@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
+import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { DropdownSelect } from '../../../components/ui/DropdownSelect.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
+import { RefundTransactionDialog } from '../components/transactions/RefundTransactionDialog.tsx'
+import { TransferTransactionDialog } from '../components/transactions/TransferTransactionDialog.tsx'
 import {
   useCreateCustomerMutation,
   useCustomerDetailQuery,
@@ -12,6 +15,7 @@ import {
   useCustomersListQuery,
   useUpdateCustomerStatusMutation,
 } from '../hooks/useCustomersQueries.ts'
+import { useTransferRefundActions } from '../hooks/useTransferRefundActions.ts'
 import type {
   CustomerItem,
   CustomerStatus,
@@ -98,6 +102,10 @@ function LoadingButtonLabel({ label }: { label: string }) {
 
 export function DashboardCustomersPage() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
+  const moneyActions = useTransferRefundActions()
+  const openTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.openTransactionDetail,
+  )
   const [statusFilter, setStatusFilter] = useState('all')
   const [pageSize, setPageSize] = useState(20)
 
@@ -371,7 +379,7 @@ export function DashboardCustomersPage() {
                   </button>
 
                   {openActionsCustomerId === customer.id ? (
-                    <div className="absolute right-full top-0 z-80 mr-2 w-44 overflow-hidden rounded-xl border border-(--color-accent)/45 bg-white">
+                    <div className="absolute right-full top-0 z-80 mr-2 w-48 overflow-hidden rounded-xl border border-(--color-accent)/45 bg-white">
                       <div className="divide-y divide-(--color-accent)/25">
                         <button
                           type="button"
@@ -405,6 +413,26 @@ export function DashboardCustomersPage() {
                           }}
                         >
                           Transactions
+                        </button>
+                        <button
+                          type="button"
+                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
+                          onClick={() => {
+                            moneyActions.openTransferForCustomer(customer.id)
+                            setOpenActionsCustomerId(null)
+                          }}
+                        >
+                          Create transfer
+                        </button>
+                        <button
+                          type="button"
+                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
+                          onClick={() => {
+                            moneyActions.openRefundForCustomer(customer.id)
+                            setOpenActionsCustomerId(null)
+                          }}
+                        >
+                          Create refund
                         </button>
                       </div>
                     </div>
@@ -663,24 +691,134 @@ export function DashboardCustomersPage() {
               <p>Created</p>
             </div>
             <div className="max-h-[280px] overflow-y-auto">
-              {transactionsRows.map((tx, index) => (
-                <div
-                  key={`${tx.id ?? 'tx'}-${index}`}
-                  className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0"
-                >
-                  <p className="truncate">{tx.reference || tx.id || '-'}</p>
-                  <p>{tx.type || '-'}</p>
-                  <p>{tx.amount || '-'}</p>
-                  <p>{tx.status || '-'}</p>
-                  <p className="text-xs text-(--color-secondary)">
-                    {tx.createdAt ? formatDateTime(tx.createdAt) : '-'}
-                  </p>
-                </div>
-              ))}
+              {transactionsRows.map((tx, index) => {
+                const txId = tx.id?.trim()
+                const canOpenDetail = Boolean(txId)
+                return (
+                  <div
+                    key={`${tx.id ?? 'tx'}-${index}`}
+                    role={canOpenDetail ? 'button' : undefined}
+                    tabIndex={canOpenDetail ? 0 : undefined}
+                    className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0 ${
+                      canOpenDetail
+                        ? 'cursor-pointer hover:bg-[#F2EFE8] focus-visible:bg-[#F2EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0700]/15'
+                        : ''
+                    }`}
+                    onClick={
+                      canOpenDetail
+                        ? () => openTransactionDetail(txId as string)
+                        : undefined
+                    }
+                    onKeyDown={
+                      canOpenDetail
+                        ? (event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              openTransactionDetail(txId as string)
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    <p className="truncate">{tx.reference || tx.id || '-'}</p>
+                    <p>{tx.type || '-'}</p>
+                    <p>{tx.amount || '-'}</p>
+                    <p>{tx.status || '-'}</p>
+                    <p className="text-xs text-(--color-secondary)">
+                      {tx.createdAt ? formatDateTime(tx.createdAt) : '-'}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
       </Dialog>
+
+      <TransferTransactionDialog
+        isOpen={moneyActions.isTransferDialogOpen}
+        onClose={() => moneyActions.setIsTransferDialogOpen(false)}
+        customerWalletId={moneyActions.transferCustomerWalletId}
+        amount={moneyActions.transferAmount}
+        onAmountChange={moneyActions.setTransferAmount}
+        reason={moneyActions.transferReason}
+        onReasonChange={moneyActions.setTransferReason}
+        mutation={moneyActions.createTransferMutation}
+        onSubmit={moneyActions.handleTransferSubmit}
+      />
+
+      <RefundTransactionDialog
+        isOpen={moneyActions.isRefundDialogOpen}
+        onClose={() => moneyActions.setIsRefundDialogOpen(false)}
+        customerWalletId={moneyActions.refundCustomerWalletId}
+        amount={moneyActions.refundAmount}
+        onAmountChange={moneyActions.setRefundAmount}
+        refundOfTransactionId={moneyActions.refundOfTransactionId}
+        onRefundOfTransactionIdChange={moneyActions.setRefundOfTransactionId}
+        reason={moneyActions.refundReason}
+        onReasonChange={moneyActions.setRefundReason}
+        mutation={moneyActions.createRefundMutation}
+        onSubmit={moneyActions.handleRefundSubmit}
+      />
+
+      <Dialog
+        isOpen={moneyActions.liveMoneyConfirm !== null}
+        onClose={() => {
+          if (
+            !moneyActions.createTransferMutation.isPending &&
+            !moneyActions.createRefundMutation.isPending
+          ) {
+            moneyActions.setLiveMoneyConfirm(null)
+          }
+        }}
+        title={
+          moneyActions.liveMoneyConfirm === 'refund'
+            ? 'Confirm live refund'
+            : 'Confirm live transfer'
+        }
+        description={
+          moneyActions.liveMoneyConfirm === 'refund'
+            ? 'This refund will be processed in the live environment and may affect real customer balances.'
+            : 'This transfer will be processed in the live environment and may move real funds.'
+        }
+        maxWidthClassName="max-w-md"
+        footer={
+          <div className="dialog-action-row grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full px-3 text-xs"
+              disabled={
+                moneyActions.createTransferMutation.isPending ||
+                moneyActions.createRefundMutation.isPending
+              }
+              onClick={() => moneyActions.setLiveMoneyConfirm(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-10 w-full px-3 text-xs"
+              disabled={
+                moneyActions.createTransferMutation.isPending ||
+                moneyActions.createRefundMutation.isPending
+              }
+              onClick={() => {
+                if (moneyActions.liveMoneyConfirm === 'refund') {
+                  void moneyActions.executeRefund()
+                } else {
+                  void moneyActions.executeTransfer()
+                }
+              }}
+            >
+              {moneyActions.createTransferMutation.isPending ||
+              moneyActions.createRefundMutation.isPending
+                ? 'Submitting...'
+                : 'Confirm'}
+            </Button>
+          </div>
+        }
+      />
     </section>
   )
 }

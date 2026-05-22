@@ -1,4 +1,4 @@
-import { Button } from '../../../../components/ui/Button.tsx'
+import { useTransactionDetailModalStore } from '../../../../store/transactionDetailModalStore.ts'
 import type { TransactionItem } from '../../services/transactionsSchemas.ts'
 import {
   formatTransactionDate,
@@ -9,12 +9,26 @@ import {
 
 type TransactionRowProps = {
   transaction: TransactionItem
-  onView: () => void
 }
 
-export function TransactionRow({ transaction, onView }: TransactionRowProps) {
+export function TransactionRow({ transaction }: TransactionRowProps) {
+  const openTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.openTransactionDetail,
+  )
+
   return (
-    <article className="grid gap-2 border-b border-(--color-accent)/25 bg-(--color-card) px-5 py-2 transition-colors duration-150 ease-out last:border-b-0 hover:bg-[#F2EFE8] focus-within:bg-[#F2EFE8] lg:grid-cols-[132px_1.2fr_124px_108px_124px_138px_120px_92px] lg:items-center lg:gap-3">
+    <article
+      role="button"
+      tabIndex={0}
+      className="grid cursor-pointer gap-2 border-b border-(--color-accent)/25 bg-(--color-card) px-5 py-2 transition-colors duration-150 ease-out last:border-b-0 hover:bg-[#F2EFE8] focus-visible:bg-[#F2EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0700]/20 lg:grid-cols-[132px_1.2fr_124px_108px_124px_138px_120px] lg:items-center lg:gap-3"
+      onClick={() => openTransactionDetail(transaction.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          openTransactionDetail(transaction.id)
+        }
+      }}
+    >
       <div className="min-w-0">
         <p
           className="truncate [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)"
@@ -59,16 +73,6 @@ export function TransactionRow({ transaction, onView }: TransactionRowProps) {
       <p className="hidden whitespace-nowrap [font-family:var(--font-body)] text-xs text-(--color-secondary) lg:block">
         {formatTransactionDate(transaction.createdAt)}
       </p>
-
-      <div>
-        <Button
-          variant="ghost"
-          className="h-8 border border-(--color-accent)/45 px-2 text-xs"
-          onClick={onView}
-        >
-          View
-        </Button>
-      </div>
     </article>
   )
 }

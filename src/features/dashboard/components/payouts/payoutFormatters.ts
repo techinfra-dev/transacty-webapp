@@ -1,3 +1,5 @@
+import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
+
 export function formatPayoutMoney(currency: string, amountText: string) {
   const amountNumber = Number(amountText)
   const amount = Number.isFinite(amountNumber) ? amountNumber : 0
@@ -8,10 +10,5 @@ export function formatPayoutMoney(currency: string, amountText: string) {
 }
 
 export function currencyOptionLabel(code: string) {
-  const names: Record<string, string> = {
-    BDT: 'Bangladeshi Taka',
-    USD: 'US Dollar',
-    EUR: 'Euro',
-  }
-  return `${code} - ${names[code] ?? code}`
+  return `${code} - ${getCurrencyFullName(code)}`
 }

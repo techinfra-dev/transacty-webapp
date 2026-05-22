@@ -9,7 +9,6 @@ type TransferTransactionDialogProps = {
   isOpen: boolean
   onClose: () => void
   customerWalletId: string
-  onCustomerWalletIdChange: (value: string) => void
   amount: string
   onAmountChange: (value: string) => void
   reason: string
@@ -27,7 +26,6 @@ export function TransferTransactionDialog({
   isOpen,
   onClose,
   customerWalletId,
-  onCustomerWalletIdChange,
   amount,
   onAmountChange,
   reason,
@@ -44,22 +42,11 @@ export function TransferTransactionDialog({
         }
       }}
       title="Create transfer"
-      description="Move funds to a customer wallet."
+      description="Move funds for this customer."
       maxWidthClassName="max-w-md"
     >
       <form className="space-y-3" onSubmit={onSubmit}>
-        <label className="space-y-1">
-          <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">
-            Customer wallet ID
-          </span>
-          <Input
-            value={customerWalletId}
-            onChange={(event) => onCustomerWalletIdChange(event.target.value)}
-            required
-            className="h-10 bg-(--color-card)"
-            placeholder="Wallet UUID"
-          />
-        </label>
+        <input type="hidden" name="customerWalletId" value={customerWalletId} readOnly />
 
         <label className="space-y-1">
           <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">

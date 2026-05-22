@@ -10,6 +10,7 @@ export function useCreatePayoutMutation() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
         queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
+        queryClient.invalidateQueries({ queryKey: ['merchant-wallets'] }),
       ])
     },
   })

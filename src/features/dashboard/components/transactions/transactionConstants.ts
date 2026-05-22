@@ -13,7 +13,10 @@ export const transactionStatusOptions = [
   { value: 'failed', label: 'Failed' },
 ]
 
+/** Maximum allowed by `GET me/transactions` query validation. */
+export const TRANSACTIONS_LIST_MAX_LIMIT = 100
+
 export const transactionPageSizeOptions = [
   { value: '10', label: '10 / page' },
-  { value: '100', label: '100 / page' },
+  { value: String(TRANSACTIONS_LIST_MAX_LIMIT), label: '100 / page' },
 ]
