@@ -1,4 +1,5 @@
 import { createRouter } from '@tanstack/react-router'
+import { RoutePending } from './components/RoutePending.tsx'
 import { Route as rootRoute } from './routes/__root.tsx'
 import { Route as indexRoute } from './routes/index.tsx'
 import { Route as authRoute } from './routes/auth.tsx'
@@ -38,7 +39,10 @@ const routeTree = rootRoute.addChildren([
   dashboardRouteTree,
 ])
 
-export const router = createRouter({ routeTree })
+export const router = createRouter({
+  routeTree,
+  defaultPendingComponent: RoutePending,
+})
 
 declare module '@tanstack/react-router' {
   interface Register {

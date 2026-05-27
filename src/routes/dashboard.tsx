@@ -1,9 +1,8 @@
-import { createRoute, redirect } from '@tanstack/react-router'
+import { createRoute, lazyRouteComponent, redirect } from '@tanstack/react-router'
 import {
   getAuthUser,
   isAuthenticated,
 } from '../features/auth/services/authSession.ts'
-import { DashboardLayout } from '../layouts/DashboardLayout.tsx'
 import { hydratePortalEnvironmentForUser } from '../store/portalEnvironmentStore.ts'
 import { Route as rootRoute } from './__root.tsx'
 
@@ -16,5 +15,8 @@ export const Route = createRoute({
     }
     hydratePortalEnvironmentForUser(getAuthUser()?.merchantId ?? null)
   },
-  component: DashboardLayout,
+  component: lazyRouteComponent(
+    () => import('../layouts/DashboardLayout.tsx'),
+    'DashboardLayout',
+  ),
 })

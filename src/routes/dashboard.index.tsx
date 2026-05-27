@@ -1,9 +1,11 @@
-import { createRoute } from '@tanstack/react-router'
-import { DashboardPage } from '../features/dashboard/pages/DashboardPage.tsx'
+import { createRoute, lazyRouteComponent } from '@tanstack/react-router'
 import { Route as dashboardRoute } from './dashboard.tsx'
 
 export const Route = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/',
-  component: DashboardPage,
+  component: lazyRouteComponent(
+    () => import('../features/dashboard/pages/DashboardPage.tsx'),
+    'DashboardPage',
+  ),
 })
