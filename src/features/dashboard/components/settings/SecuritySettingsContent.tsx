@@ -16,6 +16,11 @@ import {
   formatSetupKeyForDisplay,
   parseOtpauthTotpUrl,
 } from '../../../../utils/otpauth.ts'
+import { SettingsCard } from './SettingsCard.tsx'
+import {
+  settingsFieldInputClass,
+  settingsFieldLabelClass,
+} from './settingsFieldUtils.ts'
 
 function ButtonLoadingLabel({
   label,
@@ -101,7 +106,7 @@ function SetupCard({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-(--color-accent)/35 bg-(--color-card) p-4">
+    <section className="settings-card settings-card--nested space-y-4 p-4">
       <div className="space-y-1">
         <h3 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
           Complete MFA setup
@@ -230,8 +235,8 @@ export function SecuritySettingsContent() {
 
   if (statusQuery.isPending) {
     return (
-      <div className="flex h-full min-h-[260px] items-center justify-center">
-        <LoadingSpinner label="Loading security settings..." />
+      <div className="settings-loading">
+        <LoadingSpinner label="Loading security settings…" />
       </div>
     )
   }
@@ -308,28 +313,19 @@ export function SecuritySettingsContent() {
   }
 
   return (
-    <div className="space-y-6">
-      <section>
-        <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
-          Security
-        </h2>
-        <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          Manage two-factor authentication for your account.
-        </p>
-      </section>
-
-      <section className="space-y-3 rounded-xl border border-(--color-accent)/35 bg-(--color-card) p-4">
-        <div className="flex items-center justify-between gap-3">
+    <div className="settings-stack">
+      <SettingsCard
+        title="Two-factor authentication"
+        description="Protect your account with an authenticator app (TOTP)."
+      >
+        <div className="settings-mfa-toggle-row">
           <div>
-            <p className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-              Two-factor authentication
-            </p>
-            <p className="mt-1 [font-family:var(--font-body)] text-xs text-(--color-secondary)">
+            <p className="settings-mfa-status-label">
               {mfaStatus.enabled
                 ? 'MFA is enabled and required on your next sign in.'
                 : mfaStatus.pendingSetup
                   ? 'MFA setup is pending confirmation.'
-                  : 'MFA is disabled.'}
+                  : 'MFA is currently disabled.'}
             </p>
           </div>
           <ToggleSwitch
@@ -348,14 +344,12 @@ export function SecuritySettingsContent() {
           />
         </div>
         {mfaStatus.enabled ? (
-          <p className="[font-family:var(--font-body)] text-xs text-emerald-700">
+          <p className="settings-hint settings-hint--success">
             MFA is active. Use the form below to disable it.
           </p>
         ) : null}
-        {setupError ? (
-          <p className="[font-family:var(--font-body)] text-sm text-rose-600">{setupError}</p>
-        ) : null}
-      </section>
+        {setupError ? <p className="settings-error settings-error--inline">{setupError}</p> : null}
+      </SettingsCard>
 
       {setupData ? (
         <SetupCard
@@ -403,33 +397,34 @@ export function SecuritySettingsContent() {
       ) : null}
 
       {mfaStatus.enabled ? (
-        <section className="space-y-3 rounded-xl border border-(--color-accent)/35 bg-(--color-card) p-4">
-          <h3 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
-            Disable MFA
-          </h3>
-          <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">
-            Enter your current password and a valid authenticator code.
-          </p>
-          <form className="space-y-3" onSubmit={handleDisableMfa}>
-            <div className="space-y-1">
-              <label
-                htmlFor="mfa-disable-password"
-                className="[font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-(--color-secondary)"
-              >
-                Current password
-              </label>
+        <SettingsCard
+          title="Disable MFA"
+          description="Enter your current password and a valid authenticator code."
+          footer={
+            <button
+              type="submit"
+              form="settings-disable-mfa-form"
+              className="settings-btn settings-btn--primary"
+              disabled={isDisableBusy || disableCode.length !== 6}
+            >
+              {isDisableBusy ? 'Disabling…' : 'Disable MFA'}
+            </button>
+          }
+        >
+          <form id="settings-disable-mfa-form" className="settings-stack" onSubmit={handleDisableMfa}>
+            <label className="settings-field settings-field--full">
+              <span className={settingsFieldLabelClass}>Current password</span>
               <Input
                 id="mfa-disable-password"
                 type="password"
                 autoComplete="current-password"
                 value={disablePassword}
                 onChange={(event) => setDisablePassword(event.target.value)}
+                className={settingsFieldInputClass}
               />
-            </div>
-            <div className="space-y-2">
-              <p className="[font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
-                Authenticator code
-              </p>
+            </label>
+            <div className="settings-field settings-field--full">
+              <span className={settingsFieldLabelClass}>Authenticator code</span>
               <OtpInput
                 value={disableCode}
                 onChange={setDisableCode}
@@ -437,31 +432,15 @@ export function SecuritySettingsContent() {
                 aria-label="6-digit authenticator code"
                 aria-describedby="mfa-disable-code-hint"
               />
-              <p
-                id="mfa-disable-code-hint"
-                className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
-              >
+              <p id="mfa-disable-code-hint" className="settings-hint">
                 Enter the current code from your authenticator app.
               </p>
             </div>
-            <Button
-              type="submit"
-              className="px-4"
-              disabled={isDisableBusy || disableCode.length !== 6}
-            >
-              {isDisableBusy ? (
-                <ButtonLoadingLabel label="Disabling..." />
-              ) : (
-                'Disable MFA'
-              )}
-            </Button>
             {disableError ? (
-              <p className="[font-family:var(--font-body)] text-sm text-rose-600">
-                {disableError}
-              </p>
+              <p className="settings-error settings-error--inline">{disableError}</p>
             ) : null}
           </form>
-        </section>
+        </SettingsCard>
       ) : null}
     </div>
   )

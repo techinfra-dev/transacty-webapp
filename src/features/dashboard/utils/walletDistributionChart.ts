@@ -46,23 +46,9 @@ export function buildWalletDistributionSlices(
   })
 }
 
-/** Minimum share of the ring used for rendering (actual % still shown in legend). */
-export const MIN_VISUAL_SLICE_PERCENT = 6
-
+/** Donut arc angles match real balance share (legend shows the same %). */
 export function computeVisualSlicePercents(slices: WalletDistributionSlice[]) {
-  if (slices.length <= 1) {
-    return slices.map((slice) => slice.percent)
-  }
-
-  const boosted = slices.map((slice) =>
-    slice.percent > 0 ? Math.max(slice.percent, MIN_VISUAL_SLICE_PERCENT) : 0,
-  )
-  const total = boosted.reduce((sum, value) => sum + value, 0)
-  if (total <= 0) {
-    return slices.map(() => 0)
-  }
-
-  return boosted.map((value) => (value / total) * 100)
+  return slices.map((slice) => slice.percent)
 }
 
 export function formatDistributionPercent(value: number) {

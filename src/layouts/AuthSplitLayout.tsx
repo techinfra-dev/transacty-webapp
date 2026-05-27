@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { ThemeToggle } from '../components/ui/ThemeToggle.tsx'
+import { useBrandLogoPath } from '../theme/useBrandLogo.ts'
 
 interface AuthSplitLayoutProps {
   title: string
@@ -11,6 +13,8 @@ export function AuthSplitLayout({
   subtitle,
   children,
 }: AuthSplitLayoutProps) {
+  const logoSrc = useBrandLogoPath()
+
   return (
     <section className="auth-split h-screen w-full overflow-hidden">
       <div className="grid h-full w-full md:grid-cols-[40fr_60fr]">
@@ -31,24 +35,25 @@ export function AuthSplitLayout({
           </div>
         </aside>
 
-        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-[#ffffff]">
-          <header className="flex shrink-0 items-center border-b border-[#E8E8E8] px-5 py-3 md:px-6">
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-(--auth-content-bg)">
+          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-(--auth-header-border) px-5 py-3 md:px-6">
             <img
-              src="/TRANSACTY-LOGO-OBSIDIAN-BROWN.png"
+              src={logoSrc}
               alt="Transacty"
               width={220}
               height={48}
               className="h-8 w-auto max-w-[140px] object-contain object-left md:h-9 md:max-w-[160px]"
               decoding="async"
             />
+            <ThemeToggle />
           </header>
           <div className="flex min-h-0 flex-1 items-center justify-center px-5 py-6 md:px-8 md:py-8">
-            <div className="auth-split-surface auth-form-enter w-full max-w-[400px] space-y-4 rounded-xl border border-[#2d3237]/12 bg-[#f9f8f4] p-5 shadow-[0_8px_30px_-12px_rgba(45,50,55,0.18)] md:p-6">
+            <div className="auth-split-surface auth-form-enter w-full max-w-[400px] space-y-4 rounded-xl border border-(--auth-surface-border) bg-(--auth-surface-bg) p-5 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)] md:p-6">
               <header className="space-y-0.5">
-                <p className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#2d3237]">
+                <p className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-(--auth-surface-text)">
                   {title}
                 </p>
-                <p className="[font-family:var(--font-body)] text-sm text-[#566167]">
+                <p className="[font-family:var(--font-body)] text-sm text-(--auth-surface-muted)">
                   {subtitle}
                 </p>
               </header>

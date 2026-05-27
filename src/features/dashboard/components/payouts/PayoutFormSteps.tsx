@@ -5,12 +5,9 @@ import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payo
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
   minimumPayoutAmount,
-  payoutFieldLabelClass,
-  payoutFormCardClass,
-  payoutInputClass,
   payoutMethodOptions,
 } from './payoutConstants.ts'
-import { currencyOptionLabel, formatPayoutMoney } from './payoutFormatters.ts'
+import { formatPayoutMoney } from './payoutFormatters.ts'
 
 interface PayoutFormStepsProps {
   step: number
@@ -19,6 +16,8 @@ interface PayoutFormStepsProps {
   currency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
   effectiveMinimumAmount: number
+  effectiveMaximumAmount: number | undefined
+  formattedWalletBalance: string
   updateBeneficiaryField: (field: keyof BeneficiaryAccountInfo, value: string) => void
   updateCardHolderField: (field: keyof CardHolderInfo, value: string) => void
   clientError: string | null
@@ -32,12 +31,13 @@ export function PayoutFormSteps({
   currency,
   payoutLimits,
   effectiveMinimumAmount,
+  effectiveMaximumAmount,
+  formattedWalletBalance,
   updateBeneficiaryField,
   updateCardHolderField,
   clientError,
   mutationErrorMessage,
 }: PayoutFormStepsProps) {
-  const currencyOptions = [{ label: currencyOptionLabel(currency), value: currency }]
   const paymentMethodOptions = payoutMethodOptions.map((methodOption) => ({
     label: methodOption,
     value: methodOption,
@@ -47,79 +47,91 @@ export function PayoutFormSteps({
     ...paymentMethodOptions,
   ]
 
+  const rangeHint = (() => {
+    if (!currency) {
+      return 'Select a wallet to see amount limits.'
+    }
+    const minLabel = formatPayoutMoney(currency, String(effectiveMinimumAmount))
+    if (payoutLimits?.max) {
+      const maxLabel = formatPayoutMoney(currency, String(payoutLimits.max))
+      return `Allowed range: ${minLabel} – ${maxLabel}. Available: ${formattedWalletBalance}.`
+    }
+    if (effectiveMaximumAmount !== undefined) {
+      const maxLabel = formatPayoutMoney(currency, String(effectiveMaximumAmount))
+      return `Minimum ${minLabel}. Maximum ${maxLabel} (wallet balance).`
+    }
+    return `Minimum payout amount: ${formatPayoutMoney(currency, String(minimumPayoutAmount))}.`
+  })()
+
+  if (step < 2 || step > 4) {
+    return null
+  }
+
   return (
-    <div className={payoutFormCardClass}>
-      {step === 1 ? (
-        <div className="space-y-4">
-          <div>
-            <h2 className="[font-family:var(--font-display)] text-base font-semibold text-[#0F0700]">
-              Payout details
-            </h2>
-            <div className="mt-2 border-b border-[#C9C2B8]" />
+    <div className="payout-panel payout-panel--form">
+      <div className="payout-panel-body">
+        {step === 2 ? (
+          <div className="payout-field-grid">
+            <h2 className="payout-panel-section-title sm:col-span-2">Payout amount</h2>
+            <p className="payout-panel-section-desc sm:col-span-2">
+              Enter how much to send from the selected wallet.
+            </p>
+
+            <div className="payout-field sm:col-span-2">
+              <span className="payout-field-label">Currency</span>
+              <span className="payout-currency-badge">{currency || '—'}</span>
+            </div>
+
+            <label className="payout-field sm:col-span-2">
+              <span className="payout-field-label">Amount</span>
+              <Input
+                value={payload.amount}
+                onChange={(event) =>
+                  setPayload((previousPayload) => ({
+                    ...previousPayload,
+                    amount: event.target.value,
+                  }))
+                }
+                placeholder="0.00"
+                inputMode="decimal"
+                className="payout-field-input max-w-sm"
+              />
+              <span className="payout-field-hint">{rangeHint}</span>
+            </label>
           </div>
+        ) : null}
 
-          <label className="block space-y-1.5">
-            <span className={payoutFieldLabelClass}>Currency</span>
-            <DropdownSelect
-              ariaLabel="Payout currency (from account)"
-              options={currencyOptions}
-              disabled
-              value={currency}
-              onChange={() => {}}
-              className="w-full max-w-md"
-            />
-          </label>
+        {step === 3 ? (
+          <div className="payout-field-grid payout-field-grid--two">
+            <h2 className="payout-panel-section-title sm:col-span-2">Beneficiary account</h2>
+            <p className="payout-panel-section-desc sm:col-span-2">
+              Enter the recipient account that will receive this payout.
+            </p>
 
-          <label className="block space-y-1.5">
-            <span className={payoutFieldLabelClass}>Amount</span>
-            <Input
-              value={payload.amount}
-              onChange={(event) =>
-                setPayload((previousPayload) => ({
-                  ...previousPayload,
-                  amount: event.target.value,
-                }))
-              }
-              placeholder="0.00"
-              inputMode="decimal"
-              className={payoutInputClass}
-            />
-          </label>
+            <label className="payout-field">
+              <span className="payout-field-label">Account number</span>
+              <Input
+                placeholder="Account number"
+                value={payload.benificiaryAccountInfo.number}
+                onChange={(event) => updateBeneficiaryField('number', event.target.value)}
+                className="payout-field-input"
+              />
+            </label>
 
-          <p className="[font-family:var(--font-body)] text-[12px] leading-snug text-[#566167]">
-            {payoutLimits
-              ? `Allowed range: ${formatPayoutMoney(currency, String(effectiveMinimumAmount))} - ${formatPayoutMoney(currency, String(payoutLimits.max))}`
-              : `Minimum payout amount: ${formatPayoutMoney(currency, String(minimumPayoutAmount))}`}
-          </p>
-        </div>
-      ) : null}
+            <label className="payout-field">
+              <span className="payout-field-label">Holder name</span>
+              <Input
+                placeholder="Account holder name"
+                value={payload.benificiaryAccountInfo.holderName}
+                onChange={(event) =>
+                  updateBeneficiaryField('holderName', event.target.value)
+                }
+                className="payout-field-input"
+              />
+            </label>
 
-      {step === 2 ? (
-        <div className="space-y-4">
-          <div>
-            <h2 className="[font-family:var(--font-display)] text-base font-semibold text-[#0F0700]">
-              Beneficiary account
-            </h2>
-            <div className="mt-2 border-b border-[#C9C2B8]" />
-          </div>
-          <p className="[font-family:var(--font-body)] text-[13px] leading-snug text-[#566167]">
-            Enter the recipient account that will receive the payout.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              placeholder="Account number"
-              value={payload.benificiaryAccountInfo.number}
-              onChange={(event) => updateBeneficiaryField('number', event.target.value)}
-              className={payoutInputClass}
-            />
-            <Input
-              placeholder="Holder name"
-              value={payload.benificiaryAccountInfo.holderName}
-              onChange={(event) => updateBeneficiaryField('holderName', event.target.value)}
-              className={payoutInputClass}
-            />
-            <label className="space-y-1.5 sm:col-span-2">
-              <span className={payoutFieldLabelClass}>Payment method</span>
+            <label className="payout-field sm:col-span-2">
+              <span className="payout-field-label">Payment method</span>
               <DropdownSelect
                 ariaLabel="Select payment method"
                 options={paymentMethodOptionsWithPlaceholder}
@@ -135,64 +147,66 @@ export function PayoutFormSteps({
                     },
                   }))
                 }}
-                className="w-full"
+                className="payout-field-select w-full max-w-md"
               />
             </label>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {step === 3 ? (
-        <div className="space-y-4">
-          <div>
-            <h2 className="[font-family:var(--font-display)] text-base font-semibold text-[#0F0700]">
-              Sender identity
-            </h2>
-            <div className="mt-2 border-b border-[#C9C2B8]" />
+        {step === 4 ? (
+          <div className="payout-field-grid payout-field-grid--two">
+            <h2 className="payout-panel-section-title sm:col-span-2">Sender identity</h2>
+            <p className="payout-panel-section-desc sm:col-span-2">
+              This information identifies who initiated the payout request.
+            </p>
+
+            <label className="payout-field">
+              <span className="payout-field-label">First name</span>
+              <Input
+                placeholder="First name"
+                value={payload.cardHolderInfo.firstName}
+                onChange={(event) => updateCardHolderField('firstName', event.target.value)}
+                className="payout-field-input"
+              />
+            </label>
+
+            <label className="payout-field">
+              <span className="payout-field-label">Last name</span>
+              <Input
+                placeholder="Last name"
+                value={payload.cardHolderInfo.lastName}
+                onChange={(event) => updateCardHolderField('lastName', event.target.value)}
+                className="payout-field-input"
+              />
+            </label>
+
+            <label className="payout-field sm:col-span-2">
+              <span className="payout-field-label">Email</span>
+              <Input
+                placeholder="Email address"
+                value={payload.cardHolderInfo.email}
+                onChange={(event) => updateCardHolderField('email', event.target.value)}
+                className="payout-field-input"
+              />
+            </label>
+
+            <label className="payout-field sm:col-span-2">
+              <span className="payout-field-label">Phone</span>
+              <Input
+                placeholder="Phone number"
+                value={payload.cardHolderInfo.phone}
+                onChange={(event) => updateCardHolderField('phone', event.target.value)}
+                className="payout-field-input"
+              />
+            </label>
           </div>
-          <p className="[font-family:var(--font-body)] text-[13px] leading-snug text-[#566167]">
-            This information identifies who initiated the payout request.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              placeholder="First name"
-              value={payload.cardHolderInfo.firstName}
-              onChange={(event) => updateCardHolderField('firstName', event.target.value)}
-              className={payoutInputClass}
-            />
-            <Input
-              placeholder="Last name"
-              value={payload.cardHolderInfo.lastName}
-              onChange={(event) => updateCardHolderField('lastName', event.target.value)}
-              className={payoutInputClass}
-            />
-            <Input
-              placeholder="Email"
-              value={payload.cardHolderInfo.email}
-              onChange={(event) => updateCardHolderField('email', event.target.value)}
-              className={`${payoutInputClass} sm:col-span-2`}
-            />
-            <Input
-              placeholder="Phone number"
-              value={payload.cardHolderInfo.phone}
-              onChange={(event) => updateCardHolderField('phone', event.target.value)}
-              className={`${payoutInputClass} sm:col-span-2`}
-            />
-          </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {clientError ? (
-        <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 [font-family:var(--font-body)] text-[13px] text-rose-700">
-          {clientError}
-        </p>
-      ) : null}
-
-      {mutationErrorMessage ? (
-        <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 [font-family:var(--font-body)] text-[13px] text-rose-700">
-          {mutationErrorMessage}
-        </p>
-      ) : null}
+        {clientError ? <p className="payout-alert">{clientError}</p> : null}
+        {mutationErrorMessage ? (
+          <p className="payout-alert">{mutationErrorMessage}</p>
+        ) : null}
+      </div>
     </div>
   )
 }

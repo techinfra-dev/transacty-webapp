@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Button } from '../../../../components/ui/Button.tsx'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
@@ -11,6 +10,8 @@ import {
 } from '../../hooks/useApiKeysQuery.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 import type { ApiKeyItem, CreateApiKeyResponse } from '../../services/apiKeysSchemas.ts'
+import { SettingsKycGate } from './SettingsKycGate.tsx'
+import { settingsFieldLabelClass } from './settingsFieldUtils.ts'
 
 function formatCreatedAt(isoDate: string) {
   const timestamp = new Date(isoDate)
@@ -54,6 +55,7 @@ export function ApiKeysSettingsContent() {
   const apiKeysQuery = useApiKeysQuery(isKycVerified)
   const createApiKeyMutation = useCreateApiKeyMutation()
   const revokeApiKeyMutation = useRevokeApiKeyMutation()
+
   async function handleConfirmRevoke() {
     if (!keyForRevoke) {
       return
@@ -66,10 +68,7 @@ export function ApiKeysSettingsContent() {
     }
   }
 
-  async function handleCopyValue(
-    value: string,
-    field: 'apiKey' | 'secret',
-  ) {
+  async function handleCopyValue(value: string, field: 'apiKey' | 'secret') {
     try {
       await navigator.clipboard.writeText(value)
       setCopiedField(field)
@@ -92,149 +91,115 @@ export function ApiKeysSettingsContent() {
 
   if (profileQuery.isPending) {
     return (
-      <div className="flex h-full min-h-[260px] items-center justify-center">
-        <LoadingSpinner label="Loading API keys..." />
+      <div className="settings-loading">
+        <LoadingSpinner label="Loading API keys…" />
       </div>
     )
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return (
-      <div className="[font-family:var(--font-body)] text-sm text-rose-600">
-        Unable to verify KYC status right now.
-      </div>
-    )
+    return <p className="settings-error">Unable to verify KYC status right now.</p>
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col space-y-4">
-      <section className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
-            API keys
-          </h2>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-            Manage your generated API keys for backend integration.
-          </p>
-        </div>
-        {isKycVerified ? (
-          <Button
-            className="inline-flex h-10 items-center justify-center gap-2 px-3 text-xs"
-            onClick={handleCreateApiKey}
+    <div className="settings-stack">
+      {isKycVerified ? (
+        <div className="settings-toolbar">
+          <button
+            type="button"
+            className="settings-btn settings-btn--primary"
+            onClick={() => void handleCreateApiKey()}
             disabled={createApiKeyMutation.isPending}
             aria-busy={createApiKeyMutation.isPending}
           >
-            {createApiKeyMutation.isPending ? (
-              <>
-                <span
-                  className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--color-background)/35 border-t-(--color-background)"
-                  aria-hidden
-                />
-                Creating...
-              </>
-            ) : (
-              'Create API key'
-            )}
-          </Button>
-        ) : null}
-      </section>
+            {createApiKeyMutation.isPending ? 'Creating…' : 'Create API key'}
+          </button>
+        </div>
+      ) : null}
 
       {!isKycVerified ? (
-        <section className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xl rounded-2xl border border-(--color-accent)/35 bg-(--color-card) p-6 text-center">
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-              <svg viewBox="0 0 20 20" className="h-7 w-7 fill-current" aria-hidden="true">
-                <path d="M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Zm0 2.75a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75Zm0 8.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
-              </svg>
-            </div>
-            <h3 className="mt-4 [font-family:var(--font-display)] text-xl font-semibold text-(--color-foreground)">
-              {isKycPendingVerification
-                ? 'KYC pending verification'
-                : 'KYC verification required'}
-            </h3>
-            <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-              {isKycPendingVerification
-                ? 'Your KYC has been submitted and is currently under review. API key management will unlock after approval.'
-                : 'Upload and submit your KYC details to unlock API key management for your account.'}
-            </p>
-            {!isKycPendingVerification ? (
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <Button className="px-5" onClick={openKycDialog}>
-                  Complete KYC now
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        </section>
+        <SettingsKycGate
+          title={
+            isKycPendingVerification
+              ? 'KYC pending verification'
+              : 'KYC verification required'
+          }
+          description={
+            isKycPendingVerification
+              ? 'Your KYC has been submitted and is currently under review. API key management will unlock after approval.'
+              : 'Upload and submit your KYC details to unlock API key management for your account.'
+          }
+          showCta={!isKycPendingVerification}
+          onCta={openKycDialog}
+        />
       ) : apiKeysQuery.isPending ? (
-        <div className="flex flex-1 items-center justify-center">
-          <LoadingSpinner label="Loading API keys..." />
+        <div className="settings-loading">
+          <LoadingSpinner label="Loading API keys…" />
         </div>
       ) : apiKeysQuery.isError || !apiKeysQuery.data ? (
-        <section className="rounded-lg border border-rose-200 bg-rose-50 p-3 [font-family:var(--font-body)] text-sm text-rose-700">
+        <p className="settings-dev-alert">
           {(apiKeysQuery.error as Error | undefined)?.message ??
             'Unable to load API keys right now.'}
-        </section>
+        </p>
       ) : apiKeysQuery.data.items.length === 0 ? (
-        <section className="rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-3 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          No API keys found for this workspace.
-        </section>
+        <article className="settings-card">
+          <p className="settings-dev-empty">No API keys found for this workspace.</p>
+        </article>
       ) : (
-        <section className="flex min-h-0 max-h-[520px] flex-1 flex-col overflow-hidden rounded-lg border border-(--color-accent)/35 bg-(--color-card)">
-          <div className="grid grid-cols-[1.2fr_0.8fr_1.6fr_0.8fr_1fr_56px] gap-2 border-b border-(--color-accent)/35 px-3 py-2 [font-family:var(--font-body)] text-[11px] uppercase tracking-wide text-(--color-secondary)">
+        <article className="settings-card settings-dev-table-card">
+          <div className="settings-dev-table-head">
             <p>Key</p>
             <p>Env</p>
             <p>Scopes</p>
             <p>Status</p>
             <p>Created</p>
-            <p className="text-right">Action</p>
+            <p>Action</p>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {apiKeysQuery.data.items.map((item) => (
-              <div
-                key={item.id}
-                className="grid grid-cols-[1.2fr_0.8fr_1.6fr_0.8fr_1fr_56px] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0"
-              >
-                <p className="truncate">{item.keyMasked}</p>
-                <p>{item.environment}</p>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {parseScopes(item.scopes)
-                    .slice(0, 3)
-                    .map((scope) => (
-                      <span
-                        key={`${item.id}-${scope}`}
-                        className="inline-flex rounded-full border border-(--color-accent)/35 bg-(--color-background) px-2 py-0.5 [font-family:var(--font-body)] text-[11px] text-(--color-secondary)"
+          <div className="settings-dev-table-body">
+            {apiKeysQuery.data.items.map((item) => {
+              const isRevoked = item.status.toLowerCase() === 'revoked'
+              return (
+                <div key={item.id} className="settings-dev-table-row">
+                  <p className="truncate">{item.keyMasked}</p>
+                  <p className="settings-dev-table-muted">{item.environment}</p>
+                  <div className="settings-dev-scope-list">
+                    {parseScopes(item.scopes)
+                      .slice(0, 3)
+                      .map((scope) => (
+                        <span key={`${item.id}-${scope}`} className="settings-dev-scope-tag">
+                          {formatScopeLabel(scope)}
+                        </span>
+                      ))}
+                  </div>
+                  <p
+                    className={`settings-dev-status ${isRevoked ? 'settings-dev-status--revoked' : 'settings-dev-status--active'}`}
+                  >
+                    {item.status}
+                  </p>
+                  <p className="settings-dev-table-muted">{formatCreatedAt(item.createdAt)}</p>
+                  <div className="settings-dev-actions">
+                    {isRevoked ? null : (
+                      <button
+                        type="button"
+                        aria-label="Revoke API key"
+                        className="settings-dev-revoke-btn"
+                        onClick={() => setKeyForRevoke(item)}
                       >
-                        {formatScopeLabel(scope)}
-                      </span>
-                    ))}
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="h-3.5 w-3.5 fill-current"
+                          aria-hidden
+                        >
+                          <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p>{item.status}</p>
-                <p className="text-xs text-(--color-secondary)">
-                  {formatCreatedAt(item.createdAt)}
-                </p>
-                <div className="flex justify-end">
-                  {item.status.toLowerCase() === 'revoked' ? null : (
-                    <button
-                      type="button"
-                      aria-label="Revoke API key"
-                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-rose-300 bg-rose-50 text-rose-600 transition hover:border-rose-400 hover:bg-rose-100 hover:text-rose-700"
-                      onClick={() => setKeyForRevoke(item)}
-                    >
-                      <svg
-                        viewBox="0 0 20 20"
-                        className="h-3.5 w-3.5 fill-current"
-                        aria-hidden="true"
-                      >
-                        <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
-        </section>
+        </article>
       )}
 
       <Dialog
@@ -245,52 +210,48 @@ export function ApiKeysSettingsContent() {
         maxWidthClassName="max-w-lg"
         footer={
           <div className="flex items-center justify-end">
-            <Button variant="ghost" className="px-4" onClick={() => setCreatedApiKey(null)}>
+            <button
+              type="button"
+              className="settings-btn settings-btn--ghost"
+              onClick={() => setCreatedApiKey(null)}
+            >
               Done
-            </Button>
+            </button>
           </div>
         }
       >
         {createdApiKey ? (
-          <div className="space-y-3">
-            <div className="rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-3">
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                API key
-              </p>
-              <p className="mt-1 break-all [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {createdApiKey.apiKey}
-              </p>
-              <div className="mt-2">
-                <Button
-                  variant="ghost"
-                  className="h-8 border border-(--color-accent)/45 px-2 text-xs"
-                  onClick={() => handleCopyValue(createdApiKey.apiKey, 'apiKey')}
+          <div className="settings-stack">
+            <div className="settings-secret-block">
+              <p className={settingsFieldLabelClass}>API key</p>
+              <code className="settings-secret-code">{createdApiKey.apiKey}</code>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className="settings-btn settings-btn--ghost"
+                  onClick={() => void handleCopyValue(createdApiKey.apiKey, 'apiKey')}
                 >
                   {copiedField === 'apiKey' ? 'Copied' : 'Copy API key'}
-                </Button>
+                </button>
               </div>
             </div>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="[font-family:var(--font-body)] text-xs text-amber-700">
-                Secret (shown once)
-              </p>
-              <p className="mt-1 break-all [font-family:var(--font-body)] text-sm text-amber-900">
-                {createdApiKey.secret}
-              </p>
-              <div className="mt-2">
-                <Button
-                  variant="ghost"
-                  className="h-8 border border-amber-300 px-2 text-xs text-amber-800 hover:text-amber-900"
-                  onClick={() => handleCopyValue(createdApiKey.secret, 'secret')}
+            <div className="settings-secret-block settings-secret-block--warn">
+              <p className={settingsFieldLabelClass}>Secret (shown once)</p>
+              <code className="settings-secret-code">{createdApiKey.secret}</code>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className="settings-btn settings-btn--ghost"
+                  onClick={() => void handleCopyValue(createdApiKey.secret, 'secret')}
                 >
                   {copiedField === 'secret' ? 'Copied' : 'Copy secret'}
-                </Button>
+                </button>
               </div>
             </div>
 
-            <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-              {createdApiKey.environment === 'live' ? 'Live' : 'Test'}
+            <p className="settings-hint">
+              Environment: {createdApiKey.environment === 'live' ? 'Live' : 'Test'}
             </p>
           </div>
         ) : null}
@@ -307,48 +268,35 @@ export function ApiKeysSettingsContent() {
         description="This key will stop working immediately."
         maxWidthClassName="max-w-md"
         footer={
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="ghost"
-              className="px-4"
+          <div className="settings-dev-actions-row">
+            <button
+              type="button"
+              className="settings-btn settings-btn--ghost"
               onClick={() => setKeyForRevoke(null)}
               disabled={revokeApiKeyMutation.isPending}
             >
               Cancel
-            </Button>
-            <Button
-              className="inline-flex items-center justify-center gap-2 px-4"
-              onClick={handleConfirmRevoke}
+            </button>
+            <button
+              type="button"
+              className="settings-btn settings-btn--primary"
+              onClick={() => void handleConfirmRevoke()}
               disabled={revokeApiKeyMutation.isPending}
               aria-busy={revokeApiKeyMutation.isPending}
             >
-              {revokeApiKeyMutation.isPending ? (
-                <>
-                  <span
-                    className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--color-background)/35 border-t-(--color-background)"
-                    aria-hidden
-                  />
-                  Revoking...
-                </>
-              ) : (
-                'Revoke key'
-              )}
-            </Button>
+              {revokeApiKeyMutation.isPending ? 'Revoking…' : 'Revoke key'}
+            </button>
           </div>
         }
       >
-        <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">
-          Are you sure you want to revoke this API key?
-        </p>
+        <p className="settings-hint">Are you sure you want to revoke this API key?</p>
         {keyForRevoke ? (
-          <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+          <p className="settings-secret-code mt-2">
             {keyForRevoke.keyMasked}
           </p>
         ) : null}
         {revokeApiKeyMutation.isError ? (
-          <p className="mt-3 [font-family:var(--font-body)] text-sm text-rose-600">
-            {revokeApiKeyMutation.error.message}
-          </p>
+          <p className="settings-error settings-error--inline">{revokeApiKeyMutation.error.message}</p>
         ) : null}
       </Dialog>
     </div>

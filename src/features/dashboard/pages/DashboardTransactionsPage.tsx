@@ -8,7 +8,7 @@ export function DashboardTransactionsPage() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
 
   return (
-    <section className="app-page-enter flex h-full min-h-0 flex-col gap-4">
+    <section className="tx-history-page app-page-enter flex h-full min-h-0 flex-col gap-3">
       <TransactionsPageHeader
         query={tx.query}
         onQueryChange={(value) => {
@@ -25,15 +25,13 @@ export function DashboardTransactionsPage() {
           tx.setSelectedMethod(value)
           tx.setCurrentPage(1)
         }}
-        selectedStatus={tx.selectedStatus}
-        onSelectedStatusChange={(value) => {
-          tx.setSelectedStatus(value)
-          tx.setCurrentPage(1)
-        }}
         totalItems={tx.totalItems}
-        isFilterPanelOpen={tx.isFilterPanelOpen}
-        onToggleFilterPanel={() => tx.setIsFilterPanelOpen((previous) => !previous)}
-        filterMenuRef={tx.filterMenuRef}
+        hasActiveDateFilter={
+          tx.appliedStartDate.length > 0 || tx.appliedEndDate.length > 0
+        }
+        isFilterDialogOpen={tx.isFilterDialogOpen}
+        onOpenFilterDialog={tx.openFilterDialog}
+        onCloseFilterDialog={tx.closeFilterDialog}
         tempStartDate={tx.tempStartDate}
         tempEndDate={tx.tempEndDate}
         onTempStartDateChange={tx.setTempStartDate}
@@ -49,12 +47,15 @@ export function DashboardTransactionsPage() {
           tx.setAppliedStartDate(tx.tempStartDate)
           tx.setAppliedEndDate(tx.tempEndDate)
           tx.setCurrentPage(1)
-          tx.setIsFilterPanelOpen(false)
+          tx.closeFilterDialog()
         }}
       />
 
       <TransactionsTableSection
         transactionsQuery={tx.transactionsQuery}
+        statusTabs={tx.statusTabs}
+        statusTab={tx.statusTab}
+        onStatusTabChange={tx.setStatusTab}
         filteredTransactions={tx.filteredTransactions}
         startItem={tx.startItem}
         endItem={tx.endItem}

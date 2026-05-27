@@ -115,20 +115,16 @@ export function TeamSettingsContent() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col space-y-4">
-      <section className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
-            Team
-          </h2>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-            List and manage directors, UBOs, and authorized signatories.
-          </p>
-        </div>
-        <Button className="h-10 px-4 text-xs md:text-sm" onClick={() => setIsAddDialogOpen(true)}>
+    <div className="settings-stack">
+      <div className="settings-toolbar">
+        <button
+          type="button"
+          className="settings-btn settings-btn--primary"
+          onClick={() => setIsAddDialogOpen(true)}
+        >
           Add member
-        </Button>
-      </section>
+        </button>
+      </div>
 
       {personsQuery.isPending ? (
         <div className="flex flex-1 items-center justify-center">

@@ -5,13 +5,13 @@ function WalletCardSkeleton() {
       aria-hidden
     >
       <div className="flex gap-2">
-        <div className="h-5 w-10 rounded bg-[#F2F1ED]" />
-        <div className="h-4 w-28 rounded bg-[#F2F1ED]" />
+        <div className="dashboard-skeleton-block h-5 w-10" />
+        <div className="dashboard-skeleton-block h-4 w-28" />
       </div>
-      <div className="h-8 w-28 rounded bg-[#F2F1ED]" />
-      <div className="flex gap-2 border-t border-[rgba(15,7,0,0.05)] pt-2">
-        <div className="h-5 w-14 rounded-full bg-[#F2F1ED]" />
-        <div className="ml-auto h-3 w-16 rounded bg-[#F2F1ED]" />
+      <div className="dashboard-skeleton-block h-8 w-28" />
+      <div className="dashboard-wallet-footer">
+        <div className="dashboard-skeleton-block h-5 w-14 rounded-full" />
+        <div className="dashboard-skeleton-block ml-auto h-3 w-16" />
       </div>
     </div>
   )
@@ -20,12 +20,12 @@ function WalletCardSkeleton() {
 function AddWalletCardSkeleton() {
   return (
     <div
-      className="flex min-h-[124px] animate-pulse flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-[rgba(15,7,0,0.12)] bg-white p-4"
+      className="dashboard-add-wallet animate-pulse pointer-events-none"
       aria-hidden
     >
-      <div className="h-9 w-9 rounded-full border border-dashed border-[#E8E8E8] bg-[#F6F6F6]" />
-      <div className="h-3 w-16 rounded bg-[#F2F1ED]" />
-      <div className="h-3 w-32 max-w-full rounded bg-[#F2F1ED]" />
+      <div className="dashboard-skeleton-block h-9 w-9 rounded-full" />
+      <div className="dashboard-skeleton-block h-3 w-16" />
+      <div className="dashboard-skeleton-block h-3 w-32 max-w-full" />
     </div>
   )
 }

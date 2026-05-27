@@ -37,18 +37,6 @@ function MerchantKycBadge({
   return <span className={`${base} bg-[#9D8F82] text-white`}>{label}</span>
 }
 
-function formatMoney(currency: string, amount: number) {
-  return `${currency} ${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
-
-function maskBalance(formattedMoney: string) {
-  const [currency] = formattedMoney.split(' ')
-  return `${currency} ******`
-}
-
 export function DashboardPage() {
   const navigate = useNavigate()
   const areBalancesHidden = useUiPreferencesStore(
@@ -62,20 +50,17 @@ export function DashboardPage() {
 
   const wallets = walletsQuery.data?.items ?? null
 
-  const outlineBtn =
-    'h-[34px]! min-h-0! border! border-solid! border-[#D4CFC4]! bg-white! px-2.5 text-[11.5px] font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!'
+  const outlineBtn = 'dash-btn-outline'
 
   return (
     <>
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="[font-family:var(--font-display)] text-[21px] font-semibold tracking-tight text-[#0F0700] md:text-[25px]">
-              Merchant Insights Dashboard
-            </h1>
+            <h1 className="dash-page-title">Dashboard</h1>
             <MerchantKycBadge kycStatus={profileQuery.data?.kycStatus} />
           </div>
-          <p className="mt-1 max-w-xl [font-family:var(--font-body)] text-[12.5px] leading-relaxed text-[#566167]">
+          <p className="dash-page-subtitle">
             Monitor transactions, customers, and payouts at a glance.
           </p>
         </div>
@@ -89,14 +74,14 @@ export function DashboardPage() {
           >
             {walletsQuery.isRefetching ? (
               <span className="inline-flex items-center gap-2">
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#566167]/35 border-t-[#566167]" />
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-(--dash-fg-muted)/35 border-t-(--dash-fg-muted)" />
                 Refreshing...
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-3.5 w-3.5 shrink-0 text-[#566167]"
+                  className="h-3.5 w-3.5 shrink-0 text-(--dash-fg-muted)"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
@@ -119,7 +104,7 @@ export function DashboardPage() {
           </Button>
 
           <Button
-            className="h-[34px]! min-h-0! border! border-solid! border-[#0F0700]! bg-[#0F0700]! px-2.5 text-[11.5px] font-semibold text-[#F3E8D6]! hover:bg-[#2a241c]!"
+            className="dash-btn-primary"
             onClick={() => navigate({ to: '/dashboard/payouts' })}
           >
             Request payout
@@ -136,8 +121,8 @@ export function DashboardPage() {
           </p>
         </section>
       ) : wallets.length === 0 ? (
-        <section className="rounded-xl border border-[#E5E0D6] bg-[#EFEBE3] p-4">
-          <p className="[font-family:var(--font-body)] text-sm text-[#566167]">
+        <section className="dashboard-card p-4">
+          <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
             No active merchant wallets for this environment.
           </p>
         </section>
@@ -146,15 +131,13 @@ export function DashboardPage() {
           {wallets.map((wallet) => {
             const amount = Number(wallet.balance)
             const safeAmount = Number.isFinite(amount) ? amount : 0
-            const formatted = formatMoney(wallet.currency, safeAmount)
             return (
               <DashboardWalletCard
                 key={wallet.id}
                 walletId={wallet.id}
                 currency={wallet.currency}
-                displayValue={
-                  areBalancesHidden ? maskBalance(formatted) : formatted
-                }
+                amount={safeAmount}
+                areBalancesHidden={areBalancesHidden}
                 statusLabel={wallet.status}
               />
             )

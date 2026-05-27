@@ -1,3 +1,11 @@
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  BDT: '৳',
+  INR: '₹',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+}
+
 const CURRENCY_FULL_NAMES: Record<string, string> = {
   BDT: 'Bangladeshi Taka',
   INR: 'Indian Rupee',
@@ -34,6 +42,13 @@ function intlCurrencyName(code: string): string | undefined {
     /* Intl not available or invalid code */
   }
   return undefined
+}
+
+/** Currency symbol when defined (e.g. BDT → ৳). */
+export function getCurrencySymbol(code: string): string | undefined {
+  const normalized = code.trim().toUpperCase()
+  if (!normalized) return undefined
+  return CURRENCY_SYMBOLS[normalized]
 }
 
 /** Full currency name for UI labels (e.g. BDT → Bangladeshi Taka). */

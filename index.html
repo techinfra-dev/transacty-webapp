@@ -7,6 +7,19 @@
     <title>Transacty</title>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('transcaty-ui-preferences');
+          if (!raw) return;
+          var parsed = JSON.parse(raw);
+          if (parsed && parsed.state && parsed.state.colorScheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.colorScheme = 'dark';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

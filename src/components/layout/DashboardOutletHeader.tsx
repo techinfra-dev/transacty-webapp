@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import type { ProfileResponse } from '../../features/dashboard/services/profileSchemas.ts'
 import type { AuthSessionUser } from '../../features/auth/services/authSession.ts'
+import { ThemeToggle } from '../ui/ThemeToggle.tsx'
 
 function displayInitials(merchantName: string, email: string) {
   const fromName = merchantName
@@ -62,29 +63,33 @@ export function DashboardOutletHeader({
     <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 border-b border-(--sidebar-border) bg-(--sidebar-bg) px-4 py-2.5 md:px-5">
       <div className="min-w-0 flex-1" aria-hidden />
 
-      <Link
-        to="/dashboard/settings"
-        className="flex min-w-0 max-w-[min(100%,280px)] items-center gap-2.5 rounded-lg px-1 py-0.5 text-inherit no-underline outline-none transition hover:bg-[#F6F6F6] focus-visible:ring-2 focus-visible:ring-[#0F0700]/20"
-        aria-label={`${merchantName} account settings`}
-      >
-        <div className="min-w-0 text-right">
-          <p className="truncate [font-family:var(--font-body)] text-[15px] font-semibold text-[#0F0700]">
-            {merchantName}
-          </p>
-          <p className="truncate [font-family:var(--font-body)] text-[11.5px] text-[#566167]">
-            {email}
-            {role ? (
-              <span className="text-[#9D8F82]">{` · ${role.replace(/_/g, ' ')}`}</span>
-            ) : null}
-          </p>
-        </div>
-        <span
-          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#0F0700] [font-family:var(--font-body)] text-[12.5px] font-semibold text-[#F3E8D6]"
-          aria-hidden
+      <div className="flex shrink-0 items-center gap-2">
+        <ThemeToggle />
+
+        <Link
+          to="/dashboard/settings"
+          className="flex min-w-0 max-w-[min(100%,280px)] items-center gap-2.5 rounded-lg px-1 py-0.5 text-inherit no-underline outline-none transition hover:bg-(--dashboard-main-bg) focus-visible:ring-2 focus-visible:ring-(--color-accent)/40"
+          aria-label={`${merchantName} account settings`}
         >
-          {initials}
-        </span>
-      </Link>
+          <div className="min-w-0 text-right">
+            <p className="truncate [font-family:var(--font-body)] text-[15px] font-semibold text-(--color-foreground)">
+              {merchantName}
+            </p>
+            <p className="truncate [font-family:var(--font-body)] text-[11.5px] text-(--color-secondary)">
+              {email}
+              {role ? (
+                <span className="text-(--color-accent)">{` · ${role.replace(/_/g, ' ')}`}</span>
+              ) : null}
+            </p>
+          </div>
+          <span
+            className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-(--color-primary) [font-family:var(--font-body)] text-[12.5px] font-semibold text-(--color-background)"
+            aria-hidden
+          >
+            {initials}
+          </span>
+        </Link>
+      </div>
     </header>
   )
 }

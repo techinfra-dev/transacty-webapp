@@ -9,8 +9,7 @@ import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
 import { useTransactionsListQuery } from '../hooks/useTransactionsQueries.ts'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 
-const outlineBtn =
-  'h-[34px]! min-h-0! border! border-solid! border-[#D4CFC4]! bg-white! px-2.5 text-[11.5px] font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!'
+const outlineBtn = 'dash-btn-outline'
 
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
@@ -53,7 +52,7 @@ export function DashboardWalletPage() {
         </p>
         <Link
           to="/dashboard"
-          className="mt-4 inline-flex h-9 items-center rounded-lg border border-[#D4CFC4] bg-white px-3 [font-family:var(--font-body)] text-xs font-semibold text-[#0F0700] transition hover:bg-[#FAF8F4]"
+          className="dash-btn-outline mt-4 inline-flex items-center rounded-lg px-3 [font-family:var(--font-body)] text-xs"
         >
           Back to dashboard
         </Link>
@@ -63,16 +62,14 @@ export function DashboardWalletPage() {
 
   if (!activeWallet) {
     return (
-      <section className="app-page-enter max-w-lg rounded-xl border border-[#E5E0D6] bg-white p-6">
-        <h1 className="[font-family:var(--font-display)] text-[21px] font-semibold text-[#0F0700]">
-          Wallet not found
-        </h1>
-        <p className="mt-2 [font-family:var(--font-body)] text-[12.5px] text-[#566167]">
+      <section className="dashboard-card app-page-enter max-w-lg p-6">
+        <h1 className="dash-page-title">Wallet not found</h1>
+        <p className="dash-page-subtitle">
           This wallet is not available in the current environment, or the link may be outdated.
         </p>
         <Link
           to="/dashboard"
-          className="mt-4 inline-flex h-[34px] items-center rounded-lg border border-[#D4CFC4] bg-white px-3 [font-family:var(--font-body)] text-[11.5px] font-semibold text-[#0F0700] transition hover:bg-[#FAF8F4]"
+          className="dash-btn-outline mt-4 inline-flex items-center rounded-lg px-3 [font-family:var(--font-body)] text-[11.5px]"
         >
           Back to dashboard
         </Link>
@@ -84,12 +81,8 @@ export function DashboardWalletPage() {
     <section className="app-page-enter flex flex-col gap-4">
       <header className="mb-1 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="[font-family:var(--font-display)] text-[21px] font-semibold tracking-tight text-[#0F0700] md:text-[25px]">
-            Wallets
-          </h1>
-          <p className="mt-1 max-w-xl [font-family:var(--font-body)] text-[12.5px] leading-relaxed text-[#566167]">
-            {pageSubtitle}
-          </p>
+          <h1 className="dash-page-title">Wallets</h1>
+          <p className="dash-page-subtitle">{pageSubtitle}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
@@ -111,6 +104,7 @@ export function DashboardWalletPage() {
         wallets={wallets}
         activeWalletId={activeWallet.id}
         areBalancesHidden={areBalancesHidden}
+        walletsLoading={walletsQuery.isPending || walletsQuery.isRefetching}
       />
 
       <WalletActivityTable

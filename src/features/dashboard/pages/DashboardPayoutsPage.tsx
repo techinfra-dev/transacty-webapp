@@ -5,43 +5,53 @@ import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
 import { PayoutPinnedSummary } from '../components/payouts/PayoutPinnedSummary.tsx'
 import { PayoutStepper } from '../components/payouts/PayoutStepper.tsx'
 import { PayoutSuccessView } from '../components/payouts/PayoutSuccessView.tsx'
+import { PayoutWalletStep } from '../components/payouts/PayoutWalletStep.tsx'
 import { usePayoutFlow } from '../hooks/usePayoutFlow.ts'
 
 export function DashboardPayoutsPage() {
   const flow = usePayoutFlow()
 
   return (
-    <section className="app-page-enter space-y-6">
-      {flow.step === 4 ? (
+    <section className="payout-page app-page-enter">
+      {flow.step === 5 ? (
         <PayoutSuccessView
           formattedPreviewAmount={flow.formattedPreviewAmount}
-          environment={
-            flow.createdPayout?.environment ?? flow.portalEnvironment
-          }
+          environment={flow.createdPayout?.environment ?? flow.portalEnvironment}
           payload={flow.payload}
           createdTransactionId={flow.createdTransactionId}
           onCreateAnother={flow.handleResetFlow}
         />
       ) : (
         <>
-          {/* Match main padding (p-5 / md:p-8) so content + pinned column sit flush to the scroll area top */}
-          <div className="-mx-5 -mt-5 px-5 md:-mx-8 md:-mt-8 md:px-8">
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:gap-8">
-              <div className="flex min-w-0 flex-col gap-4 lg:pt-0">
-                <div className="flex flex-col gap-2">
-                  <div className="flex w-full justify-center pt-10 md:pt-12 lg:pt-10">
-                    <PayoutStepper step={flow.step} />
-                  </div>
-                  <div>
-                    <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700]">
-                      Create Payout
-                    </h1>
-                    <p className="mt-0.5 max-w-xl [font-family:var(--font-body)] text-[13px] leading-snug text-[#566167]">
-                      Build and submit payout requests from your merchant dashboard in a guided flow.
-                    </p>
-                  </div>
-                </div>
+          <header className="payout-page-head">
+            <h1 className="payout-page-title">New payout</h1>
+            <p className="payout-page-subtitle">
+              Select a wallet, enter payout details, and submit a transfer to your
+              beneficiary.
+            </p>
+          </header>
 
+          <div className="payout-layout">
+            <div className="payout-main">
+              <PayoutStepper step={flow.step} />
+
+              {flow.step === 1 ? (
+                <div className="payout-panel">
+                  <PayoutWalletStep
+                    wallets={flow.wallets}
+                    isLoading={flow.walletsQuery.isLoading}
+                    isError={flow.walletsQuery.isError}
+                    selectedWalletId={flow.selectedWalletId}
+                    onSelectWallet={(walletId) => {
+                      flow.setSelectedWalletId(walletId)
+                      flow.setClientError(null)
+                    }}
+                  />
+                  {flow.clientError ? (
+                    <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
+                  ) : null}
+                </div>
+              ) : (
                 <PayoutFormSteps
                   step={flow.step}
                   payload={flow.payload}
@@ -49,6 +59,8 @@ export function DashboardPayoutsPage() {
                   currency={flow.currency}
                   payoutLimits={flow.payoutLimits}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
+                  effectiveMaximumAmount={flow.effectiveMaximumAmount}
+                  formattedWalletBalance={flow.formattedWalletBalance}
                   updateBeneficiaryField={flow.updateBeneficiaryField}
                   updateCardHolderField={flow.updateCardHolderField}
                   clientError={flow.clientError}
@@ -58,29 +70,29 @@ export function DashboardPayoutsPage() {
                       : undefined
                   }
                 />
+              )}
 
-                <PayoutFormNav
-                  step={flow.step}
-                  isSubmitting={flow.createPayoutMutation.isPending}
-                  onPrevious={() => {
-                    flow.setClientError(null)
-                    flow.setStep((previousStep) => Math.max(previousStep - 1, 1))
-                  }}
-                  onContinue={flow.handleNextStep}
-                  onSubmit={flow.handleCreatePayout}
-                />
-              </div>
-
-              <div className="min-w-0 lg:pt-10">
-                <PayoutPinnedSummary
-                  environment={flow.portalEnvironment}
-                  payload={flow.payload}
-                  formattedPreviewAmount={flow.formattedPreviewAmount}
-                  hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
-                  hasSenderDetails={flow.hasSenderDetails}
-                />
-              </div>
+              <PayoutFormNav
+                step={flow.step}
+                isSubmitting={flow.createPayoutMutation.isPending}
+                onPrevious={() => {
+                  flow.setClientError(null)
+                  flow.setStep((previousStep) => Math.max(previousStep - 1, 1))
+                }}
+                onContinue={flow.handleNextStep}
+                onSubmit={flow.handleCreatePayout}
+              />
             </div>
+
+            <PayoutPinnedSummary
+              environment={flow.portalEnvironment}
+              selectedWallet={flow.selectedWallet}
+              formattedWalletBalance={flow.formattedWalletBalance}
+              payload={flow.payload}
+              formattedPreviewAmount={flow.formattedPreviewAmount}
+              hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
+              hasSenderDetails={flow.hasSenderDetails}
+            />
           </div>
         </>
       )}
@@ -100,7 +112,7 @@ export function DashboardPayoutsPage() {
             <Button
               type="button"
               variant="ghost"
-              className="h-10 w-full px-3 text-xs"
+              className="payout-btn-ghost h-10! w-full"
               disabled={flow.createPayoutMutation.isPending}
               onClick={() => flow.setIsLivePayoutConfirmOpen(false)}
             >
@@ -108,11 +120,11 @@ export function DashboardPayoutsPage() {
             </Button>
             <Button
               type="button"
-              className="h-10 w-full px-3 text-xs"
+              className="payout-btn-primary h-10! w-full"
               disabled={flow.createPayoutMutation.isPending}
               onClick={() => void flow.executeCreatePayout()}
             >
-              {flow.createPayoutMutation.isPending ? 'Submitting...' : 'Confirm payout'}
+              {flow.createPayoutMutation.isPending ? 'Submitting…' : 'Confirm payout'}
             </Button>
           </div>
         }

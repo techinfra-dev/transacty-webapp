@@ -1,4 +1,30 @@
-import type { TransactionStatus } from '../../services/transactionsSchemas.ts'
+import { formatWalletMoney } from '../../utils/walletFormatters.ts'
+import type {
+  TransactionItem,
+  TransactionStatus,
+} from '../../services/transactionsSchemas.ts'
+
+const RAIL_CURRENCY: Record<string, string> = {
+  india: 'INR',
+  bangladesh: 'BDT',
+}
+
+/** Prefer payment rail (India / Bangladesh) over optional API currency field. */
+export function getTransactionCurrency(
+  transaction: Pick<TransactionItem, 'rail' | 'currency'>,
+) {
+  const rail = transaction.rail?.trim().toLowerCase()
+  if (rail && RAIL_CURRENCY[rail]) {
+    return RAIL_CURRENCY[rail]
+  }
+
+  const code = transaction.currency?.trim().toUpperCase()
+  if (code) {
+    return code
+  }
+
+  return 'BDT'
+}
 
 export function getStatusClassName(status: TransactionStatus) {
   if (status === 'success') {
@@ -25,14 +51,47 @@ export function toTitleCase(value: string) {
     .join(' ')
 }
 
-export function formatTransactionMoney(amountText: string, currency = 'BDT') {
-  const amountNumber = Number(amountText)
-  const amount = Number.isFinite(amountNumber) ? amountNumber : 0
+export function getTransactionMethodLabel(
+  transaction: Pick<TransactionItem, 'type' | 'railLabel' | 'rail'>,
+) {
+  const label = transaction.railLabel?.trim()
+  if (label) {
+    return label
+  }
+  const rail = transaction.rail?.trim()
+  if (rail) {
+    return toTitleCase(rail)
+  }
+  return toTitleCase(transaction.type)
+}
+
+export function formatTransactionMoney(amountText: string, currency: string) {
   const code = currency.trim().toUpperCase() || 'BDT'
-  return `${code} ${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
+  return formatWalletMoney(code, amountText)
+}
+
+export function formatTransactionDateParts(
+  isoDate: string,
+  options?: { includeSeconds?: boolean },
+) {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) {
+    return { date: isoDate, time: '' }
+  }
+  return {
+    date: date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+    time: date
+      .toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        ...(options?.includeSeconds ? { second: '2-digit' } : {}),
+      })
+      .replace(/ ([AP]M)$/i, '\u00A0$1'),
+  }
 }
 
 export function formatTransactionDate(isoDate: string) {

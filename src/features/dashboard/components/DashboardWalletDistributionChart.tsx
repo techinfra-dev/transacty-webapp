@@ -41,7 +41,7 @@ export function DashboardWalletDistributionChart() {
       <div className="dashboard-card-head dashboard-card-head--compact">
         <div>
           <h2 className="dashboard-section-title">Wallet distribution</h2>
-          <p className="mt-0.5 [font-family:var(--font-body)] text-[10px] text-[rgba(15,7,0,0.5)]">
+          <p className="dashboard-caption text-[10px]!">
             Balance share across pockets
           </p>
         </div>
@@ -57,11 +57,11 @@ export function DashboardWalletDistributionChart() {
             Unable to load wallet balances.
           </p>
         ) : walletCount === 0 ? (
-          <p className="py-8 text-center [font-family:var(--font-body)] text-xs text-[rgba(15,7,0,0.58)]">
+          <p className="dashboard-caption py-8 text-center text-xs!">
             No wallets to display.
           </p>
         ) : !hasPositiveBalance ? (
-          <p className="py-8 text-center [font-family:var(--font-body)] text-xs text-[rgba(15,7,0,0.58)]">
+          <p className="dashboard-caption py-8 text-center text-xs!">
             Balances are zero across all pockets.
           </p>
         ) : (
@@ -79,7 +79,7 @@ export function DashboardWalletDistributionChart() {
                       key={arc.slice.id}
                       d={arc.path}
                       fill={arc.slice.color}
-                      stroke="#fff"
+                      className="dashboard-donut-segment-stroke"
                       strokeWidth={1.5}
                     />
                   ) : (
@@ -94,12 +94,12 @@ export function DashboardWalletDistributionChart() {
                     />
                   ),
                 )}
-                <circle cx={CX} cy={CY} r={INNER_R - 2} fill="#fff" />
+                <circle cx={CX} cy={CY} r={INNER_R - 2} className="dashboard-donut-inner" />
                 <text
                   x={CX}
                   y={CY - 6}
                   textAnchor="middle"
-                  className="fill-[rgba(15,7,0,0.45)] [font-family:var(--font-body)] text-[9px]"
+                  className="dashboard-donut-center-label [font-family:var(--font-body)] text-[9px]"
                 >
                   {walletCount === 1 ? 'Wallet' : 'Wallets'}
                 </text>
@@ -107,7 +107,7 @@ export function DashboardWalletDistributionChart() {
                   x={CX}
                   y={CY + 10}
                   textAnchor="middle"
-                  className="fill-[#0F0700] [font-family:var(--font-display)] text-[15px] font-semibold"
+                  className="dashboard-donut-center-value [font-family:var(--font-display)] text-[15px] font-semibold"
                 >
                   {walletCount}
                 </text>
@@ -127,11 +127,11 @@ export function DashboardWalletDistributionChart() {
                     {formatDistributionPercent(slice.percent)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-[#0F0700]">
+                    <p className="dashboard-donut-legend-title truncate">
                       {getCurrencyFullName(slice.currency)}
                     </p>
                   </div>
-                  <span className="shrink-0 text-right text-[10px] font-semibold tabular-nums text-[#464644]">
+                  <span className="dashboard-donut-legend-amount shrink-0 text-right">
                     {areBalancesHidden
                       ? `${slice.currency} ******`
                       : formatWalletMoney(slice.currency, slice.balance)}

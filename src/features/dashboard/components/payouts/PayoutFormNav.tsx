@@ -1,5 +1,5 @@
+import { Link } from '@tanstack/react-router'
 import { Button } from '../../../../components/ui/Button.tsx'
-import { payoutOutlineBtnClass, payoutPrimaryBtnClass } from './payoutConstants.ts'
 
 interface PayoutFormNavProps {
   step: number
@@ -17,26 +17,41 @@ export function PayoutFormNav({
   onSubmit,
 }: PayoutFormNavProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <Button
-        variant="ghost"
-        className={payoutOutlineBtnClass}
-        disabled={step <= 1 || isSubmitting}
-        onClick={onPrevious}
-      >
-        Previous
-      </Button>
+    <div className="payout-nav">
+      {step <= 1 ? (
+        <Link
+          to="/dashboard"
+          className={`payout-btn-ghost inline-flex h-9 items-center rounded-lg px-4 [font-family:var(--font-body)] text-xs font-semibold no-underline ${isSubmitting ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          Cancel
+        </Link>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          className="payout-btn-ghost"
+          disabled={isSubmitting}
+          onClick={onPrevious}
+        >
+          Back
+        </Button>
+      )}
 
-      {step < 3 ? (
-        <Button className={payoutPrimaryBtnClass} onClick={onContinue}>
+      {step < 4 ? (
+        <Button type="button" className="payout-btn-primary" onClick={onContinue}>
           Continue
         </Button>
       ) : (
-        <Button className={payoutPrimaryBtnClass} onClick={onSubmit} disabled={isSubmitting}>
+        <Button
+          type="button"
+          className="payout-btn-primary"
+          onClick={onSubmit}
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (
             <span className="inline-flex items-center gap-2">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#F3E8D6]/35 border-t-[#F3E8D6]" />
-              Submitting...
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+              Submitting…
             </span>
           ) : (
             'Submit payout'

@@ -5,9 +5,11 @@ import type {
   TransactionItem,
   TransactionsListResponse,
 } from '../services/transactionsSchemas.ts'
+import { TransactionMethodTag } from './transactions/TransactionMethodTag.tsx'
 import {
   formatTransactionMoney,
   getLedgerStatusPillClass,
+  getTransactionCurrency,
   toTitleCase,
 } from './transactions/transactionFormatters.ts'
 
@@ -71,7 +73,7 @@ export function DashboardTransactionsTable({
 
   if (rows.length === 0) {
     return (
-      <p className="px-3 py-6 text-center [font-family:var(--font-body)] text-xs text-[rgba(15,7,0,0.58)]">
+      <p className="dashboard-caption px-3 py-6 text-center">
         {emptyMessage}
       </p>
     )
@@ -107,7 +109,7 @@ export function DashboardTransactionsTable({
             'Ledger'
           const customer = truncateText(customerRaw)
           const isFailed = activity.status === 'failed'
-          const currency = activity.currency ?? 'BDT'
+          const currency = getTransactionCurrency(activity)
 
           return (
             <tr
@@ -122,22 +124,20 @@ export function DashboardTransactionsTable({
               tabIndex={0}
             >
               <td title={activity.id}>
-                <span className="[font-family:ui-monospace,monospace] text-[13px] text-[#0F0700]">
+                <span className="dashboard-cell-primary">
                   {truncateId(activity.id)}
                 </span>
               </td>
               <td title={customerRaw}>
-                <span className="text-[#0F0700]">{customer}</span>
+                <span className="dashboard-cell-body">{customer}</span>
               </td>
-              <td className="text-[rgba(15,7,0,0.72)]">
-                {toTitleCase(activity.type)}
+              <td className="dashboard-td-type">
+                <TransactionMethodTag transaction={activity} />
               </td>
               <td className="num">
                 <span
                   className={
-                    isFailed
-                      ? 'dashboard-amt-muted'
-                      : '[font-family:ui-monospace,monospace] text-[13px] font-medium tabular-nums text-[#0F0700]'
+                    isFailed ? 'dashboard-amt-muted' : 'dashboard-cell-mono'
                   }
                 >
                   {formatTransactionMoney(activity.amount, currency)}
@@ -148,7 +148,7 @@ export function DashboardTransactionsTable({
                   className={
                     isFailed
                       ? 'dashboard-amt-muted'
-                      : '[font-family:ui-monospace,monospace] text-[13px] tabular-nums text-[rgba(15,7,0,0.4)]'
+                      : 'dashboard-cell-mono-muted'
                   }
                 >
                   {formatTransactionMoney(
@@ -164,7 +164,7 @@ export function DashboardTransactionsTable({
                 </span>
               </td>
               <td title={activity.createdAt}>
-                <span className="text-xs text-[rgba(15,7,0,0.55)]">
+                <span className="dashboard-cell-subtle">
                   {formatDateCompact(activity.createdAt)}
                 </span>
               </td>

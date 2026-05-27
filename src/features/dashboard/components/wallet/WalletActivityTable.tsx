@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { TransactionsListResponse } from '../../services/transactionsSchemas.ts'
+import { getTransactionCurrency } from '../transactions/transactionFormatters.ts'
 import { DashboardTransactionsTable } from '../DashboardTransactionsTable.tsx'
 
 type WalletActivityTableProps = {
@@ -15,12 +16,9 @@ export function WalletActivityTable({
 }: WalletActivityTableProps) {
   const rows = useMemo(() => {
     const items = transactionsQuery.data?.items ?? []
-    return items.filter((item) => {
-      if (!item.currency) {
-        return true
-      }
-      return item.currency.toUpperCase() === currency.toUpperCase()
-    })
+    return items.filter(
+      (item) => getTransactionCurrency(item).toUpperCase() === currency.toUpperCase(),
+    )
   }, [currency, transactionsQuery.data?.items])
 
   return (
@@ -30,7 +28,7 @@ export function WalletActivityTable({
           <h2 className="dashboard-section-title text-sm">
             {currency} wallet activity
           </h2>
-          <p className="mt-0.5 [font-family:var(--font-body)] text-[11px] text-[rgba(15,7,0,0.5)]">
+          <p className="dashboard-caption">
             Recent transactions for this merchant pocket
           </p>
         </div>

@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { useBalanceQuery } from './useBalanceQuery.ts'
+import { useMerchantWalletsQuery } from './useMerchantWalletsQuery.ts'
 import { useCreatePayoutMutation } from './usePayoutMutations.ts'
 import {
   createPayoutPayloadSchema,
@@ -18,22 +19,66 @@ export function usePayoutFlow() {
   const [step, setStep] = useState(1)
   const [clientError, setClientError] = useState<string | null>(null)
   const [createdPayout, setCreatedPayout] = useState<CreatePayoutResponse | null>(null)
+  const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null)
   const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
+
   const createPayoutMutation = useCreatePayoutMutation()
   const balanceQuery = useBalanceQuery(true)
+  const walletsQuery = useMerchantWalletsQuery(true)
 
-  const payoutLimits = balanceQuery.data?.limits.payout
-  const currency = balanceQuery.data?.currency ?? 'BDT'
+  const wallets = walletsQuery.data?.items ?? []
+  const selectedWallet = useMemo(
+    () => wallets.find((wallet) => wallet.id === selectedWalletId) ?? null,
+    [wallets, selectedWalletId],
+  )
+
+  const currency = selectedWallet?.currency.trim().toUpperCase() ?? ''
+  const walletBalance = useMemo(() => {
+    if (!selectedWallet) {
+      return null
+    }
+    const amount = Number(selectedWallet.balance)
+    return Number.isFinite(amount) ? amount : 0
+  }, [selectedWallet])
+
+  const balanceMatchesWallet =
+    Boolean(currency) &&
+    balanceQuery.data?.currency.trim().toUpperCase() === currency
+
+  const payoutLimits = balanceMatchesWallet
+    ? balanceQuery.data?.limits.payout
+    : undefined
+
   const effectiveMinimumAmount = Math.max(
     minimumPayoutAmount,
     payoutLimits?.min ?? 0,
   )
 
+  const effectiveMaximumAmount = useMemo(() => {
+    const limits: number[] = []
+    if (payoutLimits?.max) {
+      limits.push(payoutLimits.max)
+    }
+    if (walletBalance !== null) {
+      limits.push(walletBalance)
+    }
+    return limits.length > 0 ? Math.min(...limits) : undefined
+  }, [payoutLimits?.max, walletBalance])
+
   const formattedPreviewAmount = useMemo(
-    () => formatPayoutMoney(currency, payload.amount),
+    () => (currency ? formatPayoutMoney(currency, payload.amount) : '—'),
     [currency, payload.amount],
   )
+
+  const formattedWalletBalance = useMemo(
+    () =>
+      currency && walletBalance !== null
+        ? formatPayoutMoney(currency, String(walletBalance))
+        : '—',
+    [currency, walletBalance],
+  )
+
   const createdTransactionId = createdPayout?.transactionId || createdPayout?.id
 
   const hasBeneficiaryDetails =
@@ -43,6 +88,17 @@ export function usePayoutFlow() {
   const hasSenderDetails =
     payload.cardHolderInfo.firstName.trim().length > 0 ||
     payload.cardHolderInfo.lastName.trim().length > 0
+
+  useEffect(() => {
+    if (wallets.length === 0) {
+      setSelectedWalletId(null)
+      return
+    }
+    if (selectedWalletId && wallets.some((wallet) => wallet.id === selectedWalletId)) {
+      return
+    }
+    setSelectedWalletId(wallets[0]!.id)
+  }, [wallets, selectedWalletId])
 
   function updateBeneficiaryField(
     field: keyof BeneficiaryAccountInfo,
@@ -69,6 +125,20 @@ export function usePayoutFlow() {
 
   function validateCurrentStep() {
     if (step === 1) {
+      if (!selectedWallet) {
+        return 'Select a merchant wallet to continue.'
+      }
+      if (selectedWallet.status.toLowerCase() !== 'active') {
+        return 'Selected wallet must be active to send a payout.'
+      }
+      return null
+    }
+
+    if (step === 2) {
+      if (!currency) {
+        return 'Select a wallet before entering the payout amount.'
+      }
+
       const amountText = payload.amount.trim()
       if (!/^\d+(\.\d{1,2})?$/.test(amountText)) {
         return 'Enter a valid amount (up to 2 decimal places).'
@@ -83,18 +153,16 @@ export function usePayoutFlow() {
           String(effectiveMinimumAmount),
         )}.`
       }
-      if (payoutLimits) {
-        if (amountNumber > payoutLimits.max) {
-          return `Amount cannot exceed ${formatPayoutMoney(
-            currency,
-            String(payoutLimits.max),
-          )}.`
-        }
+      if (effectiveMaximumAmount !== undefined && amountNumber > effectiveMaximumAmount) {
+        return `Amount cannot exceed ${formatPayoutMoney(
+          currency,
+          String(effectiveMaximumAmount),
+        )}.`
       }
       return null
     }
 
-    if (step === 2) {
+    if (step === 3) {
       const beneficiary = payload.benificiaryAccountInfo
       if (
         beneficiary.number.trim().length === 0 ||
@@ -169,7 +237,7 @@ export function usePayoutFlow() {
     try {
       const response = await createPayoutMutation.mutateAsync(parsedPayload.data)
       setCreatedPayout(response)
-      setStep(4)
+      setStep(5)
     } catch {
       // API error is surfaced via mutation state.
     }
@@ -182,7 +250,7 @@ export function usePayoutFlow() {
       return
     }
     setClientError(null)
-    setStep((previousStep) => Math.min(previousStep + 1, 3))
+    setStep((previousStep) => Math.min(previousStep + 1, 4))
   }
 
   function handleResetFlow() {
@@ -191,6 +259,7 @@ export function usePayoutFlow() {
     setCreatedPayout(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
+    setSelectedWalletId(wallets[0]?.id ?? null)
   }
 
   return {
@@ -202,9 +271,17 @@ export function usePayoutFlow() {
     payload,
     setPayload,
     createPayoutMutation,
+    walletsQuery,
+    wallets,
+    selectedWalletId,
+    setSelectedWalletId,
+    selectedWallet,
     payoutLimits,
     currency,
+    walletBalance,
+    formattedWalletBalance,
     effectiveMinimumAmount,
+    effectiveMaximumAmount,
     formattedPreviewAmount,
     createdTransactionId,
     hasBeneficiaryDetails,

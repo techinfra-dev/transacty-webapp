@@ -1,10 +1,13 @@
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
-import { payoutSurface } from './payoutConstants.ts'
+import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
+import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import { PayoutSummarySkeleton } from './PayoutSummarySkeleton.tsx'
 
 interface PayoutPinnedSummaryProps {
   environment: PortalEnvironment
+  selectedWallet: MerchantWalletItem | null
+  formattedWalletBalance: string
   payload: PayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
@@ -13,96 +16,91 @@ interface PayoutPinnedSummaryProps {
 
 export function PayoutPinnedSummary({
   environment,
+  selectedWallet,
+  formattedWalletBalance,
   payload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
 }: PayoutPinnedSummaryProps) {
+  const senderName =
+    `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
+    '—'
+
+  const walletLabel = selectedWallet
+    ? getCurrencyFullName(selectedWallet.currency.trim().toUpperCase())
+    : null
+
   return (
-    <aside
-      data-payout-pinned
-      className="h-fit min-w-0 self-start rounded-none border-0 shadow-none lg:sticky lg:top-0 lg:z-10"
-    >
-      <div className="bg-black px-5 pb-5 pt-3 text-white">
-        <span className="inline-flex rounded-full bg-[#F3E8D6] px-2.5 py-0.5 align-top leading-none [font-family:var(--font-body)] text-[10px] font-bold uppercase tracking-wide text-[#4a3d38]">
-          Pinned summary
-        </span>
-        <h2 className="mt-3 [font-family:var(--font-display)] text-xl font-semibold leading-tight">
-          Review before submit
-        </h2>
-        <p className="mt-1.5 [font-family:var(--font-body)] text-sm text-white/90">
-          Double-check recipient and sender details before creating this payout.
+    <aside data-payout-pinned className="payout-summary">
+      <h2 className="payout-summary-title">Summary</h2>
+
+      <div className="payout-summary-row">
+        <p className="payout-summary-label">Environment</p>
+        <p className="payout-summary-value uppercase">{environment}</p>
+      </div>
+
+      <div className="payout-summary-row">
+        <p className="payout-summary-label">Wallet</p>
+        {selectedWallet && walletLabel ? (
+          <div className="space-y-1">
+            <p className="payout-summary-value">{walletLabel}</p>
+            <p className="payout-summary-value payout-summary-value--muted">
+              {formattedWalletBalance}
+            </p>
+          </div>
+        ) : (
+          <p className="payout-summary-value payout-summary-value--placeholder">Not set</p>
+        )}
+      </div>
+
+      <div className="payout-summary-row">
+        <p className="payout-summary-label">Amount</p>
+        <p
+          className={
+            payload.amount.trim()
+              ? 'payout-summary-value'
+              : 'payout-summary-value payout-summary-value--placeholder'
+          }
+        >
+          {payload.amount.trim() ? formattedPreviewAmount : 'Not set'}
         </p>
       </div>
 
-      <div
-        className="space-y-5 px-5 py-5"
-        style={{ backgroundColor: payoutSurface }}
-      >
-        <div>
-          <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-wider text-(--color-secondary)">
-            Environment
-          </p>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm font-semibold uppercase text-(--color-foreground)">
-            {environment}
-          </p>
-        </div>
+      <div className="payout-summary-row">
+        <p className="payout-summary-label">Beneficiary</p>
+        {hasBeneficiaryDetails ? (
+          <div className="space-y-1">
+            <p className="payout-summary-value">
+              {payload.benificiaryAccountInfo.holderName || '—'}
+            </p>
+            <p className="payout-summary-value payout-summary-value--muted">
+              {payload.benificiaryAccountInfo.number || '—'}
+            </p>
+            <p className="payout-summary-value payout-summary-value--muted">
+              {payload.benificiaryAccountInfo.orgName || '—'}
+            </p>
+          </div>
+        ) : (
+          <PayoutSummarySkeleton />
+        )}
+      </div>
 
-        <div>
-          <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-wider text-(--color-secondary)">
-            Amount
-          </p>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-            {formattedPreviewAmount}
-          </p>
-        </div>
-
-        <div className="border-t border-[#E0DCD6] pt-4">
-          <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-wider text-(--color-secondary)">
-            Beneficiary
-          </p>
-          {hasBeneficiaryDetails ? (
-            <div className="mt-2 space-y-1">
-              <p className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-                {payload.benificiaryAccountInfo.holderName || '—'}
-              </p>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                {payload.benificiaryAccountInfo.number || '—'}
-              </p>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                {payload.benificiaryAccountInfo.orgName || '—'}
-              </p>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <PayoutSummarySkeleton />
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-[#E0DCD6] pt-4">
-          <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-wider text-(--color-secondary)">
-            Sender
-          </p>
-          {hasSenderDetails ? (
-            <div className="mt-2 space-y-1">
-              <p className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-                {`${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
-                  '—'}
-              </p>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                {payload.cardHolderInfo.email || '—'}
-              </p>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                {payload.cardHolderInfo.phone || '—'}
-              </p>
-            </div>
-          ) : (
-            <div className="mt-3">
-              <PayoutSummarySkeleton />
-            </div>
-          )}
-        </div>
+      <div className="payout-summary-row">
+        <p className="payout-summary-label">Sender</p>
+        {hasSenderDetails ? (
+          <div className="space-y-1">
+            <p className="payout-summary-value">{senderName}</p>
+            <p className="payout-summary-value payout-summary-value--muted">
+              {payload.cardHolderInfo.email || '—'}
+            </p>
+            <p className="payout-summary-value payout-summary-value--muted">
+              {payload.cardHolderInfo.phone || '—'}
+            </p>
+          </div>
+        ) : (
+          <PayoutSummarySkeleton />
+        )}
       </div>
     </aside>
   )

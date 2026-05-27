@@ -92,13 +92,11 @@ export function Dialog({
     return null
   }
 
-  const bodyScrollClasses =
-    bodyVariant === 'framed'
-      ? joinClasses(
-          'min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-[#FAF8F4] via-[#FFFCF9] to-[#F3E8D6]/[0.22] px-5 py-5',
-          contentClassName,
-        )
-      : joinClasses('min-h-0 flex-1 overflow-y-auto px-5 py-4', contentClassName)
+  const bodyScrollClasses = joinClasses(
+    'dialog-surface-body',
+    bodyVariant === 'framed' ? 'dialog-surface-body--framed' : undefined,
+    contentClassName,
+  )
 
   return createPortal(
     <div
@@ -113,7 +111,6 @@ export function Dialog({
           'dialog-backdrop absolute inset-0',
           isVisible ? 'dialog-backdrop-open' : 'dialog-backdrop-closed',
         )}
-        style={{ backgroundColor: 'rgba(15, 7, 0, 0.34)' }}
         aria-label="Close dialog"
         onClick={() => {
           if (closeOnBackdrop) {
@@ -125,51 +122,30 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         className={joinClasses(
-          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col rounded-2xl ring-1 ring-[#0F0700]/[0.06]',
-          allowOverflow ? 'overflow-visible' : 'overflow-hidden',
+          'dialog-surface relative z-120 flex max-h-[90vh] w-full flex-col rounded-2xl ring-1',
+          allowOverflow ? 'dialog-surface--allow-overflow overflow-visible' : 'overflow-hidden',
           isVisible ? 'dialog-surface-open' : 'dialog-surface-closed',
           maxWidthClassName,
         )}
-        style={{
-          border: '1px solid #E0D4C4',
-          backgroundColor: '#FFFFFF',
-          boxShadow:
-            '0 4px 6px rgba(15, 7, 0, 0.04), 0 24px 48px rgba(15, 7, 0, 0.14)',
-        }}
       >
         {title || description || showCloseButton ? (
-          <header
-            className={joinClasses(
-              'relative flex items-center justify-between gap-3 border-b border-[#E8E4DE] bg-gradient-to-r from-[#F9F6F1] via-[#FFFCF8] to-[#F3E8D6]/35 px-5 py-3',
-              headerClassName,
-            )}
-          >
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-[#9D8F82]/45 to-transparent"
-              aria-hidden
-            />
+          <header className={joinClasses('dialog-surface-header', headerClassName)}>
+            <div className="dialog-surface-header-accent" aria-hidden />
             <div className="min-w-0 flex-1 pr-2">
               {title ? (
-                <h2
-                  className={joinClasses(
-                    '[font-family:var(--font-display)] text-lg font-semibold leading-snug tracking-tight text-[#0F0700] sm:text-[1.125rem]',
-                    titleClassName,
-                  )}
-                >
+                <h2 className={joinClasses('dialog-surface-title', titleClassName)}>
                   {title}
                 </h2>
               ) : null}
               {description ? (
-                <p className="mt-1 max-w-prose [font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
-                  {description}
-                </p>
+                <p className="dialog-surface-description">{description}</p>
               ) : null}
             </div>
             {showCloseButton ? (
               <Button
                 variant="ghost"
                 data-dialog-close="true"
-                className="inline-flex h-9! w-9! min-h-0! shrink-0 items-center justify-center rounded-lg! border border-[#E0D4C4] bg-white! p-0! px-0! text-[#566167] shadow-sm transition hover:border-[#9D8F82] hover:bg-[#F3E8D6] hover:text-[#0F0700]"
+                className="dialog-surface-close"
                 onClick={onClose}
               >
                 <span className="sr-only">Close</span>
@@ -188,10 +164,8 @@ export function Dialog({
         {children != null ? (
           <div className={bodyScrollClasses}>
             {bodyVariant === 'framed' ? (
-              <div className="overflow-hidden rounded-xl border border-[#E8E4DE] bg-[#FCFAF7] p-px shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_1px_2px_rgba(15,7,0,0.05)]">
-                <div className="rounded-[11px] bg-white px-4 py-4 sm:px-5 sm:py-5">
-                  {children}
-                </div>
+              <div className="dialog-surface-frame">
+                <div className="dialog-surface-frame-inner">{children}</div>
               </div>
             ) : (
               children
@@ -200,12 +174,7 @@ export function Dialog({
         ) : null}
 
         {footer ? (
-          <footer
-            className={joinClasses(
-              'border-t border-[#E8E4DE] bg-gradient-to-r from-[#F7F4EF] via-[#F3E8D6]/30 to-[#F7F4EF] px-5 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]',
-              footerClassName,
-            )}
-          >
+          <footer className={joinClasses('dialog-surface-footer', footerClassName)}>
             {footer}
           </footer>
         ) : null}

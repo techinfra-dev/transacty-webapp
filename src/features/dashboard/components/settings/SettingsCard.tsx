@@ -2,21 +2,33 @@ import type { ReactNode } from 'react'
 
 interface SettingsCardProps {
   title: string
+  description?: string
   children: ReactNode
+  footer?: ReactNode
   className?: string
 }
 
-export function SettingsCard({ title, children, className }: SettingsCardProps) {
+export function SettingsCard({
+  title,
+  description,
+  children,
+  footer,
+  className,
+}: SettingsCardProps) {
   return (
-    <div
-      className={`overflow-hidden rounded-lg border border-[#E0DCD6] bg-white shadow-[0_1px_2px_rgba(15,7,0,0.04)] ${className ?? ''}`}
-    >
-      <div className="border-b border-[#E8DCC8] bg-[#F3E8D6] px-4 py-2.5">
-        <h3 className="[font-family:var(--font-display)] text-sm font-semibold tracking-tight text-[#0F0700]">
-          {title}
-        </h3>
-      </div>
-      <div className="space-y-4 p-4 md:p-5">{children}</div>
-    </div>
+    <article className={`settings-card ${className ?? ''}`.trim()}>
+      <header className="settings-card-head">
+        <h3 className="settings-card-title">{title}</h3>
+        {description ? <p className="settings-card-desc">{description}</p> : null}
+      </header>
+      <div className="settings-card-divider" aria-hidden />
+      <div className="settings-card-body">{children}</div>
+      {footer ? (
+        <>
+          <div className="settings-card-divider" aria-hidden />
+          <footer className="settings-card-foot">{footer}</footer>
+        </>
+      ) : null}
+    </article>
   )
 }

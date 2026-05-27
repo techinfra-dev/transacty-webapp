@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
+import type { TransactionStatusTabId } from '../components/transactions/TransactionStatusTabs.tsx'
+import { useTransactionStatusCounts } from './useTransactionStatusCounts.ts'
 import { useTransactionsListQuery } from './useTransactionsQueries.ts'
 import type {
   TransactionStatus,
@@ -11,7 +13,7 @@ export function useTransactionsPage() {
   const [selectedMethod, setSelectedMethod] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [customerIdFilter, setCustomerIdFilter] = useState('')
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false)
   const [tempStartDate, setTempStartDate] = useState('')
   const [tempEndDate, setTempEndDate] = useState('')
   const [appliedStartDate, setAppliedStartDate] = useState('')
@@ -32,22 +34,25 @@ export function useTransactionsPage() {
       openTransactionDetail(id)
     }
   }
-  const filterMenuRef = useRef<HTMLDivElement | null>(null)
-
   const normalizedCustomerId = customerIdFilter.trim()
   const normalizedQuery = query.trim().toLowerCase()
   const offset = (currentPage - 1) * pageSize
+  const listType =
+    selectedMethod === 'all' ? undefined : (selectedMethod as TransactionType)
+  const listStatus =
+    selectedStatus === 'all' ? undefined : (selectedStatus as TransactionStatus)
+  const listCustomerId =
+    normalizedCustomerId.length > 0 ? normalizedCustomerId : undefined
+
+  const statusCountsQuery = useTransactionStatusCounts({
+    type: listType,
+    customerId: listCustomerId,
+  })
 
   const transactionsQuery = useTransactionsListQuery({
-    type:
-      selectedMethod === 'all'
-        ? undefined
-        : (selectedMethod as TransactionType),
-    status:
-      selectedStatus === 'all'
-        ? undefined
-        : (selectedStatus as TransactionStatus),
-    customerId: normalizedCustomerId.length > 0 ? normalizedCustomerId : undefined,
+    type: listType,
+    status: listStatus,
+    customerId: listCustomerId,
     limit: pageSize,
     offset,
   })
@@ -83,29 +88,44 @@ export function useTransactionsPage() {
   const startItem = totalItems === 0 ? 0 : offset + 1
   const endItem = Math.min(offset + pageSize, totalItems)
 
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (!filterMenuRef.current) {
-        return
-      }
-      if (!filterMenuRef.current.contains(event.target as Node)) {
-        setIsFilterPanelOpen(false)
-      }
-    }
+  const statusTabs = useMemo(
+    () => [
+      { id: 'all' as const, label: 'All', count: statusCountsQuery.counts.all },
+      {
+        id: 'success' as const,
+        label: 'Successful',
+        count: statusCountsQuery.counts.success,
+      },
+      {
+        id: 'pending' as const,
+        label: 'Pending',
+        count: statusCountsQuery.counts.pending,
+      },
+      {
+        id: 'failed' as const,
+        label: 'Failed',
+        count: statusCountsQuery.counts.failed,
+      },
+    ],
+    [statusCountsQuery.counts],
+  )
 
-    function handleEscapeKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsFilterPanelOpen(false)
-      }
-    }
+  function setStatusTab(id: TransactionStatusTabId) {
+    setSelectedStatus(id)
+    setCurrentPage(1)
+  }
 
-    window.addEventListener('mousedown', handleOutsideClick)
-    window.addEventListener('keydown', handleEscapeKey)
-    return () => {
-      window.removeEventListener('mousedown', handleOutsideClick)
-      window.removeEventListener('keydown', handleEscapeKey)
-    }
-  }, [])
+  function openFilterDialog() {
+    setTempStartDate(appliedStartDate)
+    setTempEndDate(appliedEndDate)
+    setIsFilterDialogOpen(true)
+  }
+
+  function closeFilterDialog() {
+    setTempStartDate(appliedStartDate)
+    setTempEndDate(appliedEndDate)
+    setIsFilterDialogOpen(false)
+  }
 
   return {
     query,
@@ -116,8 +136,9 @@ export function useTransactionsPage() {
     setSelectedStatus,
     customerIdFilter,
     setCustomerIdFilter,
-    isFilterPanelOpen,
-    setIsFilterPanelOpen,
+    isFilterDialogOpen,
+    openFilterDialog,
+    closeFilterDialog,
     tempStartDate,
     setTempStartDate,
     tempEndDate,
@@ -131,12 +152,14 @@ export function useTransactionsPage() {
     pageSize,
     setPageSize,
     setSelectedTransactionId,
-    filterMenuRef,
     transactionsQuery,
     filteredTransactions,
     totalItems,
     totalPages,
     startItem,
     endItem,
+    statusTabs,
+    statusTab: selectedStatus as TransactionStatusTabId,
+    setStatusTab,
   }
 }

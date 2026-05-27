@@ -1,37 +1,57 @@
 import { Link } from '@tanstack/react-router'
-import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
+import { getCurrencyFullName, getCurrencySymbol } from '../../../utils/currencyNames.ts'
+import {
+  formatWalletMoney,
+  maskWalletMoney,
+} from '../utils/walletFormatters.ts'
 import {
   formatWalletStatusLabel,
-  splitMoneyDisplay,
   walletStatusPillClass,
 } from '../utils/dashboardLedgerStyles.ts'
 
 interface DashboardWalletCardProps {
   walletId: string
   currency: string
-  displayValue: string
+  amount: number
+  areBalancesHidden?: boolean
   statusLabel: string
   isSelected?: boolean
+}
+
+function formatAmountOnly(value: number) {
+  const safe = Number.isFinite(value) ? value : 0
+  return safe.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function DashboardWalletCard({
   walletId,
   currency,
-  displayValue,
+  amount,
+  areBalancesHidden = false,
   statusLabel,
   isSelected = false,
 }: DashboardWalletCardProps) {
-  const { currency: parsedCurrency, amount } = splitMoneyDisplay(displayValue)
-  const code = parsedCurrency || currency
+  const code = currency.trim().toUpperCase()
+  const symbol = getCurrencySymbol(code)
   const currencyName = getCurrencyFullName(code)
   const statusDisplay = formatWalletStatusLabel(statusLabel)
+  const amountDisplay = areBalancesHidden
+    ? '******'
+    : formatAmountOnly(amount)
+  const ariaLabel = areBalancesHidden
+    ? maskWalletMoney(code)
+    : formatWalletMoney(code, amount)
 
   return (
     <Link
       to="/dashboard/wallets/$walletId"
       params={{ walletId }}
-      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected ring-2 ring-[#0F0700] ring-offset-2' : ''}`}
+      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected' : ''}`}
       aria-current={isSelected ? 'page' : undefined}
+      aria-label={`${code} wallet, ${ariaLabel}`}
     >
       <div className="flex min-w-0 items-center gap-2">
         <span className="dashboard-wallet-code shrink-0">{code}</span>
@@ -39,24 +59,24 @@ export function DashboardWalletCard({
       </div>
 
       <div className="flex min-w-0 items-baseline gap-1.5">
-        <span className="dashboard-wallet-balance [font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-[#0F0700] tabular-nums">
-          {amount}
-        </span>
-        {code ? (
-          <span className="[font-family:var(--font-body)] text-[11px] font-medium text-[rgba(15,7,0,0.4)]">
-            {code}
+        {symbol ? (
+          <span
+            className={`dashboard-wallet-currency-symbol shrink-0 ${code === 'BDT' ? 'dashboard-wallet-currency-symbol--bdt' : ''}`}
+            aria-hidden
+          >
+            {symbol}
           </span>
         ) : null}
+        <span className="dashboard-wallet-balance truncate">{amountDisplay}</span>
+        {code ? <span className="dashboard-wallet-code-inline">{code}</span> : null}
       </div>
 
-      <div className="dashboard-wallet-footer flex items-center gap-2 border-t border-[rgba(15,7,0,0.05)] pt-2">
+      <div className="dashboard-wallet-footer">
         <span className={walletStatusPillClass(statusLabel)}>
           <i aria-hidden />
           <span className="capitalize">{statusDisplay}</span>
         </span>
-        <span className="ml-auto [font-family:var(--font-body)] text-[11px] text-[rgba(15,7,0,0.4)]">
-          Merchant pocket
-        </span>
+        <span className="dashboard-wallet-footer-note">Merchant pocket</span>
       </div>
     </Link>
   )

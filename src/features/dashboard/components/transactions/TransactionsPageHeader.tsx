@@ -1,11 +1,78 @@
-import type { RefObject } from 'react'
-import { Button } from '../../../../components/ui/Button.tsx'
-import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
-import { Input } from '../../../../components/ui/Input.tsx'
-import {
-  transactionMethodOptions,
-  transactionStatusOptions,
-} from './transactionConstants.ts'
+import { transactionMethodOptions } from './transactionConstants.ts'
+import { TransactionDateFilterDialog } from './TransactionDateFilterDialog.tsx'
+
+function SearchIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="M21 21l-4.35-4.35" />
+    </svg>
+  )
+}
+
+function FilterIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+    </svg>
+  )
+}
+
+function SelectChevron() {
+  return (
+    <svg
+      className="tx-history-field-chev"
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}
 
 type TransactionsPageHeaderProps = {
   query: string
@@ -14,12 +81,11 @@ type TransactionsPageHeaderProps = {
   onCustomerIdFilterChange: (value: string) => void
   selectedMethod: string
   onSelectedMethodChange: (value: string) => void
-  selectedStatus: string
-  onSelectedStatusChange: (value: string) => void
   totalItems: number
-  isFilterPanelOpen: boolean
-  onToggleFilterPanel: () => void
-  filterMenuRef: RefObject<HTMLDivElement | null>
+  isFilterDialogOpen: boolean
+  onOpenFilterDialog: () => void
+  onCloseFilterDialog: () => void
+  hasActiveDateFilter: boolean
   tempStartDate: string
   tempEndDate: string
   onTempStartDateChange: (value: string) => void
@@ -35,12 +101,11 @@ export function TransactionsPageHeader({
   onCustomerIdFilterChange,
   selectedMethod,
   onSelectedMethodChange,
-  selectedStatus,
-  onSelectedStatusChange,
   totalItems,
-  isFilterPanelOpen,
-  onToggleFilterPanel,
-  filterMenuRef,
+  isFilterDialogOpen,
+  onOpenFilterDialog,
+  onCloseFilterDialog,
+  hasActiveDateFilter,
   tempStartDate,
   tempEndDate,
   onTempStartDateChange,
@@ -49,107 +114,83 @@ export function TransactionsPageHeader({
   onApplyDateFilters,
 }: TransactionsPageHeaderProps) {
   return (
-    <header className="relative z-20 rounded-xl border border-(--color-accent)/45 bg-(--color-card) p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <>
+      <header className="tx-history-head">
         <div>
-          <h1 className="[font-family:var(--font-display)] text-2xl font-semibold tracking-tight text-(--color-foreground)">
-            Transactions History
-          </h1>
-          <p className="mt-0.5 max-w-2xl [font-family:var(--font-body)] text-[13px] leading-snug text-(--color-secondary)">
+          <h1 className="tx-history-title">Transactions History</h1>
+          <p className="tx-history-sub">
             Track payins and payouts with method, fee, net amount, and status.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div ref={filterMenuRef} className="relative">
-            <button
-              type="button"
-              onClick={onToggleFilterPanel}
-              className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-(--color-accent)/45 bg-(--color-card) text-(--color-foreground) transition hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20"
-              aria-label="Toggle transaction filters"
-              aria-expanded={isFilterPanelOpen}
-            >
-              <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-                <path d="M3.25 4.75a.75.75 0 0 1 .75-.75h12a.75.75 0 0 1 .58 1.22L12 10.92V15a.75.75 0 0 1-.44.68l-2.5 1.12A.75.75 0 0 1 8 16.12v-5.2L3.42 5.22a.75.75 0 0 1-.17-.47Z" />
-              </svg>
-            </button>
-
-            {isFilterPanelOpen ? (
-              <div className="absolute right-0 top-full z-30 mt-2 w-[min(92vw,420px)] rounded-xl border border-(--color-accent)/35 bg-(--color-card) p-4">
-                <h2 className="[font-family:var(--font-display)] text-lg font-semibold text-(--color-foreground)">
-                  Transaction Filter
-                </h2>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="space-y-1.5">
-                    <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">
-                      Start Date
-                    </span>
-                    <Input
-                      type="date"
-                      value={tempStartDate}
-                      onChange={(event) => onTempStartDateChange(event.target.value)}
-                      className="h-10 cursor-pointer bg-(--color-card)"
-                    />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="[font-family:var(--font-body)] text-xs font-semibold text-(--color-secondary)">
-                      End Date
-                    </span>
-                    <Input
-                      type="date"
-                      value={tempEndDate}
-                      onChange={(event) => onTempEndDateChange(event.target.value)}
-                      className="h-10 cursor-pointer bg-(--color-card)"
-                    />
-                  </label>
-                </div>
-
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    className="h-9 border border-(--color-accent)/45 px-3 text-xs"
-                    onClick={onResetDateFilters}
-                  >
-                    Reset
-                  </Button>
-                  <Button className="h-9 px-3 text-xs" onClick={onApplyDateFilters}>
-                    Apply Filter
-                  </Button>
-                </div>
-              </div>
+        <div className="tx-history-head-meta">
+          <button type="button" className="tx-history-icon-btn" aria-label="Export">
+            <DownloadIcon />
+            Export
+          </button>
+          <button
+            type="button"
+            className={`tx-history-icon-btn ${isFilterDialogOpen ? 'tx-history-icon-btn--active' : ''}`}
+            aria-label="Open date range filter"
+            aria-haspopup="dialog"
+            aria-expanded={isFilterDialogOpen}
+            onClick={onOpenFilterDialog}
+          >
+            <FilterIcon />
+            Filter
+            {hasActiveDateFilter ? (
+              <span className="tx-history-filter-dot" aria-hidden />
             ) : null}
-          </div>
-          <div className="inline-flex rounded-full border border-(--color-accent)/45 bg-(--color-background) px-2.5 py-1 [font-family:var(--font-body)] text-[11px] font-semibold text-(--color-secondary)">
-            {totalItems} records
-          </div>
+          </button>
+          <span className="tx-history-records">
+            <b>{totalItems}</b> records
+          </span>
         </div>
+      </header>
+
+      <div className="tx-history-filter-bar tx-history-filter-bar--three">
+        <label className="tx-history-field">
+          <SearchIcon />
+          <input
+            type="search"
+            placeholder="Search by transaction ID or platform order ID"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+          />
+        </label>
+        <label className="tx-history-field">
+          <input
+            type="text"
+            placeholder="Customer wallet ID"
+            value={customerIdFilter}
+            onChange={(event) => onCustomerIdFilterChange(event.target.value)}
+          />
+        </label>
+        <label className="tx-history-field tx-history-field-select">
+          <select
+            aria-label="Filter transactions by type"
+            value={selectedMethod}
+            onChange={(event) => onSelectedMethodChange(event.target.value)}
+          >
+            {transactionMethodOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
+        </label>
       </div>
 
-      <div className="mt-3 grid gap-2 lg:grid-cols-[1fr_auto_auto_auto]">
-        <Input
-          placeholder="Search by transaction ID or platform order ID"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          className="h-10 bg-(--color-card)"
-        />
-        <Input
-          placeholder="Customer wallet ID"
-          value={customerIdFilter}
-          onChange={(event) => onCustomerIdFilterChange(event.target.value)}
-          className="h-10 bg-(--color-card)"
-        />
-        <DropdownSelect
-          ariaLabel="Filter transactions by type"
-          options={transactionMethodOptions}
-          value={selectedMethod}
-          onChange={onSelectedMethodChange}
-        />
-        <DropdownSelect
-          ariaLabel="Filter transactions by status"
-          options={transactionStatusOptions}
-          value={selectedStatus}
-          onChange={onSelectedStatusChange}
-        />
-      </div>
-    </header>
+      <TransactionDateFilterDialog
+        isOpen={isFilterDialogOpen}
+        onClose={onCloseFilterDialog}
+        tempStartDate={tempStartDate}
+        tempEndDate={tempEndDate}
+        onTempStartDateChange={onTempStartDateChange}
+        onTempEndDateChange={onTempEndDateChange}
+        onReset={onResetDateFilters}
+        onApply={onApplyDateFilters}
+      />
+    </>
   )
 }

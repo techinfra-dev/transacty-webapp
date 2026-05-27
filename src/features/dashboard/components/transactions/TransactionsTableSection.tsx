@@ -1,10 +1,18 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { TransactionItem, TransactionsListResponse } from '../../services/transactionsSchemas.ts'
 import { TransactionsFooter } from './TransactionsFooter.tsx'
-import { TransactionsListBody } from './TransactionsListBody.tsx'
+import { TransactionsHistoryTable } from './TransactionsHistoryTable.tsx'
+import {
+  TransactionStatusTabs,
+  type TransactionStatusTab,
+  type TransactionStatusTabId,
+} from './TransactionStatusTabs.tsx'
 
 type TransactionsTableSectionProps = {
   transactionsQuery: UseQueryResult<TransactionsListResponse, Error>
+  statusTabs: TransactionStatusTab[]
+  statusTab: TransactionStatusTabId
+  onStatusTabChange: (id: TransactionStatusTabId) => void
   filteredTransactions: TransactionItem[]
   startItem: number
   endItem: number
@@ -18,8 +26,20 @@ type TransactionsTableSectionProps = {
   isLiveEnvironment: boolean
 }
 
+function emptyMessageForStatusTab(tab: TransactionStatusTabId) {
+  if (tab === 'all') {
+    return 'No transactions match these filters.'
+  }
+  const label =
+    tab === 'success' ? 'successful' : tab === 'pending' ? 'pending' : 'failed'
+  return `No ${label} transactions match these filters.`
+}
+
 export function TransactionsTableSection({
   transactionsQuery,
+  statusTabs,
+  statusTab,
+  onStatusTabChange,
   filteredTransactions,
   startItem,
   endItem,
@@ -32,23 +52,33 @@ export function TransactionsTableSection({
   onNextPage,
   isLiveEnvironment,
 }: TransactionsTableSectionProps) {
-  return (
-    <section className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-card)">
-      <div className="hidden grid-cols-[132px_1.2fr_124px_108px_124px_138px_120px] gap-3 border-b border-(--color-accent)/35 px-5 py-2 [font-family:var(--font-body)] text-[11px] font-semibold uppercase tracking-wide text-(--color-secondary) lg:grid">
-        <p>Transaction</p>
-        <p>Reference</p>
-        <p>Type</p>
-        <p>Amount</p>
-        <p>Paid amount</p>
-        <p>Status</p>
-        <p>Date</p>
-      </div>
+  const serverTotal = transactionsQuery.data?.total ?? 0
+  const emptyLive =
+    isLiveEnvironment &&
+    serverTotal === 0 &&
+    !transactionsQuery.isPending &&
+    !transactionsQuery.isError
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <TransactionsListBody
+  const emptyMessage = emptyLive
+    ? 'No live transactions yet.'
+    : emptyMessageForStatusTab(statusTab)
+
+  return (
+    <section className="tx-history-card">
+      <TransactionStatusTabs
+        tabs={statusTabs}
+        activeId={statusTab}
+        onChange={onStatusTabChange}
+      />
+
+      <div
+        key={statusTab}
+        className="dashboard-activity-table-panel tx-history-table-wrap"
+      >
+        <TransactionsHistoryTable
           transactionsQuery={transactionsQuery}
-          filteredTransactions={filteredTransactions}
-          isLiveEnvironment={isLiveEnvironment}
+          rows={filteredTransactions}
+          emptyMessage={emptyMessage}
         />
       </div>
 
@@ -60,6 +90,7 @@ export function TransactionsTableSection({
         currentPage={currentPage}
         totalPages={totalPages}
         isPending={transactionsQuery.isPending}
+        isLiveEnvironment={isLiveEnvironment}
         onPageSizeChange={onPageSizeChange}
         onPreviousPage={onPreviousPage}
         onNextPage={onNextPage}

@@ -17,6 +17,8 @@ export const transactionStatusOptions = [
 export const TRANSACTIONS_LIST_MAX_LIMIT = 100
 
 export const transactionPageSizeOptions = [
-  { value: '10', label: '10 / page' },
-  { value: String(TRANSACTIONS_LIST_MAX_LIMIT), label: '100 / page' },
+  { value: '10', label: '10' },
+  { value: '25', label: '25' },
+  { value: '50', label: '50' },
+  { value: String(TRANSACTIONS_LIST_MAX_LIMIT), label: '100' },
 ]

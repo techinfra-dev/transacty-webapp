@@ -23,6 +23,8 @@ export const transactionItemSchema = z.object({
   createdAt: z.string().min(1),
   completedAt: z.string().nullable().optional(),
   currency: z.string().min(1).optional(),
+  rail: z.string().min(1).optional(),
+  railLabel: z.string().optional(),
 })
 
 export const transactionsListResponseSchema = z.object({

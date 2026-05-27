@@ -1,5 +1,5 @@
+import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
-import { formatWalletMoney } from '../../utils/walletFormatters.ts'
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
 import { WalletCurrencyTabs } from './WalletCurrencyTabs.tsx'
@@ -8,16 +8,23 @@ type WalletOverviewCardProps = {
   wallets: MerchantWalletItem[]
   activeWalletId: string
   areBalancesHidden: boolean
-}
-
-function maskMoney(currency: string, amount: number) {
-  const formatted = formatWalletMoney(currency, amount)
-  const [code] = formatted.split(' ')
-  return `${code} ******`
+  walletsLoading?: boolean
 }
 
 function formatLimitRange(min: number, max: number) {
   return `${min.toLocaleString('en-US')} – ${max.toLocaleString('en-US')}`
+}
+
+function formatWalletUpdated(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return iso
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function WalletMetricTile({
@@ -33,17 +40,15 @@ function WalletMetricTile({
 }) {
   const n = Number(amountStr)
   const safe = Number.isFinite(n) ? n : 0
-  const display = areBalancesHidden
-    ? maskMoney(currency, safe)
-    : formatWalletMoney(currency, safe)
-
   return (
-    <div className="rounded-[10px] border border-[rgba(15,7,0,0.08)] bg-white px-3 py-3">
-      <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#566167]">
-        {label}
-      </p>
-      <p className="mt-1.5 [font-family:var(--font-display)] text-xl font-semibold tracking-tight tabular-nums text-[#0F0700]">
-        {display}
+    <div className="wallet-metric-tile">
+      <p className="wallet-metric-tile-label">{label}</p>
+      <p className="wallet-metric-tile-value">
+        <FormattedMoney
+          currency={currency}
+          value={safe}
+          masked={areBalancesHidden}
+        />
       </p>
     </div>
   )
@@ -53,6 +58,7 @@ export function WalletOverviewCard({
   wallets,
   activeWalletId,
   areBalancesHidden,
+  walletsLoading = false,
 }: WalletOverviewCardProps) {
   const balanceQuery = useBalanceQuery(true)
   const active = wallets.find((w) => w.id === activeWalletId)
@@ -61,12 +67,17 @@ export function WalletOverviewCard({
     return null
   }
 
-  const data = balanceQuery.data
-  const ledgerCurrency = data?.currency ?? active.currency
+  const ledger = balanceQuery.data
+  const ledgerMatchesWallet =
+    ledger != null && ledger.currency === active.currency
 
   return (
     <section className="dashboard-card">
-      <WalletCurrencyTabs wallets={wallets} activeWalletId={activeWalletId} />
+      <WalletCurrencyTabs
+        wallets={wallets}
+        activeWalletId={activeWalletId}
+        areBalancesHidden={areBalancesHidden}
+      />
 
       <div
         className="dashboard-card-head border-b-0! pt-3!"
@@ -75,73 +86,77 @@ export function WalletOverviewCard({
       >
         <div>
           <h2 className="dashboard-section-title text-sm">Account overview</h2>
-          <p className="mt-0.5 [font-family:var(--font-body)] text-[11px] text-[rgba(15,7,0,0.5)]">
-            Balances and limits for {active.currency}
+          <p className="dashboard-caption">
+            Pocket balance from merchant wallets · updated{' '}
+            {formatWalletUpdated(active.updatedAt)}
           </p>
         </div>
       </div>
 
-      {data && data.currency !== active.currency ? (
-        <p className="border-b border-[rgba(15,7,0,0.06)] px-[18px] py-2.5 [font-family:var(--font-body)] text-[11px] leading-relaxed text-[#566167]">
-          Ledger figures follow your primary{' '}
-          <span className="font-semibold text-[#0F0700]">{data.currency}</span> account.
-          Selected tab:{' '}
-          <span className="font-semibold text-[#0F0700]">{active.currency}</span>.
-        </p>
-      ) : null}
-
       <div className="p-3 md:p-4">
-        {balanceQuery.isPending ? (
+        {walletsLoading ? (
           <div className="flex min-h-[120px] items-center justify-center">
-            <LoadingSpinner label="Loading ledger…" />
+            <LoadingSpinner label="Loading wallet balances…" />
           </div>
-        ) : balanceQuery.isError ? (
-          <p className="py-6 text-center [font-family:var(--font-body)] text-xs text-[#b91c1c]">
-            {balanceQuery.error.message}
-          </p>
-        ) : data ? (
+        ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <WalletMetricTile
               label="Balance"
-              currency={ledgerCurrency}
-              amountStr={data.balance}
+              currency={active.currency}
+              amountStr={active.balance}
               areBalancesHidden={areBalancesHidden}
             />
-            <WalletMetricTile
-              label="Available balance"
-              currency={ledgerCurrency}
-              amountStr={data.availableBalance}
-              areBalancesHidden={areBalancesHidden}
-            />
-            <WalletMetricTile
-              label="Pending balance"
-              currency={ledgerCurrency}
-              amountStr={data.pendingBalance}
-              areBalancesHidden={areBalancesHidden}
-            />
-            <div className="rounded-[10px] border border-[rgba(15,7,0,0.08)] bg-white px-3 py-3">
-              <p className="[font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#566167]">
-                Payin & payout limits
-              </p>
-              <dl className="mt-2 space-y-2 [font-family:var(--font-body)] text-xs text-[#464644]">
-                <div>
-                  <dt className="font-semibold text-[#566167]">Payin</dt>
-                  <dd className="tabular-nums">
-                    {formatLimitRange(data.limits.payin.min, data.limits.payin.max)}{' '}
-                    {ledgerCurrency}
-                  </dd>
+
+            {ledgerMatchesWallet ? (
+              <>
+                <WalletMetricTile
+                  label="Available balance"
+                  currency={active.currency}
+                  amountStr={ledger.availableBalance}
+                  areBalancesHidden={areBalancesHidden}
+                />
+                <WalletMetricTile
+                  label="Pending balance"
+                  currency={active.currency}
+                  amountStr={ledger.pendingBalance}
+                  areBalancesHidden={areBalancesHidden}
+                />
+                <div className="wallet-metric-tile">
+                  <p className="wallet-metric-tile-label">Payin & payout limits</p>
+                  <dl className="wallet-metric-tile-body space-y-2">
+                    <div>
+                      <dt>Payin</dt>
+                      <dd className="tabular-nums">
+                        {formatLimitRange(
+                          ledger.limits.payin.min,
+                          ledger.limits.payin.max,
+                        )}{' '}
+                        {active.currency}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Payout</dt>
+                      <dd className="tabular-nums">
+                        {formatLimitRange(
+                          ledger.limits.payout.min,
+                          ledger.limits.payout.max,
+                        )}{' '}
+                        {active.currency}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-                <div>
-                  <dt className="font-semibold text-[#566167]">Payout</dt>
-                  <dd className="tabular-nums">
-                    {formatLimitRange(data.limits.payout.min, data.limits.payout.max)}{' '}
-                    {ledgerCurrency}
-                  </dd>
-                </div>
-              </dl>
-            </div>
+              </>
+            ) : (
+              <div className="wallet-metric-tile">
+                <p className="wallet-metric-tile-label">Status</p>
+                <p className="wallet-metric-tile-value capitalize !text-base">
+                  {active.status}
+                </p>
+              </div>
+            )}
           </div>
-        ) : null}
+        )}
       </div>
     </section>
   )

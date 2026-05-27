@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import { Button } from '../../../../components/ui/Button.tsx'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
@@ -12,6 +11,11 @@ import {
 } from '../../hooks/useWebhookSettings.ts'
 import { DEVELOPER_DOCS_URL } from './settingsTabs.ts'
 import { SettingsCard } from './SettingsCard.tsx'
+import { SettingsKycGate } from './SettingsKycGate.tsx'
+import {
+  settingsFieldInputClass,
+  settingsFieldLabelClass,
+} from './settingsFieldUtils.ts'
 
 export function WebhooksSettingsContent() {
   const [urlDraft, setUrlDraft] = useState('')
@@ -96,150 +100,110 @@ export function WebhooksSettingsContent() {
 
   if (profileQuery.isPending) {
     return (
-      <div className="flex h-full min-h-[260px] items-center justify-center">
-        <LoadingSpinner label="Loading profile..." />
+      <div className="settings-loading">
+        <LoadingSpinner label="Loading profile…" />
       </div>
     )
   }
 
   if (profileQuery.isError || !profileQuery.data) {
-    return (
-      <div className="[font-family:var(--font-body)] text-sm text-rose-600">
-        Unable to verify KYC status right now.
-      </div>
-    )
+    return <p className="settings-error">Unable to verify KYC status right now.</p>
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col space-y-4">
-      <section className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="[font-family:var(--font-display)] text-2xl font-semibold text-(--color-foreground)">
-            Webhooks
-          </h2>
-          <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-            Receive HTTPS callbacks for payment and transaction events. Verify
-            payloads using your signing secret.
-          </p>
-        </div>
-      </section>
-
+    <div className="settings-stack">
       {!isKycVerified ? (
-        <section className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xl rounded-2xl border border-(--color-accent)/35 bg-(--color-card) p-6 text-center">
-            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700">
-              <svg viewBox="0 0 20 20" className="h-7 w-7 fill-current" aria-hidden="true">
-                <path d="M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Zm0 2.75a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75Zm0 8.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
-              </svg>
-            </div>
-            <h3 className="mt-4 [font-family:var(--font-display)] text-xl font-semibold text-(--color-foreground)">
-              {isKycPendingVerification
-                ? 'KYC pending verification'
-                : 'KYC verification required'}
-            </h3>
-            <p className="mt-2 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-              {isKycPendingVerification
-                ? 'Your KYC has been submitted and is currently under review. Webhook configuration will unlock after approval.'
-                : 'Complete KYC verification to configure webhook URLs and receive event notifications.'}
-            </p>
-            {!isKycPendingVerification ? (
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <Button className="px-5" onClick={openKycDialog}>
-                  Complete KYC now
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        </section>
+        <SettingsKycGate
+          title={
+            isKycPendingVerification
+              ? 'KYC pending verification'
+              : 'KYC verification required'
+          }
+          description={
+            isKycPendingVerification
+              ? 'Your KYC has been submitted and is currently under review. Webhook configuration will unlock after approval.'
+              : 'Complete KYC verification to configure webhook URLs and receive event notifications.'
+          }
+          showCta={!isKycPendingVerification}
+          onCta={openKycDialog}
+        />
       ) : webhookQuery.isPending ? (
-        <div className="flex flex-1 items-center justify-center">
-          <LoadingSpinner label="Loading webhook settings..." />
+        <div className="settings-loading">
+          <LoadingSpinner label="Loading webhook settings…" />
         </div>
       ) : webhookQuery.isError || !webhookQuery.data ? (
-        <section className="rounded-lg border border-rose-200 bg-rose-50 p-3 [font-family:var(--font-body)] text-sm text-rose-700">
+        <p className="settings-dev-alert">
           {(webhookQuery.error as Error | undefined)?.message ??
             'Unable to load webhook settings right now.'}
-        </section>
+        </p>
       ) : (
-        <div className="space-y-4">
-          <SettingsCard title="Endpoint URL">
-            <p className="[font-family:var(--font-body)] text-sm leading-relaxed text-[#566167]">
-              Transacty sends signed POST requests to this URL. Use{' '}
-              <a
-                href={DEVELOPER_DOCS_URL + '/webhook'}
-                target="_blank"
-                rel="noreferrer"
-                className="font-semibold text-[#0F0700] underline underline-offset-2"
-              >
-                developer documentation
-              </a>{' '}
-              for payload shapes and verification steps.
-            </p>
-            <div className="space-y-2">
-              <label
-                className="block [font-family:var(--font-body)] text-xs font-semibold text-[#566167]"
-                htmlFor="webhook-url-input"
-              >
-                Webhook URL
-              </label>
-              <Input
-                id="webhook-url-input"
-                type="url"
-                inputMode="url"
-                autoComplete="url"
-                placeholder="https://merchant.com/webhooks/transacty"
-                value={urlDraft}
-                onChange={(e) => setUrlDraft(e.target.value)}
-                disabled={updateWebhookMutation.isPending}
-                className="border-[#D4CFC7] bg-white focus:border-[#0F0700]"
-              />
-            </div>
-            {validationError ? (
-              <p className="[font-family:var(--font-body)] text-sm text-rose-600">
-                {validationError}
-              </p>
-            ) : null}
-            {mutationError ? (
-              <p className="[font-family:var(--font-body)] text-sm text-rose-600">
-                {mutationError}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                className="h-10 px-4 text-xs"
+        <SettingsCard
+          title="Endpoint URL"
+          description="Transacty sends signed POST requests to this URL."
+          footer={
+            <div className="settings-dev-actions-row">
+              <button
+                type="button"
+                className="settings-btn settings-btn--primary"
                 onClick={() => void handleSave()}
                 disabled={updateWebhookMutation.isPending}
                 aria-busy={updateWebhookMutation.isPending}
               >
-                {updateWebhookMutation.isPending ? (
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--color-background)/35 border-t-(--color-background)"
-                      aria-hidden
-                    />
-                    Saving…
-                  </span>
-                ) : (
-                  'Save webhook'
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-10 border border-[#D4CFC4] bg-white px-4 text-xs font-semibold text-[#0F0700]! hover:bg-[#FAF8F4]!"
+                {updateWebhookMutation.isPending ? 'Saving…' : 'Save webhook'}
+              </button>
+              <button
+                type="button"
+                className="settings-btn settings-btn--ghost"
                 onClick={() => void handleRemove()}
                 disabled={
                   updateWebhookMutation.isPending || !webhookQuery.data.webhookUrl
                 }
               >
                 Remove webhook
-              </Button>
+              </button>
             </div>
-            <p className="[font-family:var(--font-body)] text-xs leading-relaxed text-[#566167]">
-              When you save a URL, a new signing secret is generated. Store it
-              only on your server—never in client-side code or public repos.
-            </p>
-          </SettingsCard>
-        </div>
+          }
+        >
+          <p className="settings-hint">
+            Use{' '}
+            <a
+              href={`${DEVELOPER_DOCS_URL}/webhook`}
+              target="_blank"
+              rel="noreferrer"
+              className="settings-link"
+            >
+              developer documentation
+            </a>{' '}
+            for payload shapes and verification steps.
+          </p>
+
+          <label className="settings-field settings-field--full">
+            <span className={settingsFieldLabelClass}>Webhook URL</span>
+            <Input
+              id="webhook-url-input"
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              placeholder="https://merchant.com/webhooks/transacty"
+              value={urlDraft}
+              onChange={(event) => setUrlDraft(event.target.value)}
+              disabled={updateWebhookMutation.isPending}
+              className={settingsFieldInputClass}
+            />
+          </label>
+
+          {validationError ? (
+            <p className="settings-error settings-error--inline">{validationError}</p>
+          ) : null}
+          {mutationError ? (
+            <p className="settings-error settings-error--inline">{mutationError}</p>
+          ) : null}
+
+          <p className="settings-hint">
+            When you save a URL, a new signing secret is generated. Store it only on your
+            server—never in client-side code or public repos.
+          </p>
+        </SettingsCard>
       )}
 
       <Dialog
@@ -250,29 +214,26 @@ export function WebhooksSettingsContent() {
         maxWidthClassName="max-w-lg"
         footer={
           <div className="dialog-action-row flex flex-wrap justify-end gap-2">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              className="h-10 px-4 text-xs"
-              onClick={handleCopySecret}
+              className="settings-btn settings-btn--ghost"
+              onClick={() => void handleCopySecret()}
             >
               {copiedSecret ? 'Copied' : 'Copy secret'}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              className="h-10 px-4 text-xs"
+              className="settings-btn settings-btn--primary"
               onClick={() => setSecretDialogValue(null)}
             >
-              I've stored it securely
-            </Button>
+              I&apos;ve stored it securely
+            </button>
           </div>
         }
       >
         {secretDialogValue ? (
-          <div className="mt-3 rounded-lg border border-[#E0DCD6] bg-[#FAF8F5] p-3">
-            <code className="block break-all font-[ui-monospace,monospace] text-xs text-[#0F0700]">
-              {secretDialogValue}
-            </code>
+          <div className="settings-secret-block settings-secret-block--warn">
+            <code className="settings-secret-code">{secretDialogValue}</code>
           </div>
         ) : null}
       </Dialog>

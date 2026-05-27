@@ -1,122 +1,49 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
-import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
+import { useEffect, useMemo, useState } from 'react'
+import { FormattedMoney } from '../../../components/ui/FormattedMoney.tsx'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { DropdownSelect } from '../../../components/ui/DropdownSelect.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
+import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
+import { CustomersFilterBar } from '../components/customers/CustomersFilterBar.tsx'
+import { CustomersPageHeader } from '../components/customers/CustomersPageHeader.tsx'
+import { CustomersStatsStrip } from '../components/customers/CustomersStatsStrip.tsx'
+import { CustomersTableSection } from '../components/customers/CustomersTableSection.tsx'
+import {
+  formatDateTime,
+  LoadingButtonLabel,
+  statusUpdateOptions,
+  toTitleCaseFromSnake,
+  txPageSizeOptions,
+} from '../components/customers/customerViewUtils.tsx'
 import { RefundTransactionDialog } from '../components/transactions/RefundTransactionDialog.tsx'
 import { TransferTransactionDialog } from '../components/transactions/TransferTransactionDialog.tsx'
 import {
   useCreateCustomerMutation,
   useCustomerDetailQuery,
   useCustomerTransactionsQuery,
-  useCustomersListQuery,
   useUpdateCustomerStatusMutation,
 } from '../hooks/useCustomersQueries.ts'
+import { useCustomersPage } from '../hooks/useCustomersPage.ts'
 import { useTransferRefundActions } from '../hooks/useTransferRefundActions.ts'
-import type {
-  CustomerItem,
-  CustomerStatus,
-} from '../services/customersSchemas.ts'
-
-const statusFilterOptions = [
-  { value: 'all', label: 'All status' },
-  { value: 'active', label: 'Active' },
-  { value: 'frozen', label: 'Frozen' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'closed', label: 'Closed' },
-]
-
-const pageSizeOptions = [
-  { value: '10', label: '10 / page' },
-  { value: '20', label: '20 / page' },
-  { value: '50', label: '50 / page' },
-]
-
-const statusUpdateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'frozen', label: 'Frozen' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'closed', label: 'Closed' },
-]
-
-const txPageSizeOptions = [
-  { value: '10', label: '10 / page' },
-  { value: '20', label: '20 / page' },
-]
-
-function getCustomerStatusClassName(status: CustomerStatus) {
-  if (status === 'active') {
-    return 'bg-emerald-100 text-emerald-700'
-  }
-  if (status === 'pending') {
-    return 'bg-amber-100 text-amber-700'
-  }
-  if (status === 'frozen') {
-    return 'bg-blue-100 text-blue-700'
-  }
-  return 'bg-rose-100 text-rose-700'
-}
-
-function toTitleCaseFromSnake(value: string) {
-  return value
-    .split('_')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ')
-}
-
-function formatMoney(currency: string, amountText: string) {
-  const amountNumber = Number(amountText)
-  const amount = Number.isFinite(amountNumber) ? amountNumber : 0
-  return `${currency} ${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-  return date.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function LoadingButtonLabel({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
-      {label}
-    </span>
-  )
-}
+import type { CustomerItem, CustomerStatus } from '../services/customersSchemas.ts'
 
 export function DashboardCustomersPage() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
+  const page = useCustomersPage()
   const moneyActions = useTransferRefundActions()
   const openTransactionDetail = useTransactionDetailModalStore(
     (state) => state.openTransactionDetail,
   )
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [pageSize, setPageSize] = useState(20)
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [newCustomerLabel, setNewCustomerLabel] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [isCreateLabelMissing, setIsCreateLabelMissing] = useState(false)
 
-  const [customerForDetail, setCustomerForDetail] = useState<CustomerItem | null>(
-    null,
-  )
+  const [customerForDetail, setCustomerForDetail] = useState<CustomerItem | null>(null)
   const [customerForStatusUpdate, setCustomerForStatusUpdate] =
     useState<CustomerItem | null>(null)
   const [nextStatus, setNextStatus] = useState('active')
@@ -127,22 +54,9 @@ export function DashboardCustomersPage() {
     useState<CustomerItem | null>(null)
   const [txCurrentPage, setTxCurrentPage] = useState(1)
   const [txPageSize, setTxPageSize] = useState(10)
-  const [copiedCustomerId, setCopiedCustomerId] = useState<string | null>(null)
-  const [openActionsCustomerId, setOpenActionsCustomerId] = useState<string | null>(
-    null,
-  )
-  const actionsMenuRef = useRef<HTMLDivElement | null>(null)
 
-  const customersLimit = pageSize
-  const customersQuery = useCustomersListQuery({
-    limit: customersLimit,
-    offset: 0,
-    status:
-      statusFilter === 'all' ? undefined : (statusFilter as CustomerStatus),
-  })
   const createCustomerMutation = useCreateCustomerMutation()
   const updateCustomerStatusMutation = useUpdateCustomerStatusMutation()
-
   const detailQuery = useCustomerDetailQuery(customerForDetail?.id ?? null, true)
 
   const txOffset = (txCurrentPage - 1) * txPageSize
@@ -152,11 +66,8 @@ export function DashboardCustomersPage() {
     Boolean(customerForTransactions),
   )
 
-  const customersData = customersQuery.data
-
   const txTotal = customerTransactionsQuery.data?.total ?? 0
   const txTotalPages = Math.max(1, Math.ceil(txTotal / txPageSize))
-
   const transactionsRows = useMemo(
     () => customerTransactionsQuery.data?.items ?? [],
     [customerTransactionsQuery.data],
@@ -166,29 +77,10 @@ export function DashboardCustomersPage() {
     setTxCurrentPage(1)
   }, [txPageSize, customerForTransactions?.id])
 
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (!actionsMenuRef.current) {
-        return
-      }
-      if (!actionsMenuRef.current.contains(event.target as Node)) {
-        setOpenActionsCustomerId(null)
-      }
-    }
-
-    function handleEscapeKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpenActionsCustomerId(null)
-      }
-    }
-
-    window.addEventListener('mousedown', handleOutsideClick)
-    window.addEventListener('keydown', handleEscapeKey)
-    return () => {
-      window.removeEventListener('mousedown', handleOutsideClick)
-      window.removeEventListener('keydown', handleEscapeKey)
-    }
-  }, [])
+  const emptyMessage =
+    portalEnvironment === 'live' && page.totalItems === 0 && !page.customersQuery.isPending
+      ? 'No live customers yet.'
+      : 'No customers match your filters.'
 
   async function handleCreateCustomer() {
     setCreateError(null)
@@ -200,9 +92,7 @@ export function DashboardCustomersPage() {
     }
 
     try {
-      await createCustomerMutation.mutateAsync({
-        label: normalizedLabel,
-      })
+      await createCustomerMutation.mutateAsync({ label: normalizedLabel })
       setNewCustomerLabel('')
       setIsCreateLabelMissing(false)
       setIsCreateDialogOpen(false)
@@ -239,211 +129,59 @@ export function DashboardCustomersPage() {
     }
   }
 
-  async function handleCopyCustomerId(customerId: string) {
-    try {
-      await navigator.clipboard.writeText(customerId)
-      setCopiedCustomerId(customerId)
-      window.setTimeout(() => setCopiedCustomerId(null), 1500)
-    } catch {
-      setCopiedCustomerId(null)
-    }
-  }
-
   return (
-    <section className="flex h-full min-h-0 flex-col gap-4">
-      <header className="relative z-20 rounded-2xl border border-(--color-accent)/45 bg-(--color-card) p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="[font-family:var(--font-display)] text-3xl font-semibold text-(--color-foreground)">
-              Customers
-            </h1>
-            <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-              Manage customer wallets, statuses, and transaction activity.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <DropdownSelect
-              ariaLabel="Filter customers by status"
-              options={statusFilterOptions}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-            <DropdownSelect
-              ariaLabel="Select customers per page"
-              options={pageSizeOptions}
-              value={String(pageSize)}
-              onChange={(value) => setPageSize(Number(value))}
-              className="min-w-[108px]"
-            />
-            <Button className="h-10 px-3 text-xs" onClick={() => setIsCreateDialogOpen(true)}>
-              Add customer
-            </Button>
-          </div>
-        </div>
-      </header>
+    <section className="customers-page app-page-enter flex h-full min-h-0 flex-col gap-3">
+      <CustomersPageHeader onCreate={() => setIsCreateDialogOpen(true)} />
 
-      <section className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-(--color-accent)/45 bg-(--color-card)">
-        <div className="hidden grid-cols-[minmax(220px,1.8fr)_minmax(120px,1fr)_minmax(90px,0.8fr)_minmax(140px,1.1fr)_120px] gap-3 border-b border-(--color-accent)/35 px-5 py-3 [font-family:var(--font-body)] text-[11px] font-semibold uppercase tracking-wide text-(--color-secondary) lg:grid">
-          <p>Customer</p>
-          <p>Balance</p>
-          <p>Status</p>
-          <p>Created</p>
-          <p>Actions</p>
-        </div>
+      <CustomersStatsStrip
+        total={page.statusCounts.total}
+        active={page.statusCounts.active}
+        frozen={page.statusCounts.frozen}
+        closed={page.statusCounts.closed}
+        balancesByCurrency={page.totalBalanceQuery.data?.byCurrency ?? []}
+        isCountsLoading={page.statusCounts.isLoading}
+        isBalanceLoading={page.totalBalanceQuery.isPending}
+      />
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {customersQuery.isPending ? (
-            <div className="flex h-full items-center justify-center px-5 py-8">
-              <LoadingSpinner label="Loading customers..." />
-            </div>
-          ) : customersQuery.isError || !customersData ? (
-            <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-rose-600">
-              Unable to load customers right now.
-            </div>
-          ) : customersData.items.length === 0 ? (
-            <div className="px-5 py-8 text-center [font-family:var(--font-body)] text-sm text-(--color-secondary)">
-              {portalEnvironment === 'live'
-                ? 'No live customers yet.'
-                : 'No customers found for the selected filter.'}
-            </div>
-          ) : (
-            customersData.items.map((customer) => (
-              <article
-                key={customer.id}
-                className={`relative grid gap-2 border-b border-(--color-accent)/25 px-5 py-3 last:border-b-0 lg:grid-cols-[minmax(220px,1.8fr)_minmax(120px,1fr)_minmax(90px,0.8fr)_minmax(140px,1.1fr)_120px] lg:items-center lg:gap-3 ${
-                  openActionsCustomerId === customer.id ? 'z-70' : 'z-0'
-                }`}
-              >
-                <div>
-                  <p className="[font-family:var(--font-body)] text-sm font-semibold text-(--color-foreground)">
-                    {customer.label || 'Unnamed customer'}
-                  </p>
-                  <div className="mt-0.5 inline-flex items-center gap-1.5">
-                    <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                      {customer.id}
-                    </p>
-                    <button
-                      type="button"
-                      aria-label="Copy customer ID"
-                      className="inline-flex h-5 w-5 cursor-pointer items-center justify-center rounded text-(--color-secondary) transition hover:bg-(--color-background) hover:text-(--color-foreground)"
-                      onClick={() => handleCopyCustomerId(customer.id)}
-                    >
-                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden="true">
-                        <path d="M7 2.75A2.25 2.25 0 0 0 4.75 5v7.25A2.25 2.25 0 0 0 7 14.5h7.25a2.25 2.25 0 0 0 2.25-2.25V5A2.25 2.25 0 0 0 14.25 2.75H7Zm-.75 2.5c0-.41.34-.75.75-.75h7.25c.41 0 .75.34.75.75v7.25a.75.75 0 0 1-.75.75H7a.75.75 0 0 1-.75-.75V5.25ZM3.5 6.75a.75.75 0 0 1 .75.75v8.25c0 .41.34.75.75.75h8.25a.75.75 0 0 1 0 1.5H5a2.25 2.25 0 0 1-2.25-2.25V7.5a.75.75 0 0 1 .75-.75Z" />
-                      </svg>
-                    </button>
-                    {copiedCustomerId === customer.id ? (
-                      <span className="[font-family:var(--font-body)] text-[11px] text-emerald-700">
-                        Copied
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
+      <CustomersFilterBar
+        searchQuery={page.searchQuery}
+        onSearchQueryChange={page.setSearchQuery}
+        statusFilter={page.statusFilter}
+        onStatusFilterChange={page.setStatusFilter}
+        pageSize={page.pageSize}
+        onPageSizeChange={page.setPageSize}
+      />
 
-                <p className="[font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                  {formatMoney(customer.currency, customer.balance)}
-                </p>
-
-                <div>
-                  <span
-                    className={`inline-flex rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-xs font-semibold ${getCustomerStatusClassName(
-                      customer.status,
-                    )}`}
-                  >
-                    {toTitleCaseFromSnake(customer.status)}
-                  </span>
-                </div>
-
-                <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                  {formatDateTime(customer.createdAt)}
-                </p>
-
-                <div
-                  className="relative inline-flex lg:justify-self-end"
-                  ref={openActionsCustomerId === customer.id ? actionsMenuRef : null}
-                >
-                  <button
-                    type="button"
-                    aria-label="Open customer actions"
-                    aria-expanded={openActionsCustomerId === customer.id}
-                    onClick={() =>
-                      setOpenActionsCustomerId((previousValue) =>
-                        previousValue === customer.id ? null : customer.id,
-                      )
-                    }
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-(--color-accent)/45 bg-(--color-card) text-(--color-foreground) transition hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20"
-                  >
-                    <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current" aria-hidden="true">
-                      <path d="M10 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm0 4.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm0 4.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
-                    </svg>
-                  </button>
-
-                  {openActionsCustomerId === customer.id ? (
-                    <div className="absolute right-full top-0 z-80 mr-2 w-48 overflow-hidden rounded-xl border border-(--color-accent)/45 bg-white">
-                      <div className="divide-y divide-(--color-accent)/25">
-                        <button
-                          type="button"
-                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
-                          onClick={() => {
-                            setCustomerForDetail(customer)
-                            setOpenActionsCustomerId(null)
-                          }}
-                        >
-                          View
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
-                          onClick={() => {
-                            setCustomerForStatusUpdate(customer)
-                            setNextStatus(customer.status)
-                            setStatusReason('')
-                            setStatusUpdateError(null)
-                            setOpenActionsCustomerId(null)
-                          }}
-                        >
-                          Update status
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
-                          onClick={() => {
-                            setCustomerForTransactions(customer)
-                            setOpenActionsCustomerId(null)
-                          }}
-                        >
-                          Transactions
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
-                          onClick={() => {
-                            moneyActions.openTransferForCustomer(customer.id)
-                            setOpenActionsCustomerId(null)
-                          }}
-                        >
-                          Create transfer
-                        </button>
-                        <button
-                          type="button"
-                          className="block w-full cursor-pointer bg-white px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm text-(--color-foreground) transition hover:bg-(--color-primary) hover:text-(--color-background)"
-                          onClick={() => {
-                            moneyActions.openRefundForCustomer(customer.id)
-                            setOpenActionsCustomerId(null)
-                          }}
-                        >
-                          Create refund
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-
-      </section>
+      <CustomersTableSection
+        customersQuery={page.customersQuery}
+        items={page.displayedItems}
+        emptyMessage={emptyMessage}
+        startItem={page.startItem}
+        endItem={page.endItem}
+        totalItems={page.totalItems}
+        pageSize={page.pageSize}
+        currentPage={page.currentPage}
+        totalPages={page.totalPages}
+        copiedCustomerId={page.copiedCustomerId}
+        openActionsCustomerId={page.openActionsCustomerId}
+        actionsMenuRef={page.actionsMenuRef}
+        isLiveEnvironment={portalEnvironment === 'live'}
+        onPageSizeChange={page.setPageSize}
+        onPreviousPage={() => page.setCurrentPage((p) => p - 1)}
+        onNextPage={() => page.setCurrentPage((p) => p + 1)}
+        onCopyCustomerId={(id) => void page.copyCustomerId(id)}
+        onToggleActions={page.toggleActions}
+        onView={setCustomerForDetail}
+        onUpdateStatus={(customer) => {
+          setCustomerForStatusUpdate(customer)
+          setNextStatus(customer.status)
+          setStatusReason('')
+          setStatusUpdateError(null)
+        }}
+        onTransactions={setCustomerForTransactions}
+        onTransfer={(customer) => moneyActions.openTransferForCustomer(customer.id)}
+        onRefund={(customer) => moneyActions.openRefundForCustomer(customer.id)}
+      />
 
       <Dialog
         isOpen={isCreateDialogOpen}
@@ -467,11 +205,11 @@ export function DashboardCustomersPage() {
             </Button>
             <Button
               className="h-10 w-full px-4 text-xs"
-              onClick={handleCreateCustomer}
+              onClick={() => void handleCreateCustomer()}
               disabled={createCustomerMutation.isPending}
             >
               {createCustomerMutation.isPending ? (
-                <LoadingButtonLabel label="Creating..." />
+                <LoadingButtonLabel label="Creating…" />
               ) : (
                 'Create customer'
               )}
@@ -522,7 +260,7 @@ export function DashboardCustomersPage() {
       >
         {detailQuery.isPending ? (
           <div className="flex min-h-[150px] items-center justify-center">
-            <LoadingSpinner label="Loading customer..." />
+            <LoadingSpinner label="Loading customer…" />
           </div>
         ) : detailQuery.isError || !detailQuery.data ? (
           <p className="[font-family:var(--font-body)] text-sm text-rose-600">
@@ -551,7 +289,10 @@ export function DashboardCustomersPage() {
                 Balance
               </p>
               <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {formatMoney(detailQuery.data.currency, detailQuery.data.balance)}
+                <FormattedMoney
+                  currency={detailQuery.data.currency}
+                  value={Number(detailQuery.data.balance) || 0}
+                />
               </p>
             </div>
             <div>
@@ -559,7 +300,7 @@ export function DashboardCustomersPage() {
                 Created
               </p>
               <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {formatDateTime(detailQuery.data.createdAt)}
+                {formatDateTime(detailQuery.data.createdAt).primary}
               </p>
             </div>
           </div>
@@ -571,8 +312,8 @@ export function DashboardCustomersPage() {
         onClose={() => setCustomerForStatusUpdate(null)}
         title="Update customer status"
         description="Change operational status for this wallet."
-        maxWidthClassName="max-w-lg min-h-[380px]"
-        contentClassName="overflow-visible"
+        maxWidthClassName="max-w-lg"
+        allowOverflow
         footer={
           <div className="grid grid-cols-2 gap-2">
             <Button
@@ -585,11 +326,11 @@ export function DashboardCustomersPage() {
             </Button>
             <Button
               className="h-10 w-full px-4 text-xs"
-              onClick={handleUpdateCustomerStatus}
+              onClick={() => void handleUpdateCustomerStatus()}
               disabled={updateCustomerStatusMutation.isPending}
             >
               {updateCustomerStatusMutation.isPending ? (
-                <LoadingButtonLabel label="Updating..." />
+                <LoadingButtonLabel label="Updating…" />
               ) : (
                 'Update status'
               )}
@@ -607,7 +348,7 @@ export function DashboardCustomersPage() {
               options={statusUpdateOptions}
               value={nextStatus}
               onChange={setNextStatus}
-              className="relative z-70 w-full"
+              className="dialog-field-select relative z-70 w-full"
             />
           </label>
           <label className="space-y-1">
@@ -637,7 +378,7 @@ export function DashboardCustomersPage() {
         footer={
           <div className="flex flex-wrap items-center justify-between gap-2 [font-family:var(--font-body)] text-xs text-(--color-secondary)">
             <p>
-              Showing {txTotal === 0 ? 0 : txOffset + 1}-
+              Showing {txTotal === 0 ? 0 : txOffset + 1}–
               {Math.min(txOffset + txPageSize, txTotal)} of {txTotal}
             </p>
             <div className="flex items-center gap-2">
@@ -653,7 +394,7 @@ export function DashboardCustomersPage() {
                 variant="ghost"
                 className="h-9 border border-(--color-accent)/45 px-3 text-xs"
                 disabled={txCurrentPage <= 1}
-                onClick={() => setTxCurrentPage((previousPage) => previousPage - 1)}
+                onClick={() => setTxCurrentPage((p) => p - 1)}
               >
                 Previous
               </Button>
@@ -661,7 +402,7 @@ export function DashboardCustomersPage() {
                 variant="ghost"
                 className="h-9 border border-(--color-accent)/45 px-3 text-xs"
                 disabled={txCurrentPage >= txTotalPages}
-                onClick={() => setTxCurrentPage((previousPage) => previousPage + 1)}
+                onClick={() => setTxCurrentPage((p) => p + 1)}
               >
                 Next
               </Button>
@@ -671,9 +412,9 @@ export function DashboardCustomersPage() {
       >
         {customerTransactionsQuery.isPending ? (
           <div className="flex min-h-[200px] items-center justify-center">
-            <LoadingSpinner label="Loading transactions..." />
+            <LoadingSpinner label="Loading transactions…" />
           </div>
-        ) : customerTransactionsQuery.isError || !customerTransactionsQuery.data ? (
+        ) : customerTransactionsQuery.isError ? (
           <p className="[font-family:var(--font-body)] text-sm text-rose-600">
             Unable to load customer transactions right now.
           </p>
@@ -694,6 +435,9 @@ export function DashboardCustomersPage() {
               {transactionsRows.map((tx, index) => {
                 const txId = tx.id?.trim()
                 const canOpenDetail = Boolean(txId)
+                const created = tx.createdAt
+                  ? formatDateTime(tx.createdAt)
+                  : { primary: '—', secondary: '' }
                 return (
                   <div
                     key={`${tx.id ?? 'tx'}-${index}`}
@@ -701,7 +445,7 @@ export function DashboardCustomersPage() {
                     tabIndex={canOpenDetail ? 0 : undefined}
                     className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0 ${
                       canOpenDetail
-                        ? 'cursor-pointer hover:bg-[#F2EFE8] focus-visible:bg-[#F2EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0700]/15'
+                        ? 'cursor-pointer hover:bg-[#F2EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0700]/15'
                         : ''
                     }`}
                     onClick={
@@ -720,13 +464,11 @@ export function DashboardCustomersPage() {
                         : undefined
                     }
                   >
-                    <p className="truncate">{tx.reference || tx.id || '-'}</p>
-                    <p>{tx.type || '-'}</p>
-                    <p>{tx.amount || '-'}</p>
-                    <p>{tx.status || '-'}</p>
-                    <p className="text-xs text-(--color-secondary)">
-                      {tx.createdAt ? formatDateTime(tx.createdAt) : '-'}
-                    </p>
+                    <p className="truncate">{tx.reference || tx.id || '—'}</p>
+                    <p>{tx.type || '—'}</p>
+                    <p>{tx.amount || '—'}</p>
+                    <p>{tx.status || '—'}</p>
+                    <p className="text-xs text-(--color-secondary)">{created.primary}</p>
                   </div>
                 )
               })}
@@ -813,7 +555,7 @@ export function DashboardCustomersPage() {
             >
               {moneyActions.createTransferMutation.isPending ||
               moneyActions.createRefundMutation.isPending
-                ? 'Submitting...'
+                ? 'Submitting…'
                 : 'Confirm'}
             </Button>
           </div>

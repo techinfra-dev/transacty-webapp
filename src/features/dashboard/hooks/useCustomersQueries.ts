@@ -36,7 +36,11 @@ export function useCreateCustomerMutation() {
         environment: usePortalEnvironmentStore.getState().environment,
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['customers-list'] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['customers-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers-count'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers-total-balance'] }),
+      ])
     },
   })
 }
@@ -67,6 +71,8 @@ export function useUpdateCustomerStatusMutation() {
       const environment = usePortalEnvironmentStore.getState().environment
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['customers-list'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers-count'] }),
+        queryClient.invalidateQueries({ queryKey: ['customers-total-balance'] }),
         queryClient.invalidateQueries({
           queryKey: ['customer-detail', environment, variables.customerId],
         }),

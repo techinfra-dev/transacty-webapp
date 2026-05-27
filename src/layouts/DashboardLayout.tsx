@@ -24,7 +24,7 @@ import type { PortalEnvironment } from '../types/portalEnvironment.ts'
 import { useInactivityLogout } from '../hooks/useInactivityLogout.ts'
 import { invalidatePortalQueries } from '../utils/invalidatePortalQueries.ts'
 import { DashboardOutletHeader } from '../components/layout/DashboardOutletHeader.tsx'
-import { SidebarItemIcon } from '../components/layout/SidebarItemIcon.tsx'
+import { LogoutIcon, SidebarItemIcon } from '../components/layout/SidebarItemIcon.tsx'
 
 interface MenuItem {
   label: string
@@ -133,13 +133,13 @@ function isSidebarItemActive(to: MenuItem['to'], pathname: string) {
 }
 
 const sidebarNavLinkClass =
-  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[12.5px] transition-[color,background-color,box-shadow] duration-150'
+  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[12.5px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
 
 const sidebarNavLinkActiveClass =
-  'bg-(--sidebar-link-active-bg) font-semibold text-(--sidebar-link-active) shadow-[0_1px_4px_rgba(0,0,0,0.06)] ring-1 ring-[#E8E8E8]/90'
+  'bg-(--sidebar-link-active-bg) font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
 
 const sidebarNavLinkInactiveClass =
-  'font-medium text-(--sidebar-link) hover:bg-white/70 hover:text-(--sidebar-link-hover)'
+  'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'
 
 export function DashboardLayout() {
   const queryClient = useQueryClient()
@@ -307,17 +307,13 @@ export function DashboardLayout() {
                         >
                           {isActive ? (
                             <span
-                              className="absolute top-1/2 -left-3 h-[70%] w-[3px] -translate-y-1/2 rounded-r-sm bg-(--sidebar-nav-accent)"
+                              className="sidebar-nav-accent absolute top-1/2 -left-3 h-[70%] w-[3px] -translate-y-1/2 rounded-r-sm bg-(--sidebar-nav-accent)"
                               aria-hidden
                             />
                           ) : null}
                           <span
                             aria-hidden
-                            className={`inline-flex size-4 shrink-0 items-center justify-center ${
-                              isActive
-                                ? 'text-(--sidebar-link-active)'
-                                : 'text-(--sidebar-link)'
-                            }`}
+                            className="inline-flex size-4 shrink-0 items-center justify-center text-inherit"
                           >
                             <SidebarItemIcon to={item.to} active={isActive} />
                           </span>
@@ -349,18 +345,7 @@ export function DashboardLayout() {
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5">
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4 shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0-3-3m0 0-3 3m3-3H9" />
-                    </svg>
+                    <LogoutIcon />
                     Logout
                   </span>
                 )}

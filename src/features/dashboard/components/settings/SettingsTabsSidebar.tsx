@@ -38,22 +38,15 @@ function tabIcon(tabId: SettingsTabId) {
   }
 }
 
-const navButtonClass = (isActive: boolean) =>
-  [
-    'flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left [font-family:var(--font-body)] text-sm transition',
-    isActive
-      ? 'border border-[#E0D4C4] bg-[#F3E8D6] font-semibold text-[#0F0700] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'
-      : 'border border-transparent text-[#566167] hover:border-[#E0DCD6]/80 hover:bg-[#F7F4EF]',
-  ].join(' ')
-
 export function SettingsTabsSidebar({
   activeTab,
   onSelectTab,
 }: SettingsTabsSidebarProps) {
   return (
-    <aside className="shrink-0 rounded-2xl border border-[#E8E2DA] bg-[#FCFAF7] p-3 shadow-[0_1px_3px_rgba(15,7,0,0.06)] md:w-[260px]">
-      <div className="flex min-h-0 flex-col">
-        <nav className="space-y-1">
+    <aside className="settings-nav">
+      <div className="settings-nav-group">
+        <p className="settings-nav-group-label">Account</p>
+        <nav className="settings-nav-list">
           {accountTabs.map((tab) => {
             const isActive = activeTab === tab.id
             return (
@@ -61,9 +54,10 @@ export function SettingsTabsSidebar({
                 key={tab.id}
                 type="button"
                 onClick={() => onSelectTab(tab.id)}
-                className={navButtonClass(isActive)}
+                className={`settings-nav-item ${isActive ? 'settings-nav-item--active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <span className={isActive ? 'text-[#0F0700]' : 'text-[#566167]'}>
+                <span className="settings-nav-item-icon" aria-hidden>
                   {tabIcon(tab.id)}
                 </span>
                 <span>{tab.label}</span>
@@ -71,40 +65,40 @@ export function SettingsTabsSidebar({
             )
           })}
         </nav>
+      </div>
 
-        <div className="mt-5 border-t border-[#E8E2DA] pt-4">
-          <p className="px-3 [font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-wider text-[#9D8F82]">
-            Developers
-          </p>
-          <nav className="mt-2 space-y-1">
-            {developerTabs.map((tab) => {
-              const isActive = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => onSelectTab(tab.id)}
-                  className={navButtonClass(isActive)}
-                >
-                  <span className={isActive ? 'text-[#0F0700]' : 'text-[#566167]'}>
-                    {tabIcon(tab.id)}
-                  </span>
-                  <span>{tab.label}</span>
-                </button>
-              )
-            })}
-
-            <a
-              href={DEVELOPER_DOCS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 [font-family:var(--font-body)] text-sm text-[#566167] transition hover:border-[#E0DCD6]/80 hover:bg-[#F7F4EF]"
-            >
+      <div className="settings-nav-group">
+        <p className="settings-nav-group-label">Developers</p>
+        <nav className="settings-nav-list">
+          {developerTabs.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => onSelectTab(tab.id)}
+                className={`settings-nav-item ${isActive ? 'settings-nav-item--active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <span className="settings-nav-item-icon" aria-hidden>
+                  {tabIcon(tab.id)}
+                </span>
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
+          <a
+            href={DEVELOPER_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="settings-nav-item settings-nav-item--link"
+          >
+            <span className="settings-nav-item-icon" aria-hidden>
               <SettingsIconDeveloperDocs />
-              <span>Developer docs</span>
-            </a>
-          </nav>
-        </div>
+            </span>
+            <span>Developer docs</span>
+          </a>
+        </nav>
       </div>
     </aside>
   )
