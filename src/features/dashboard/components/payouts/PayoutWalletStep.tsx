@@ -1,6 +1,7 @@
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
+import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 
 type PayoutWalletStepProps = {
@@ -12,9 +13,8 @@ type PayoutWalletStepProps = {
 }
 
 function walletSubtitle(wallet: MerchantWalletItem) {
-  const custom = wallet.label?.trim()
-  if (custom) {
-    return custom
+  if (wallet.displayLabel?.trim() || wallet.regionLabel?.trim() || wallet.label?.trim()) {
+    return getWalletDisplayLabel(wallet)
   }
   return `${getCurrencyFullName(wallet.currency)} merchant pocket`
 }
@@ -58,7 +58,7 @@ export function PayoutWalletStep({
     <div className="payout-wallet-list" role="radiogroup" aria-label="Select payout wallet">
       {wallets.map((wallet) => {
         const isSelected = wallet.id === selectedWalletId
-        const balance = Number(wallet.balance)
+        const balance = Number(wallet.availableBalance ?? wallet.balance)
         const safeBalance = Number.isFinite(balance) ? balance : 0
         const code = wallet.currency.trim().toUpperCase()
 

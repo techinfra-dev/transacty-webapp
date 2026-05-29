@@ -136,7 +136,7 @@ const sidebarNavLinkClass =
   'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[12.5px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
 
 const sidebarNavLinkActiveClass =
-  'bg-(--sidebar-link-active-bg) font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
+  'bg-(--sidebar-link-active-bg) font-semibold text-(--sidebar-link-active) shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
 
 const sidebarNavLinkInactiveClass =
   'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'

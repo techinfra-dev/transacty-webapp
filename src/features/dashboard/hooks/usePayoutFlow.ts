@@ -33,22 +33,25 @@ export function usePayoutFlow() {
     [wallets, selectedWalletId],
   )
 
+  const selectedBalanceItem = useMemo(
+    () =>
+      balanceQuery.data?.items.find((item) => item.id === selectedWalletId) ??
+      null,
+    [balanceQuery.data?.items, selectedWalletId],
+  )
+
   const currency = selectedWallet?.currency.trim().toUpperCase() ?? ''
   const walletBalance = useMemo(() => {
-    if (!selectedWallet) {
+    if (!selectedBalanceItem) {
       return null
     }
-    const amount = Number(selectedWallet.balance)
+    const amount = Number(
+      selectedBalanceItem.availableBalance ?? selectedBalanceItem.balance,
+    )
     return Number.isFinite(amount) ? amount : 0
-  }, [selectedWallet])
+  }, [selectedBalanceItem])
 
-  const balanceMatchesWallet =
-    Boolean(currency) &&
-    balanceQuery.data?.currency.trim().toUpperCase() === currency
-
-  const payoutLimits = balanceMatchesWallet
-    ? balanceQuery.data?.limits.payout
-    : undefined
+  const payoutLimits = selectedBalanceItem?.limits.payout
 
   const effectiveMinimumAmount = Math.max(
     minimumPayoutAmount,

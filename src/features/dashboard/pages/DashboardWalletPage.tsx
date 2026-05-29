@@ -5,9 +5,12 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
-import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
+import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
 import { useTransactionsListQuery } from '../hooks/useTransactionsQueries.ts'
-import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
+import {
+  findBalanceWalletItem,
+  getWalletDisplayLabel,
+} from '../utils/balanceWalletUtils.ts'
 
 const outlineBtn = 'dash-btn-outline'
 
@@ -20,23 +23,24 @@ export function DashboardWalletPage() {
     (state) => state.toggleBalancesVisibility,
   )
 
-  const walletsQuery = useMerchantWalletsQuery(true)
+  const balanceQuery = useBalanceQuery(true)
   const transactionsQuery = useTransactionsListQuery({
     limit: 50,
     offset: 0,
   })
 
-  const wallets = walletsQuery.data?.items ?? null
-  const activeWallet = wallets?.find((w) => w.id === walletId) ?? null
+  const wallets = balanceQuery.data?.items ?? null
+  const activeWallet = findBalanceWalletItem(balanceQuery.data, walletId) ?? null
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
       return 'Manage balances, quick actions, and activity for each merchant pocket.'
     }
-    return `${getCurrencyFullName(activeWallet.currency)} · ${activeWallet.currency} merchant pocket`
+    const code = activeWallet.currency.trim().toUpperCase()
+    return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
   }, [activeWallet])
 
-  if (walletsQuery.isPending) {
+  if (balanceQuery.isPending) {
     return (
       <section className="app-page-enter flex min-h-[240px] items-center justify-center">
         <LoadingSpinner label="Loading wallet..." />
@@ -44,7 +48,7 @@ export function DashboardWalletPage() {
     )
   }
 
-  if (walletsQuery.isError || wallets === null) {
+  if (balanceQuery.isError || wallets === null) {
     return (
       <section className="app-page-enter rounded-xl border border-rose-200 bg-rose-50 p-6">
         <p className="[font-family:var(--font-body)] text-sm text-rose-800">
@@ -89,10 +93,10 @@ export function DashboardWalletPage() {
           <Button
             variant="ghost"
             className={outlineBtn}
-            onClick={() => walletsQuery.refetch()}
-            disabled={walletsQuery.isRefetching}
+            onClick={() => balanceQuery.refetch()}
+            disabled={balanceQuery.isRefetching}
           >
-            {walletsQuery.isRefetching ? 'Refreshing...' : 'Refresh balances'}
+            {balanceQuery.isRefetching ? 'Refreshing...' : 'Refresh balances'}
           </Button>
           <Button variant="ghost" className={outlineBtn} onClick={toggleBalancesVisibility}>
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
@@ -104,7 +108,7 @@ export function DashboardWalletPage() {
         wallets={wallets}
         activeWalletId={activeWallet.id}
         areBalancesHidden={areBalancesHidden}
-        walletsLoading={walletsQuery.isPending || walletsQuery.isRefetching}
+        walletsLoading={balanceQuery.isPending || balanceQuery.isRefetching}
       />
 
       <WalletActivityTable

@@ -1,29 +1,29 @@
 import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
-import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
+import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
 
 export function DashboardWalletsIndexPage() {
   const navigate = useNavigate()
-  const walletsQuery = useMerchantWalletsQuery(true)
+  const balanceQuery = useBalanceQuery(true)
 
   useEffect(() => {
-    if (walletsQuery.isPending) {
+    if (balanceQuery.isPending) {
       return
     }
-    if (walletsQuery.isError || !walletsQuery.data?.items?.length) {
+    if (balanceQuery.isError || !balanceQuery.data?.items?.length) {
       void navigate({ to: '/dashboard', replace: true })
       return
     }
-    const first = walletsQuery.data.items[0]
+    const first = balanceQuery.data.items[0]
     void navigate({
       to: '/dashboard/wallets/$walletId',
       params: { walletId: first.id },
       replace: true,
     })
-  }, [walletsQuery.isPending, walletsQuery.isError, walletsQuery.data, navigate])
+  }, [balanceQuery.isPending, balanceQuery.isError, balanceQuery.data, navigate])
 
-  if (walletsQuery.isError || (!walletsQuery.isPending && !walletsQuery.data?.items?.length)) {
+  if (balanceQuery.isError || (!balanceQuery.isPending && !balanceQuery.data?.items?.length)) {
     return null
   }
 

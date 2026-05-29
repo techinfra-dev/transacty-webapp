@@ -1,10 +1,10 @@
 import { Link } from '@tanstack/react-router'
-import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
-import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
+import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
+import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 
 type WalletCurrencyTabsProps = {
-  wallets: MerchantWalletItem[]
+  wallets: BalanceWalletItem[]
   activeWalletId: string
   areBalancesHidden?: boolean
 }
@@ -22,8 +22,9 @@ export function WalletCurrencyTabs({
     >
       {wallets.map((wallet) => {
         const isActive = wallet.id === activeWalletId
-        const currencyName = getCurrencyFullName(wallet.currency)
-        const amount = Number(wallet.balance)
+        const displayName = getWalletDisplayLabel(wallet)
+        const code = wallet.currency.trim().toUpperCase()
+        const amount = Number(wallet.availableBalance ?? wallet.balance)
         const safeAmount = Number.isFinite(amount) ? amount : 0
         return (
           <Link
@@ -34,8 +35,8 @@ export function WalletCurrencyTabs({
             params={{ walletId: wallet.id }}
             className="dashboard-wallet-tab"
           >
-            <span className="dashboard-wallet-tab-code">{wallet.currency}</span>
-            <span className="dashboard-wallet-tab-name">{currencyName}</span>
+            <span className="dashboard-wallet-tab-code">{code}</span>
+            <span className="dashboard-wallet-tab-name">{displayName}</span>
             <FormattedMoney
               className="dashboard-wallet-tab-balance"
               currency={wallet.currency}
