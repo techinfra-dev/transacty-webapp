@@ -90,6 +90,7 @@ export function TransactionsTableSection({
         currentPage={currentPage}
         totalPages={totalPages}
         isPending={transactionsQuery.isPending}
+        isFetching={transactionsQuery.isFetching}
         isLiveEnvironment={isLiveEnvironment}
         onPageSizeChange={onPageSizeChange}
         onPreviousPage={onPreviousPage}

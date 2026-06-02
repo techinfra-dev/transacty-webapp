@@ -9,6 +9,7 @@ import {
   transactionsListResponseSchema,
   type CreateRefundPayload,
   type CreateTransferPayload,
+  type TransactionRailApi,
   type TransactionStatus,
   type TransactionType,
 } from './transactionsSchemas.ts'
@@ -50,13 +51,23 @@ export async function listTransactions(params: {
   type?: TransactionType
   status?: TransactionStatus
   customerId?: string
+  rail?: TransactionRailApi
   limit: number
   offset: number
 }) {
   try {
+    const { environment, type, status, customerId, rail, limit, offset } = params
     const response = await axiosInstance.get('me/transactions', {
       headers: getAuthHeader(),
-      params,
+      params: {
+        environment,
+        limit,
+        offset,
+        ...(type ? { type } : {}),
+        ...(status ? { status } : {}),
+        ...(customerId ? { customerId } : {}),
+        ...(rail ? { rail } : {}),
+      },
     })
     return transactionsListResponseSchema.parse(response.data)
   } catch (error) {

@@ -11,6 +11,15 @@ export const transactionTypeSchema = z.enum([
 
 export const transactionStatusSchema = z.enum(['pending', 'success', 'failed'])
 
+export const transactionRailApiSchema = z.enum(['bangladesh', 'india', 'europe'])
+
+export const transactionRailFilterSchema = z.enum([
+  'all',
+  'bangladesh',
+  'india',
+  'europe',
+])
+
 export const transactionItemSchema = z.object({
   id: z.string().min(1),
   type: transactionTypeSchema,
@@ -57,6 +66,8 @@ export const createRefundPayloadSchema = z.object({
 
 export type TransactionType = z.infer<typeof transactionTypeSchema>
 export type TransactionStatus = z.infer<typeof transactionStatusSchema>
+export type TransactionRailApi = z.infer<typeof transactionRailApiSchema>
+export type TransactionRailFilter = z.infer<typeof transactionRailFilterSchema>
 export type TransactionItem = z.infer<typeof transactionItemSchema>
 export type TransactionsListResponse = z.infer<typeof transactionsListResponseSchema>
 export type TransactionDetail = z.infer<typeof transactionDetailSchema>

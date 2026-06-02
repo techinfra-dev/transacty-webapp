@@ -2,6 +2,7 @@ import { useQueries } from '@tanstack/react-query'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { listTransactions } from '../services/transactionsService.ts'
 import type {
+  TransactionRailApi,
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
@@ -9,11 +10,13 @@ import type {
 type UseTransactionStatusCountsParams = {
   type?: TransactionType
   customerId?: string
+  rail?: TransactionRailApi
 }
 
 export function useTransactionStatusCounts({
   type,
   customerId,
+  rail,
 }: UseTransactionStatusCountsParams) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
 
@@ -29,13 +32,14 @@ export function useTransactionStatusCounts({
       queryKey: [
         'transactions-list-count',
         environment,
-        { type, customerId, status },
+        { type, customerId, rail, status },
       ],
       queryFn: () =>
         listTransactions({
           environment,
           type,
           customerId,
+          rail,
           status,
           limit: 1,
           offset: 0,

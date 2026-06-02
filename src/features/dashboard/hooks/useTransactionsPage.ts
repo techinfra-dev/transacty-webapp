@@ -4,12 +4,15 @@ import type { TransactionStatusTabId } from '../components/transactions/Transact
 import { useTransactionStatusCounts } from './useTransactionStatusCounts.ts'
 import { useTransactionsListQuery } from './useTransactionsQueries.ts'
 import type {
+  TransactionRailFilter,
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
+import { transactionRailFilterToApiParam } from '../utils/transactionRailUtils.ts'
 
 export function useTransactionsPage() {
   const [query, setQuery] = useState('')
+  const [selectedRail, setSelectedRail] = useState<TransactionRailFilter>('all')
   const [selectedMethod, setSelectedMethod] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [customerIdFilter, setCustomerIdFilter] = useState('')
@@ -43,16 +46,19 @@ export function useTransactionsPage() {
     selectedStatus === 'all' ? undefined : (selectedStatus as TransactionStatus)
   const listCustomerId =
     normalizedCustomerId.length > 0 ? normalizedCustomerId : undefined
+  const listRail = transactionRailFilterToApiParam(selectedRail)
 
   const statusCountsQuery = useTransactionStatusCounts({
     type: listType,
     customerId: listCustomerId,
+    rail: listRail,
   })
 
   const transactionsQuery = useTransactionsListQuery({
     type: listType,
     status: listStatus,
     customerId: listCustomerId,
+    rail: listRail,
     limit: pageSize,
     offset,
   })
@@ -86,7 +92,9 @@ export function useTransactionsPage() {
   const totalItems = transactionsQuery.data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const startItem = totalItems === 0 ? 0 : offset + 1
-  const endItem = Math.min(offset + pageSize, totalItems)
+  const pageRowCount = transactionsQuery.data?.items.length ?? 0
+  const endItem =
+    totalItems === 0 ? 0 : Math.min(offset + pageRowCount, totalItems)
 
   const statusTabs = useMemo(
     () => [
@@ -130,6 +138,8 @@ export function useTransactionsPage() {
   return {
     query,
     setQuery,
+    selectedRail,
+    setSelectedRail,
     selectedMethod,
     setSelectedMethod,
     selectedStatus,

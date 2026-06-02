@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button.tsx'
 import { Dialog } from '../components/ui/Dialog.tsx'
 import { TestModeBanner } from '../components/ui/TestModeBanner.tsx'
@@ -24,122 +24,28 @@ import type { PortalEnvironment } from '../types/portalEnvironment.ts'
 import { useInactivityLogout } from '../hooks/useInactivityLogout.ts'
 import { invalidatePortalQueries } from '../utils/invalidatePortalQueries.ts'
 import { DashboardOutletHeader } from '../components/layout/DashboardOutletHeader.tsx'
-import { LogoutIcon, SidebarItemIcon } from '../components/layout/SidebarItemIcon.tsx'
+import {
+  DashboardSidebarLogo,
+  DashboardSidebarNav,
+} from '../components/layout/DashboardSidebarNav.tsx'
 
-interface MenuItem {
-  label: string
-  to:
-    | '/dashboard'
-    | '/dashboard/wallets'
-    | '/dashboard/transactions'
-    | '/dashboard/customers'
-    | '/dashboard/payouts'
-    | '/dashboard/settings'
-}
+const MOBILE_NAV_ANIMATION_MS = 280
 
-interface MenuSection {
-  title: string
-  items: MenuItem[]
-}
-
-function PortalEnvironmentSegmentedControl({
-  portalEnvironment,
-  onRequestEnvironment,
-  isKycVerified,
-  className,
-}: {
-  portalEnvironment: PortalEnvironment
-  onRequestEnvironment: (next: PortalEnvironment) => void
-  isKycVerified: boolean
-  className?: string
-}) {
-  const liveSwitchBlocked = !isKycVerified && portalEnvironment !== 'live'
+function MobileNavCloseIcon() {
   return (
-    <div
-      className={className}
-      role="group"
-      aria-label="Portal environment"
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      aria-hidden
     >
-      <p className="mb-1 px-1 [font-family:var(--font-body)] text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
-        Environment
-      </p>
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-(--sidebar-border) bg-(--sidebar-segment-inactive) p-0.5">
-        <button
-          type="button"
-          onClick={() => onRequestEnvironment('test')}
-          className={`rounded-md px-2 py-1.5 [font-family:var(--font-body)] text-[11.5px] font-semibold transition-colors ${
-            portalEnvironment === 'test'
-              ? 'bg-(--sidebar-segment-active-bg) text-(--sidebar-segment-active-text)'
-              : 'bg-transparent text-(--sidebar-segment-inactive-text) hover:bg-(--sidebar-segment-hover)'
-          }`}
-        >
-          Test
-        </button>
-        <button
-          type="button"
-          title={
-            liveSwitchBlocked
-              ? 'Complete KYC verification to use the live environment'
-              : undefined
-          }
-          disabled={liveSwitchBlocked}
-          onClick={() => onRequestEnvironment('live')}
-          className={`rounded-md px-2 py-1.5 [font-family:var(--font-body)] text-[11px] font-semibold transition-colors ${
-            portalEnvironment === 'live'
-              ? 'bg-(--sidebar-segment-active-bg) text-(--sidebar-segment-active-text)'
-              : 'bg-transparent text-(--sidebar-segment-inactive-text) hover:bg-(--sidebar-segment-hover)'
-          } ${liveSwitchBlocked ? 'cursor-not-allowed opacity-45' : ''}`}
-        >
-          Live
-        </button>
-      </div>
-    </div>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
   )
 }
-
-const menuSections: MenuSection[] = [
-  {
-    title: 'Overview',
-    items: [
-      { label: 'Dashboard', to: '/dashboard' },
-      { label: 'Wallets', to: '/dashboard/wallets' },
-    ],
-  },
-  {
-    title: 'Payments',
-    items: [
-      { label: 'Transactions', to: '/dashboard/transactions' },
-      { label: 'Payouts', to: '/dashboard/payouts' },
-    ],
-  },
-  {
-    title: 'Customers',
-    items: [{ label: 'Customers', to: '/dashboard/customers' }],
-  },
-  {
-    title: 'Settings',
-    items: [{ label: 'Settings', to: '/dashboard/settings' }],
-  },
-]
-
-function isSidebarItemActive(to: MenuItem['to'], pathname: string) {
-  if (to === '/dashboard') {
-    return pathname === '/dashboard'
-  }
-  if (to === '/dashboard/wallets') {
-    return pathname.startsWith('/dashboard/wallets')
-  }
-  return pathname === to || pathname.startsWith(`${to}/`)
-}
-
-const sidebarNavLinkClass =
-  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[12.5px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
-
-const sidebarNavLinkActiveClass =
-  'bg-(--sidebar-link-active-bg) font-semibold text-(--sidebar-link-active) shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
-
-const sidebarNavLinkInactiveClass =
-  'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'
 
 export function DashboardLayout() {
   const queryClient = useQueryClient()
@@ -149,6 +55,21 @@ export function DashboardLayout() {
     (state) => state.setEnvironment,
   )
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isMobileNavMounted, setIsMobileNavMounted] = useState(false)
+  const [isMobileNavClosing, setIsMobileNavClosing] = useState(false)
+  const isMobileNavOpen = isMobileNavMounted && !isMobileNavClosing
+
+  function openMobileNav() {
+    setIsMobileNavClosing(false)
+    setIsMobileNavMounted(true)
+  }
+
+  function closeMobileNav() {
+    if (!isMobileNavMounted || isMobileNavClosing) {
+      return
+    }
+    setIsMobileNavClosing(true)
+  }
   const [isLiveSwitchConfirmOpen, setIsLiveSwitchConfirmOpen] = useState(false)
   const [pendingEnvironment, setPendingEnvironment] =
     useState<PortalEnvironment | null>(null)
@@ -183,6 +104,40 @@ export function DashboardLayout() {
     })
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    closeMobileNav()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- close drawer when route changes
+  }, [pathname])
+
+  useEffect(() => {
+    if (!isMobileNavClosing) {
+      return
+    }
+    const timer = window.setTimeout(() => {
+      setIsMobileNavMounted(false)
+      setIsMobileNavClosing(false)
+    }, MOBILE_NAV_ANIMATION_MS)
+    return () => window.clearTimeout(timer)
+  }, [isMobileNavClosing])
+
+  useEffect(() => {
+    if (!isMobileNavMounted) {
+      return
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeMobileNav()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isMobileNavMounted])
 
   useLayoutEffect(() => {
     hydratePortalEnvironmentForUser(authUser?.merchantId ?? null)
@@ -268,101 +223,78 @@ export function DashboardLayout() {
       <div className="grid h-full lg:grid-cols-[var(--sidebar-width)_1fr]">
         <aside className="hidden h-full w-(--sidebar-width) shrink-0 flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) lg:flex">
           <header className="flex shrink-0 items-center border-b border-(--sidebar-border) bg-(--sidebar-bg) px-3 py-2.5">
-            <Link
-              to="/dashboard"
-              aria-label="Go to dashboard home"
-              className="inline-flex w-full max-w-full shrink-0 items-center justify-center rounded-md bg-[#0F0700] px-2.5 py-2 shadow-[0_2px_6px_rgba(15,7,0,0.18)] ring-1 ring-[#0F0700]/40 outline-none transition hover:bg-[#1a1208] focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg)"
-            >
-              <img
-                src="/TRENSACTY-LOGO-IVORY-DUST.png"
-                alt="Transacty"
-                width={220}
-                height={48}
-                className="h-7 w-auto max-w-[130px] object-contain object-center"
-                decoding="async"
-              />
-            </Link>
+            <DashboardSidebarLogo />
           </header>
+          <DashboardSidebarNav
+            pathname={pathname}
+            portalEnvironment={portalEnvironment}
+            onRequestEnvironment={requestPortalEnvironment}
+            isKycVerified={isKycVerified}
+            onLogout={() => void handleLogout()}
+            isLoggingOut={isLoggingOut}
+          />
+        </aside>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5 py-4">
-            <nav className="space-y-5">
-              {menuSections.map((section) => (
-                <div key={section.title} className="space-y-1">
-                  <p className="px-2 [font-family:var(--font-body)] text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
-                    {section.title}
-                  </p>
-                  <div className="space-y-1.5">
-                    {section.items.map((item) => {
-                      const isActive = isSidebarItemActive(item.to, pathname)
-                      return (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          activeOptions={{ exact: item.to === '/dashboard' }}
-                          className={`${sidebarNavLinkClass} ${
-                            isActive
-                              ? sidebarNavLinkActiveClass
-                              : sidebarNavLinkInactiveClass
-                          }`}
-                        >
-                          {isActive ? (
-                            <span
-                              className="sidebar-nav-accent absolute top-1/2 -left-3 h-[70%] w-[3px] -translate-y-1/2 rounded-r-sm bg-(--sidebar-nav-accent)"
-                              aria-hidden
-                            />
-                          ) : null}
-                          <span
-                            aria-hidden
-                            className="inline-flex size-4 shrink-0 items-center justify-center text-inherit"
-                          >
-                            <SidebarItemIcon to={item.to} active={isActive} />
-                          </span>
-                          <span>{item.label}</span>
-                        </Link>
-                      )
-                    })}
-                  </div>
+        {isMobileNavMounted ? (
+          <div className="fixed inset-0 z-[60] lg:hidden" role="presentation">
+            <button
+              type="button"
+              className={`dashboard-mobile-nav-scrim absolute inset-0 ${
+                isMobileNavClosing
+                  ? 'dashboard-mobile-nav-scrim--out'
+                  : 'dashboard-mobile-nav-scrim--in'
+              }`}
+              aria-label="Close navigation menu"
+              onClick={closeMobileNav}
+            />
+            <aside
+              id="dashboard-mobile-nav"
+              className={`absolute inset-y-0 left-0 flex h-full w-(--sidebar-width) max-w-[min(100vw-3rem,var(--sidebar-width))] flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) shadow-[4px_0_24px_rgba(15,7,0,0.12)] will-change-transform ${
+                isMobileNavClosing
+                  ? 'dashboard-mobile-nav--out'
+                  : 'dashboard-mobile-nav--in'
+              }`}
+              aria-label="Main navigation"
+              aria-hidden={isMobileNavClosing}
+            >
+              <header className="flex shrink-0 items-center gap-2 border-b border-(--sidebar-border) bg-(--sidebar-bg) px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <DashboardSidebarLogo />
                 </div>
-              ))}
-            </nav>
-
-            <div className="mt-auto flex flex-col gap-2.5 pt-5">
-              <PortalEnvironmentSegmentedControl
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-(--sidebar-border) bg-(--color-card) text-(--color-foreground) transition hover:bg-(--sidebar-segment-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent)/40"
+                  onClick={closeMobileNav}
+                  aria-label="Close navigation menu"
+                >
+                  <MobileNavCloseIcon />
+                </button>
+              </header>
+              <DashboardSidebarNav
+                pathname={pathname}
                 portalEnvironment={portalEnvironment}
                 onRequestEnvironment={requestPortalEnvironment}
                 isKycVerified={isKycVerified}
+                onLogout={() => void handleLogout()}
+                isLoggingOut={isLoggingOut}
+                onNavigate={closeMobileNav}
+                reserveTestBannerSpace
               />
-              <Button
-                variant="ghost"
-                className="h-[38px]! min-h-0! w-full rounded-lg border border-(--sidebar-border) bg-(--color-card) px-3 text-[11.5px]! text-(--sidebar-link)! hover:border-(--color-accent) hover:bg-(--sidebar-segment-hover) hover:text-(--sidebar-link-active)!"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-(--sidebar-link)/35 border-t-(--sidebar-link-active)" />
-                    Logging out...
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5">
-                    <LogoutIcon />
-                    Logout
-                  </span>
-                )}
-              </Button>
-            </div>
+            </aside>
           </div>
-        </aside>
+        ) : null}
 
         <main className="flex h-full min-h-0 flex-col overflow-hidden bg-(--dashboard-main-bg)">
           <DashboardOutletHeader
             authUser={authUser}
             profile={profileQuery.data}
             isProfilePending={profileQuery.isPending && Boolean(authUser)}
+            isMobileNavOpen={isMobileNavOpen}
+            onOpenMobileNav={openMobileNav}
           />
 
           <div
-            className={`min-h-0 flex-1 overflow-y-auto p-4 md:p-5 ${portalEnvironment === 'test' ? 'pb-24' : ''}`}
+            className={`min-h-0 flex-1 overflow-y-auto p-4 md:p-5 ${portalEnvironment === 'test' ? 'pb-32' : ''}`}
           >
           {showKycPendingBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
@@ -416,7 +348,7 @@ export function DashboardLayout() {
         />
       ) : null}
 
-      {portalEnvironment === 'test' ? <TestModeBanner /> : null}
+      {portalEnvironment === 'test' && !isMobileNavMounted ? <TestModeBanner /> : null}
 
       <Dialog
         isOpen={isInactivityLogoutWarningOpen}

@@ -6,11 +6,11 @@ import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
-import { useTransactionsListQuery } from '../hooks/useTransactionsQueries.ts'
 import {
   findBalanceWalletItem,
   getWalletDisplayLabel,
 } from '../utils/balanceWalletUtils.ts'
+import { resolveWalletTransactionRail } from '../utils/transactionRailUtils.ts'
 
 const outlineBtn = 'dash-btn-outline'
 
@@ -24,13 +24,9 @@ export function DashboardWalletPage() {
   )
 
   const balanceQuery = useBalanceQuery(true)
-  const transactionsQuery = useTransactionsListQuery({
-    limit: 50,
-    offset: 0,
-  })
-
   const wallets = balanceQuery.data?.items ?? null
   const activeWallet = findBalanceWalletItem(balanceQuery.data, walletId) ?? null
+  const walletRail = resolveWalletTransactionRail(activeWallet)
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
@@ -113,7 +109,8 @@ export function DashboardWalletPage() {
 
       <WalletActivityTable
         currency={activeWallet.currency}
-        transactionsQuery={transactionsQuery}
+        walletLabel={getWalletDisplayLabel(activeWallet)}
+        walletRail={walletRail}
       />
     </section>
   )

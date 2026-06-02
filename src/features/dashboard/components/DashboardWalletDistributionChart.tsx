@@ -37,7 +37,10 @@ export function DashboardWalletDistributionChart() {
   )
 
   return (
-    <section className="dashboard-card flex min-w-0 flex-col" aria-label="Wallet balance distribution">
+    <section
+      className="dashboard-card hidden min-w-0 flex-col lg:flex"
+      aria-label="Wallet balance distribution"
+    >
       <div className="dashboard-card-head dashboard-card-head--compact">
         <div>
           <h2 className="dashboard-section-title">Wallet distribution</h2>

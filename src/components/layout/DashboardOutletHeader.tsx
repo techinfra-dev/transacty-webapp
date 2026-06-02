@@ -43,16 +43,36 @@ function resolveMerchantLabel(
   return 'Merchant'
 }
 
+function MobileNavMenuIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  )
+}
+
 interface DashboardOutletHeaderProps {
   authUser: AuthSessionUser | null
   profile: ProfileResponse | undefined
   isProfilePending: boolean
+  isMobileNavOpen: boolean
+  onOpenMobileNav: () => void
 }
 
 export function DashboardOutletHeader({
   authUser,
   profile,
   isProfilePending,
+  isMobileNavOpen,
+  onOpenMobileNav,
 }: DashboardOutletHeaderProps) {
   const merchantName = resolveMerchantLabel(authUser, profile, isProfilePending)
   const email = profile?.email ?? authUser?.email ?? ''
@@ -61,7 +81,18 @@ export function DashboardOutletHeader({
 
   return (
     <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 border-b border-(--sidebar-border) bg-(--sidebar-bg) px-4 py-2.5 md:px-5">
-      <div className="min-w-0 flex-1" aria-hidden />
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <button
+          type="button"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-(--sidebar-border) bg-(--color-card) text-(--color-foreground) transition hover:bg-(--dashboard-main-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 lg:hidden"
+          onClick={onOpenMobileNav}
+          aria-label="Open navigation menu"
+          aria-expanded={isMobileNavOpen}
+          aria-controls="dashboard-mobile-nav"
+        >
+          <MobileNavMenuIcon />
+        </button>
+      </div>
 
       <div className="flex shrink-0 items-center gap-2">
         <ThemeToggle />

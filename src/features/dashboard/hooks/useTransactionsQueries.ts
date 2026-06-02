@@ -9,23 +9,48 @@ import {
 import type {
   CreateRefundPayload,
   CreateTransferPayload,
+  TransactionRailApi,
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
 
-export function useTransactionsListQuery(params: {
-  type?: TransactionType
-  status?: TransactionStatus
-  customerId?: string
-  limit: number
-  offset: number
-}) {
+export function useTransactionsListQuery(
+  params: {
+    type?: TransactionType
+    status?: TransactionStatus
+    customerId?: string
+    rail?: TransactionRailApi
+    limit: number
+    offset: number
+  },
+  options?: { enabled?: boolean },
+) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
 
+  const { type, status, customerId, rail, limit, offset } = params
+
   return useQuery({
-    queryKey: ['transactions-list', environment, params],
-    queryFn: () => listTransactions({ ...params, environment }),
-    placeholderData: (previousData) => previousData,
+    queryKey: [
+      'transactions-list',
+      environment,
+      limit,
+      offset,
+      type ?? null,
+      status ?? null,
+      customerId ?? null,
+      rail ?? null,
+    ],
+    queryFn: () =>
+      listTransactions({
+        environment,
+        type,
+        status,
+        customerId,
+        rail,
+        limit,
+        offset,
+      }),
+    enabled: options?.enabled ?? true,
   })
 }
 

@@ -1,4 +1,6 @@
 import { transactionMethodOptions } from './transactionConstants.ts'
+import { transactionRailFilterOptions } from '../../utils/transactionRailUtils.ts'
+import type { TransactionRailFilter } from '../../services/transactionsSchemas.ts'
 import { TransactionDateFilterDialog } from './TransactionDateFilterDialog.tsx'
 
 function SearchIcon() {
@@ -79,6 +81,8 @@ type TransactionsPageHeaderProps = {
   onQueryChange: (value: string) => void
   customerIdFilter: string
   onCustomerIdFilterChange: (value: string) => void
+  selectedRail: TransactionRailFilter
+  onSelectedRailChange: (value: TransactionRailFilter) => void
   selectedMethod: string
   onSelectedMethodChange: (value: string) => void
   totalItems: number
@@ -99,6 +103,8 @@ export function TransactionsPageHeader({
   onQueryChange,
   customerIdFilter,
   onCustomerIdFilterChange,
+  selectedRail,
+  onSelectedRailChange,
   selectedMethod,
   onSelectedMethodChange,
   totalItems,
@@ -147,7 +153,7 @@ export function TransactionsPageHeader({
         </div>
       </header>
 
-      <div className="tx-history-filter-bar tx-history-filter-bar--three">
+      <div className="tx-history-filter-bar">
         <label className="tx-history-field">
           <SearchIcon />
           <input
@@ -164,6 +170,22 @@ export function TransactionsPageHeader({
             value={customerIdFilter}
             onChange={(event) => onCustomerIdFilterChange(event.target.value)}
           />
+        </label>
+        <label className="tx-history-field tx-history-field-select">
+          <select
+            aria-label="Filter transactions by rail"
+            value={selectedRail}
+            onChange={(event) =>
+              onSelectedRailChange(event.target.value as TransactionRailFilter)
+            }
+          >
+            {transactionRailFilterOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <SelectChevron />
         </label>
         <label className="tx-history-field tx-history-field-select">
           <select

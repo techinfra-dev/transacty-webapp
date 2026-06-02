@@ -1,6 +1,4 @@
-import {
-  transactionPageSizeOptions,
-} from './transactionConstants.ts'
+import { transactionPageSizeOptions } from './transactionConstants.ts'
 
 function ChevronLeftIcon() {
   return (
@@ -38,24 +36,6 @@ function ChevronRightIcon() {
   )
 }
 
-function ChevronDownIcon() {
-  return (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
 type TransactionsFooterProps = {
   startItem: number
   endItem: number
@@ -64,6 +44,7 @@ type TransactionsFooterProps = {
   currentPage: number
   totalPages: number
   isPending: boolean
+  isFetching?: boolean
   isLiveEnvironment: boolean
   onPageSizeChange: (value: number) => void
   onPreviousPage: () => void
@@ -78,11 +59,14 @@ export function TransactionsFooter({
   currentPage,
   totalPages,
   isPending,
+  isFetching = false,
   isLiveEnvironment,
   onPageSizeChange,
   onPreviousPage,
   onNextPage,
 }: TransactionsFooterProps) {
+  const pagerBusy = isPending || isFetching
+
   return (
     <footer className="tx-history-foot">
       <p className="tx-history-foot-info">
@@ -102,12 +86,18 @@ export function TransactionsFooter({
 
       <div className="tx-history-foot-spacer" />
 
-      <label className="tx-history-page-size">
+      <div className="tx-history-page-size-wrap">
         <select
+          className="tx-history-page-size-select"
           aria-label="Select transactions per page"
           value={String(pageSize)}
-          disabled={isPending}
-          onChange={(event) => onPageSizeChange(Number(event.target.value))}
+          disabled={totalItems === 0}
+          onChange={(event) => {
+            const next = Number(event.target.value)
+            if (Number.isFinite(next) && next > 0) {
+              onPageSizeChange(next)
+            }
+          }}
         >
           {transactionPageSizeOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -115,15 +105,14 @@ export function TransactionsFooter({
             </option>
           ))}
         </select>
-        <span>per page</span>
-        <ChevronDownIcon />
-      </label>
+        <span className="tx-history-page-size-suffix">per page</span>
+      </div>
 
       <div className="tx-history-pager">
         <button
           type="button"
           className="tx-history-pager-btn"
-          disabled={currentPage <= 1 || isPending}
+          disabled={currentPage <= 1 || pagerBusy}
           onClick={onPreviousPage}
         >
           <ChevronLeftIcon />
@@ -135,7 +124,7 @@ export function TransactionsFooter({
         <button
           type="button"
           className="tx-history-pager-btn"
-          disabled={currentPage >= totalPages || isPending}
+          disabled={currentPage >= totalPages || pagerBusy}
           onClick={onNextPage}
         >
           Next

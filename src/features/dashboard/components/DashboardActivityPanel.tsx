@@ -104,7 +104,7 @@ export function DashboardActivityPanel() {
 
       <div
         key={statusFilter}
-        className="dashboard-activity-table-panel dashboard-table-wrap min-w-0"
+        className="dashboard-transactions-table-panel dashboard-activity-table-panel dashboard-table-wrap min-w-0"
       >
         <DashboardTransactionsTable
           transactionsQuery={transactionsQuery}

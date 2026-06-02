@@ -7,6 +7,7 @@ import type {
 const RAIL_CURRENCY: Record<string, string> = {
   india: 'INR',
   bangladesh: 'BDT',
+  europe: 'EUR',
 }
 
 /** Prefer payment rail (India / Bangladesh) over optional API currency field. */
