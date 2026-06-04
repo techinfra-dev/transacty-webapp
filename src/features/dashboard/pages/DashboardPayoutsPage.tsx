@@ -39,8 +39,8 @@ export function DashboardPayoutsPage() {
                 <div className="payout-panel">
                   <PayoutWalletStep
                     wallets={flow.wallets}
-                    isLoading={flow.walletsQuery.isLoading}
-                    isError={flow.walletsQuery.isError}
+                    isLoading={flow.balanceQuery.isLoading}
+                    isError={flow.balanceQuery.isError}
                     selectedWalletId={flow.selectedWalletId}
                     onSelectWallet={(walletId) => {
                       flow.setSelectedWalletId(walletId)

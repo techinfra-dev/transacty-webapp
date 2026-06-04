@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
-import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
+import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { getActivatedWallets } from '../utils/balanceWalletUtils.ts'
 import { formatWalletMoney } from '../utils/walletFormatters.ts'
 import {
   buildDonutArcSegments,
@@ -20,8 +21,8 @@ export function DashboardWalletDistributionChart() {
   const areBalancesHidden = useUiPreferencesStore(
     (state) => state.areBalancesHidden,
   )
-  const walletsQuery = useMerchantWalletsQuery(true)
-  const wallets = walletsQuery.data?.items ?? []
+  const walletsQuery = useBalanceQuery(true)
+  const wallets = getActivatedWallets(walletsQuery.data)
 
   const slices = useMemo(
     () => buildWalletDistributionSlices(wallets),

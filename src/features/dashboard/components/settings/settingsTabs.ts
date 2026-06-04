@@ -1,6 +1,7 @@
 export type SettingsTabId =
   | 'profile'
   | 'security'
+  | 'markets'
   | 'business-preference'
   | 'settlement-accounts'
   | 'team'
@@ -17,6 +18,7 @@ export interface SettingsTab {
 export const accountTabs: SettingsTab[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'security', label: 'Security' },
+  { id: 'markets', label: 'Markets' },
   { id: 'team', label: 'Directors' },
   { id: 'whitelisted-ip-addresses', label: 'Whitelisted IP addresses' },
 ]
@@ -39,6 +41,11 @@ export const tabContent: Record<
     title: 'Security',
     description:
       'Protect your account with multi-factor authentication enrollment and verification controls.',
+  },
+  markets: {
+    title: 'Markets',
+    description:
+      'Request and manage payment market entitlements for Bangladesh, India, and Europe.',
   },
   'business-preference': {
     title: 'Business preference',

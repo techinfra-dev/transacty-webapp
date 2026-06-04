@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import {
+  marketEntitlementStatusSchema,
+  marketKybStatusSchema,
+  merchantMarketSchema,
+  walletActivationStatusSchema,
+} from './marketSchemas.ts'
 import { portalEnvironmentResponseSchema } from './walletsSchemas.ts'
 
 export const balanceLimitsSchema = z.object({
@@ -23,10 +29,15 @@ export const balanceWalletItemSchema = z.object({
   displayLabel: z.string().nullish(),
   region: z.string().nullish(),
   regionLabel: z.string().nullish(),
-  lastUpdated: z.string(),
-  updatedAt: z.string(),
-  createdAt: z.string(),
+  lastUpdated: z.string().nullish(),
+  updatedAt: z.string().nullish(),
+  createdAt: z.string().nullish(),
   limits: balanceLimitsSchema,
+  market: merchantMarketSchema.or(z.literal('other')).nullish(),
+  entitlementStatus: marketEntitlementStatusSchema.nullish(),
+  kybStatus: marketKybStatusSchema.nullish(),
+  activationStatus: walletActivationStatusSchema.nullish(),
+  walletActivated: z.boolean().nullish(),
 })
 
 export const balanceResponseSchema = z.object({
@@ -34,7 +45,7 @@ export const balanceResponseSchema = z.object({
   availableBalance: z.string(),
   pendingBalance: z.string(),
   currency: z.string().min(1),
-  lastUpdated: z.string().min(1),
+  lastUpdated: z.string().nullish(),
   limits: balanceLimitsSchema,
   environment: portalEnvironmentResponseSchema,
   items: z.array(balanceWalletItemSchema),

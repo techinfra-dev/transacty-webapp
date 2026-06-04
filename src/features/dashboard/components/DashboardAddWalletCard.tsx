@@ -1,11 +1,16 @@
-export function DashboardAddWalletCard() {
+interface DashboardAddWalletCardProps {
+  onClick?: () => void
+}
+
+export function DashboardAddWalletCard({ onClick }: DashboardAddWalletCardProps) {
   return (
     <button
       type="button"
       onClick={(event) => {
         event.preventDefault()
+        onClick?.()
       }}
-      aria-label="Add wallet — create another merchant pocket"
+      aria-label="Add wallet — activate another merchant pocket"
       className="dashboard-add-wallet"
     >
       <span className="dashboard-add-wallet-icon">

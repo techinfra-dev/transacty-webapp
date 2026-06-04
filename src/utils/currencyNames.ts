@@ -2,6 +2,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   BDT: '৳',
   INR: '₹',
   USD: '$',
+  USDT: '$',
+  USDC: '$',
   EUR: '€',
   GBP: '£',
 }
@@ -49,6 +51,29 @@ export function getCurrencySymbol(code: string): string | undefined {
   const normalized = code.trim().toUpperCase()
   if (!normalized) return undefined
   return CURRENCY_SYMBOLS[normalized]
+}
+
+/** Settlement list for market cards (e.g. INR, USDT → ₹, $). */
+export function formatSettlementCurrenciesLabel(currencies: string[]) {
+  return currencies
+    .map((code) => {
+      const normalized = code.trim().toUpperCase()
+      return getCurrencySymbol(normalized) ?? normalized
+    })
+    .join(', ')
+}
+
+/** Icon glyph for a market row — prefers $ for dollar-pegged settlement currencies. */
+export function getMarketSettlementIcon(currencies: string[]) {
+  const dollarCode = currencies.find((code) => {
+    const normalized = code.trim().toUpperCase()
+    return normalized === 'USDT' || normalized === 'USDC' || normalized === 'USD'
+  })
+  if (dollarCode) {
+    return getCurrencySymbol(dollarCode) ?? '$'
+  }
+  const first = currencies[0]?.trim().toUpperCase() ?? ''
+  return getCurrencySymbol(first) ?? first.slice(0, 1)
 }
 
 /** Full currency name for UI labels (e.g. BDT → Bangladeshi Taka). */

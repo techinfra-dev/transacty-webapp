@@ -726,17 +726,17 @@ export function KycActivationModal({
                     }
                   />
                 </label>
-                <label className="space-y-1">
+                <label className="space-y-1 sm:col-span-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
                     Contact phone *
                   </span>
-                  <div className="grid gap-2 sm:grid-cols-[200px_1fr]">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
                     <DropdownSelect
                       options={phoneCodeDropdownOptions}
                       value={selectedPhoneCode}
                       onChange={setSelectedPhoneCode}
                       ariaLabel="Phone country code"
-                      className="w-full"
+                      className="w-full sm:w-48 sm:shrink-0"
                     />
                     <Input
                       value={businessForm.contactPhone}
@@ -757,8 +757,8 @@ export function KycActivationModal({
                       placeholder="Phone number"
                       className={
                         businessFieldErrors.contactPhone
-                          ? requiredInputErrorClassName
-                          : undefined
+                          ? `min-w-0 flex-1 ${requiredInputErrorClassName}`
+                          : 'min-w-0 flex-1'
                       }
                     />
                   </div>

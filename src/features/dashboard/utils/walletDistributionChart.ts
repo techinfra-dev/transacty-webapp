@@ -1,4 +1,4 @@
-import type { MerchantWalletItem } from '../services/walletsSchemas.ts'
+import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
 
 export const WALLET_DISTRIBUTION_COLORS = [
   '#06261B',
@@ -19,7 +19,7 @@ export type WalletDistributionSlice = {
 }
 
 export function buildWalletDistributionSlices(
-  wallets: MerchantWalletItem[],
+  wallets: BalanceWalletItem[],
 ): WalletDistributionSlice[] {
   const active = wallets.filter((w) => {
     const balance = Number(w.balance)

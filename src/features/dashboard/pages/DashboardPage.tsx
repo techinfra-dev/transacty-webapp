@@ -1,13 +1,20 @@
+import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { DashboardActivityPanel } from '../components/DashboardActivityPanel.tsx'
 import { DashboardWalletDistributionChart } from '../components/DashboardWalletDistributionChart.tsx'
 import { DashboardAddWalletCard } from '../components/DashboardAddWalletCard.tsx'
+import { AddWalletDialog } from '../components/AddWalletDialog.tsx'
 import { DashboardWalletCard } from '../components/DashboardWalletCard.tsx'
 import { DashboardWalletsSkeleton } from '../components/DashboardWalletsSkeleton.tsx'
-import { useMerchantWalletsQuery } from '../hooks/useMerchantWalletsQuery.ts'
+import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { useMarketsQuery } from '../hooks/useMarketsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
+import {
+  getActivatedWallets,
+  getCatalogWallets,
+} from '../utils/balanceWalletUtils.ts'
 
 function MerchantKycBadge({
   kycStatus,
@@ -45,10 +52,16 @@ export function DashboardPage() {
   const toggleBalancesVisibility = useUiPreferencesStore(
     (state) => state.toggleBalancesVisibility,
   )
-  const walletsQuery = useMerchantWalletsQuery(true)
+  const walletsQuery = useBalanceQuery(true)
+  const marketsQuery = useMarketsQuery(true)
   const profileQuery = useProfileQuery(true)
+  const [isAddWalletOpen, setIsAddWalletOpen] = useState(false)
 
-  const wallets = walletsQuery.data?.items ?? null
+  const wallets = walletsQuery.data
+    ? getActivatedWallets(walletsQuery.data)
+    : null
+  const catalog = getCatalogWallets(walletsQuery.data)
+  const markets = marketsQuery.data ?? []
 
   const outlineBtn = 'dash-btn-outline'
 
@@ -120,12 +133,6 @@ export function DashboardPage() {
             Unable to load merchant wallets right now.
           </p>
         </section>
-      ) : wallets.length === 0 ? (
-        <section className="dashboard-card p-4">
-          <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
-            No active merchant wallets for this environment.
-          </p>
-        </section>
       ) : (
         <section className="dashboard-wallets-grid">
           {wallets.map((wallet) => {
@@ -142,7 +149,7 @@ export function DashboardPage() {
               />
             )
           })}
-          <DashboardAddWalletCard />
+          <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
         </section>
       )}
 
@@ -150,6 +157,13 @@ export function DashboardPage() {
         <DashboardActivityPanel />
         <DashboardWalletDistributionChart />
       </section>
+
+      <AddWalletDialog
+        isOpen={isAddWalletOpen}
+        onClose={() => setIsAddWalletOpen(false)}
+        markets={markets}
+        catalog={catalog}
+      />
     </>
   )
 }

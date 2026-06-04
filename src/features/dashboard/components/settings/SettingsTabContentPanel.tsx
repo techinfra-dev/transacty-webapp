@@ -4,6 +4,7 @@ import { ProfileSettingsContent } from './ProfileSettingsContent.tsx'
 import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
 import { WebhooksSettingsContent } from './WebhooksSettingsContent.tsx'
+import { MarketsSettingsContent } from './MarketsSettingsContent.tsx'
 
 interface SettingsTabContentPanelProps {
   activeTab: SettingsTabId
@@ -33,9 +34,11 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       {activeTab === 'team' ? <TeamSettingsContent /> : null}
       {activeTab === 'api-keys' ? <ApiKeysSettingsContent /> : null}
       {activeTab === 'webhooks' ? <WebhooksSettingsContent /> : null}
+      {activeTab === 'markets' ? <MarketsSettingsContent /> : null}
 
       {activeTab !== 'profile' &&
       activeTab !== 'security' &&
+      activeTab !== 'markets' &&
       activeTab !== 'team' &&
       activeTab !== 'api-keys' &&
       activeTab !== 'webhooks' ? (

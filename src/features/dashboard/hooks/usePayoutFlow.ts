@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { useBalanceQuery } from './useBalanceQuery.ts'
-import { useMerchantWalletsQuery } from './useMerchantWalletsQuery.ts'
+import { getActivatedWallets } from '../utils/balanceWalletUtils.ts'
 import { useCreatePayoutMutation } from './usePayoutMutations.ts'
 import {
   createPayoutPayloadSchema,
@@ -25,33 +25,29 @@ export function usePayoutFlow() {
 
   const createPayoutMutation = useCreatePayoutMutation()
   const balanceQuery = useBalanceQuery(true)
-  const walletsQuery = useMerchantWalletsQuery(true)
 
-  const wallets = walletsQuery.data?.items ?? []
+  const wallets = useMemo(
+    () => getActivatedWallets(balanceQuery.data),
+    [balanceQuery.data],
+  )
+
   const selectedWallet = useMemo(
     () => wallets.find((wallet) => wallet.id === selectedWalletId) ?? null,
     [wallets, selectedWalletId],
   )
 
-  const selectedBalanceItem = useMemo(
-    () =>
-      balanceQuery.data?.items.find((item) => item.id === selectedWalletId) ??
-      null,
-    [balanceQuery.data?.items, selectedWalletId],
-  )
-
   const currency = selectedWallet?.currency.trim().toUpperCase() ?? ''
   const walletBalance = useMemo(() => {
-    if (!selectedBalanceItem) {
+    if (!selectedWallet) {
       return null
     }
     const amount = Number(
-      selectedBalanceItem.availableBalance ?? selectedBalanceItem.balance,
+      selectedWallet.availableBalance ?? selectedWallet.balance,
     )
     return Number.isFinite(amount) ? amount : 0
-  }, [selectedBalanceItem])
+  }, [selectedWallet])
 
-  const payoutLimits = selectedBalanceItem?.limits.payout
+  const payoutLimits = selectedWallet?.limits.payout
 
   const effectiveMinimumAmount = Math.max(
     minimumPayoutAmount,
@@ -274,7 +270,7 @@ export function usePayoutFlow() {
     payload,
     setPayload,
     createPayoutMutation,
-    walletsQuery,
+    balanceQuery,
     wallets,
     selectedWalletId,
     setSelectedWalletId,

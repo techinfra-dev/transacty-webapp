@@ -1,18 +1,18 @@
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
-import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
+import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 
 type PayoutWalletStepProps = {
-  wallets: MerchantWalletItem[] | undefined
+  wallets: BalanceWalletItem[] | undefined
   isLoading: boolean
   isError: boolean
   selectedWalletId: string | null
   onSelectWallet: (walletId: string) => void
 }
 
-function walletSubtitle(wallet: MerchantWalletItem) {
+function walletSubtitle(wallet: BalanceWalletItem) {
   if (wallet.displayLabel?.trim() || wallet.regionLabel?.trim() || wallet.label?.trim()) {
     return getWalletDisplayLabel(wallet)
   }

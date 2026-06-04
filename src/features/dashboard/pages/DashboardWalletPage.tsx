@@ -7,7 +7,7 @@ import { WalletActivityTable } from '../components/wallet/WalletActivityTable.ts
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
 import {
-  findBalanceWalletItem,
+  getActivatedWallets,
   getWalletDisplayLabel,
 } from '../utils/balanceWalletUtils.ts'
 import { resolveWalletTransactionRail } from '../utils/transactionRailUtils.ts'
@@ -24,8 +24,9 @@ export function DashboardWalletPage() {
   )
 
   const balanceQuery = useBalanceQuery(true)
-  const wallets = balanceQuery.data?.items ?? null
-  const activeWallet = findBalanceWalletItem(balanceQuery.data, walletId) ?? null
+  const wallets = balanceQuery.data ? getActivatedWallets(balanceQuery.data) : null
+  const activeWallet =
+    wallets?.find((wallet) => wallet.id === walletId) ?? null
   const walletRail = resolveWalletTransactionRail(activeWallet)
 
   const pageSubtitle = useMemo(() => {

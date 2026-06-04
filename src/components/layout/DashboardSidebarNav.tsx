@@ -219,14 +219,14 @@ export function DashboardSidebarLogo() {
     <Link
       to="/dashboard"
       aria-label="Go to dashboard home"
-      className="inline-flex w-full max-w-full shrink-0 items-center justify-center rounded-md bg-[#0F0700] px-2.5 py-2 shadow-[0_2px_6px_rgba(15,7,0,0.18)] ring-1 ring-[#0F0700]/40 outline-none transition hover:bg-[#1a1208] focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg)"
+      className="inline-flex w-full max-w-full shrink-0 items-center justify-center rounded-md py-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg)"
     >
       <img
-        src="/TRENSACTY-LOGO-IVORY-DUST.png"
+        src="/TRANSACTY-LOGO-OBSIDIAN-BROWN.png"
         alt="Transacty"
         width={220}
         height={48}
-        className="h-7 w-auto max-w-[130px] object-contain object-center"
+        className="h-10 w-auto max-w-[168px] object-contain object-center"
         decoding="async"
       />
     </Link>

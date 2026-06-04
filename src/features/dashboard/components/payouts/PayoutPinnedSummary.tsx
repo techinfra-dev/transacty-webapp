@@ -1,12 +1,12 @@
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
-import type { MerchantWalletItem } from '../../services/walletsSchemas.ts'
+import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import { PayoutSummarySkeleton } from './PayoutSummarySkeleton.tsx'
 
 interface PayoutPinnedSummaryProps {
   environment: PortalEnvironment
-  selectedWallet: MerchantWalletItem | null
+  selectedWallet: BalanceWalletItem | null
   formattedWalletBalance: string
   payload: PayoutFormPayload
   formattedPreviewAmount: string
