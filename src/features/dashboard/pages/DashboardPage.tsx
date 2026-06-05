@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
@@ -13,6 +13,7 @@ import { useMarketsQuery } from '../hooks/useMarketsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 import {
   getActivatedWallets,
+  getAddWalletCatalogRows,
   getCatalogWallets,
 } from '../utils/balanceWalletUtils.ts'
 
@@ -62,6 +63,13 @@ export function DashboardPage() {
     : null
   const catalog = getCatalogWallets(walletsQuery.data)
   const markets = marketsQuery.data ?? []
+  const addableWallets = useMemo(() => {
+    if (!marketsQuery.data) {
+      return []
+    }
+    return getAddWalletCatalogRows(markets, catalog)
+  }, [markets, catalog, marketsQuery.data])
+  const canAddWallet = addableWallets.length > 0
 
   const outlineBtn = 'dash-btn-outline'
 
@@ -151,7 +159,9 @@ export function DashboardPage() {
               />
             )
           })}
-          <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
+          {canAddWallet ? (
+            <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
+          ) : null}
         </section>
       )}
 
