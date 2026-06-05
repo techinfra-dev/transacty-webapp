@@ -88,7 +88,7 @@ export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | nul
   return null
 }
 
-export type MarketWalletAction =
+export type CatalogWalletAction =
   | 'request_access'
   | 'pending_review'
   | 'complete_kyc'
@@ -96,51 +96,107 @@ export type MarketWalletAction =
   | 'provisioning'
   | 'none'
 
-export function getMarketWalletAction(
-  market: PortalMarketRow,
-  catalogItems: BalanceWalletItem[],
-): MarketWalletAction {
-  if (market.entitlementStatus === 'suspended') {
-    return 'suspended'
-  }
-  if (market.entitlementStatus === 'disabled') {
-    return 'request_access'
-  }
-  if (
-    market.entitlementStatus === 'requested' ||
-    market.entitlementStatus === 'kyb_in_review'
-  ) {
-    return 'pending_review'
-  }
-  if (market.entitlementStatus === 'approved' && market.kybStatus !== 'verified') {
-    return 'complete_kyc'
+export type MarketWalletAction = CatalogWalletAction
+
+function resolveMarketEntitlement(
+  wallet: BalanceWalletItem,
+  market: PortalMarketRow | undefined,
+) {
+  return market?.entitlementStatus ?? wallet.entitlementStatus ?? 'disabled'
+}
+
+function resolveMarketKyb(
+  wallet: BalanceWalletItem,
+  market: PortalMarketRow | undefined,
+) {
+  return market?.kybStatus ?? wallet.kybStatus ?? 'not_started'
+}
+
+export function getCatalogWalletAction(
+  wallet: BalanceWalletItem,
+  market: PortalMarketRow | undefined,
+): CatalogWalletAction {
+  if (isWalletActivated(wallet)) {
+    return 'none'
   }
 
-  const marketItems = catalogItems.filter(
-    (item) => getWalletMarket(item) === market.market,
-  )
-  const hasInactiveApproved = marketItems.some(
-    (item) =>
-      item.activationStatus === 'active' &&
-      !item.walletActivated &&
-      market.entitlementStatus === 'approved' &&
-      market.kybStatus === 'verified',
-  )
-  if (hasInactiveApproved) {
+  const entitlement = resolveMarketEntitlement(wallet, market)
+  const kyb = resolveMarketKyb(wallet, market)
+  const activationStatus = wallet.activationStatus ?? 'not_enabled'
+
+  if (entitlement === 'suspended' || activationStatus === 'suspended') {
+    return 'suspended'
+  }
+  if (entitlement === 'disabled' || activationStatus === 'not_enabled') {
+    return 'request_access'
+  }
+  if (entitlement === 'requested' || entitlement === 'kyb_in_review') {
+    return 'pending_review'
+  }
+  if (entitlement === 'approved' && kyb !== 'verified') {
+    return 'complete_kyc'
+  }
+  if (activationStatus === 'pending_kyb') {
+    return 'complete_kyc'
+  }
+  if (
+    entitlement === 'approved' &&
+    kyb === 'verified' &&
+    activationStatus === 'active'
+  ) {
     return 'provisioning'
   }
 
   return 'none'
 }
 
+export function getInactiveCatalogWallets(catalog: BalanceWalletItem[]) {
+  return catalog.filter((item) => !isWalletActivated(item))
+}
+
+export function getAddWalletCatalogRows(
+  markets: PortalMarketRow[],
+  catalog: BalanceWalletItem[],
+) {
+  const marketById = new Map(markets.map((row) => [row.market, row]))
+
+  return getInactiveCatalogWallets(catalog)
+    .map((wallet) => {
+      const marketKey = getWalletMarket(wallet)
+      const market = marketKey ? marketById.get(marketKey) : undefined
+      return {
+        wallet,
+        market,
+        action: getCatalogWalletAction(wallet, market),
+      }
+    })
+    .filter((row) => row.action !== 'none')
+}
+
+export function getMarketWalletAction(
+  market: PortalMarketRow,
+  catalogItems: BalanceWalletItem[],
+): CatalogWalletAction {
+  const inactiveInMarket = catalogItems.filter(
+    (item) =>
+      getWalletMarket(item) === market.market && !isWalletActivated(item),
+  )
+  if (inactiveInMarket.length === 0) {
+    return 'none'
+  }
+
+  const actions = inactiveInMarket.map((wallet) =>
+    getCatalogWalletAction(wallet, market),
+  )
+  if (actions.every((action) => action === 'none')) {
+    return 'none'
+  }
+  return actions.find((action) => action !== 'none') ?? 'none'
+}
+
 export function getMarketsWithWalletActions(
   markets: PortalMarketRow[],
   catalog: BalanceWalletItem[],
 ) {
-  return markets
-    .map((market) => ({
-      market,
-      action: getMarketWalletAction(market, catalog),
-    }))
-    .filter(({ action }) => action !== 'none')
+  return getAddWalletCatalogRows(markets, catalog)
 }

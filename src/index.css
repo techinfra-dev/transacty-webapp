@@ -1434,6 +1434,19 @@ body {
   border-radius: 4px;
 }
 
+.dashboard-wallet-code--europe {
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  color: #1e3a5f;
+  background: #e8eef5;
+  border: 1px solid #c8d8ea;
+}
+
+.dashboard-wallet--europe .dashboard-wallet-name {
+  color: var(--dash-fg);
+  font-weight: 500;
+}
+
 .dashboard-wallet-name {
   font-family: var(--font-body);
   font-size: 12px;

@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { getCurrencyFullName, getCurrencySymbol } from '../../../utils/currencyNames.ts'
+import { getMarketDisplayName } from '../utils/marketDisplayUtils.ts'
 import {
   formatWalletMoney,
   maskWalletMoney,
@@ -15,6 +16,8 @@ interface DashboardWalletCardProps {
   amount: number
   areBalancesHidden?: boolean
   statusLabel: string
+  market?: string | null
+  displayLabel?: string | null
   isSelected?: boolean
 }
 
@@ -32,11 +35,20 @@ export function DashboardWalletCard({
   amount,
   areBalancesHidden = false,
   statusLabel,
+  market,
+  displayLabel,
   isSelected = false,
 }: DashboardWalletCardProps) {
   const code = currency.trim().toUpperCase()
+  const normalizedMarket = (market ?? '').trim().toLowerCase()
+  const isEuropeMarket = normalizedMarket === 'europe'
   const symbol = getCurrencySymbol(code)
   const currencyName = getCurrencyFullName(code)
+  const walletTitle =
+    displayLabel?.trim() ||
+    (isEuropeMarket ? `${getMarketDisplayName('europe')} (${code})` : currencyName)
+  const badgeLabel = isEuropeMarket ? getMarketDisplayName('europe') : code
+  const footerNote = isEuropeMarket ? 'Europe merchant pocket' : 'Merchant pocket'
   const statusDisplay = formatWalletStatusLabel(statusLabel)
   const amountDisplay = areBalancesHidden
     ? '******'
@@ -49,13 +61,17 @@ export function DashboardWalletCard({
     <Link
       to="/dashboard/wallets/$walletId"
       params={{ walletId }}
-      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected' : ''}`}
+      className={`dashboard-wallet ${isEuropeMarket ? 'dashboard-wallet--europe' : ''} ${isSelected ? 'dashboard-wallet--selected' : ''}`}
       aria-current={isSelected ? 'page' : undefined}
-      aria-label={`${code} wallet, ${ariaLabel}`}
+      aria-label={`${walletTitle}, ${ariaLabel}`}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <span className="dashboard-wallet-code shrink-0">{code}</span>
-        <span className="dashboard-wallet-name truncate">{currencyName}</span>
+        <span
+          className={`dashboard-wallet-code shrink-0 ${isEuropeMarket ? 'dashboard-wallet-code--europe' : ''}`}
+        >
+          {badgeLabel}
+        </span>
+        <span className="dashboard-wallet-name truncate">{walletTitle}</span>
       </div>
 
       <div className="flex min-w-0 items-baseline gap-1.5">
@@ -76,7 +92,7 @@ export function DashboardWalletCard({
           <i aria-hidden />
           <span className="capitalize">{statusDisplay}</span>
         </span>
-        <span className="dashboard-wallet-footer-note">Merchant pocket</span>
+        <span className="dashboard-wallet-footer-note">{footerNote}</span>
       </div>
     </Link>
   )

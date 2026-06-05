@@ -5,10 +5,12 @@ import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../services/marketSchemas.ts'
 import { useRequestMarketMutation } from '../hooks/useRequestMarketMutation.ts'
 import {
-  getMarketWalletAction,
-  type MarketWalletAction,
+  getAddWalletCatalogRows,
+  getWalletDisplayLabel,
+  getWalletMarket,
+  type CatalogWalletAction,
 } from '../utils/balanceWalletUtils.ts'
-import { getMarketSettlementIcon } from '../../../utils/currencyNames.ts'
+import { getCurrencySymbol } from '../../../utils/currencyNames.ts'
 import {
   formatEntitlementStatusLabel,
   getMarketDisplayName,
@@ -21,27 +23,36 @@ interface AddWalletDialogProps {
   catalog: BalanceWalletItem[]
 }
 
-function MarketActionRow({
+function CatalogWalletActionRow({
+  wallet,
   market,
   action,
 }: {
-  market: PortalMarketRow
-  action: MarketWalletAction
+  wallet: BalanceWalletItem
+  market: PortalMarketRow | undefined
+  action: CatalogWalletAction
 }) {
   const requestMutation = useRequestMarketMutation()
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const [justRequested, setJustRequested] = useState(false)
 
-  const displayName = getMarketDisplayName(market.market)
-  const statusLabel = formatEntitlementStatusLabel(market.entitlementStatus)
-  const settlementLabel = market.settlementCurrencies.join(', ')
-  const iconGlyph = getMarketSettlementIcon(market.settlementCurrencies)
+  const code = wallet.currency.trim().toUpperCase()
+  const marketKey = getWalletMarket(wallet)
+  const marketName = marketKey ? getMarketDisplayName(marketKey) : ''
+  const title = getWalletDisplayLabel(wallet)
+  const iconGlyph = getCurrencySymbol(code) ?? code.slice(0, 1)
+  const entitlement =
+    market?.entitlementStatus ?? wallet.entitlementStatus ?? 'disabled'
+  const statusLabel = formatEntitlementStatusLabel(
+    entitlement as PortalMarketRow['entitlementStatus'],
+  )
+  const kybStatus = market?.kybStatus ?? wallet.kybStatus
 
   function handleRequestAccess() {
-    if (requestMutation.isPending) {
+    if (!marketKey || requestMutation.isPending) {
       return
     }
-    requestMutation.mutate(market.market, {
+    requestMutation.mutate(marketKey, {
       onSuccess: () => setJustRequested(true),
     })
   }
@@ -53,11 +64,16 @@ function MarketActionRow({
       </span>
 
       <div className="add-wallet-row-info">
-        <p className="add-wallet-row-title">{displayName}</p>
-        <p className="add-wallet-row-sub">{settlementLabel}</p>
+        <p className="add-wallet-row-title">{title}</p>
+        <p className="add-wallet-row-sub">
+          {code}
+          {marketName ? ` · ${marketName}` : ''}
+        </p>
         <p className="add-wallet-row-note">
           {statusLabel}
-          {market.kybStatus !== 'verified' ? ` · ${market.kybStatus.replace(/_/g, ' ')}` : ''}
+          {kybStatus && kybStatus !== 'verified'
+            ? ` · ${kybStatus.replace(/_/g, ' ')}`
+            : ''}
         </p>
         {requestMutation.isError ? (
           <p className="add-wallet-row-error">
@@ -70,14 +86,14 @@ function MarketActionRow({
 
       <div className="add-wallet-row-action">
         {action === 'request_access' ? (
-          justRequested || market.entitlementStatus !== 'disabled' ? (
+          justRequested || entitlement !== 'disabled' ? (
             <span className="add-wallet-row-pill">Requested</span>
           ) : (
             <button
               type="button"
               className="dash-btn-primary add-wallet-row-btn"
               onClick={handleRequestAccess}
-              disabled={requestMutation.isPending}
+              disabled={requestMutation.isPending || !marketKey}
               aria-busy={requestMutation.isPending}
               aria-label={
                 requestMutation.isPending
@@ -124,31 +140,27 @@ export function AddWalletDialog({
   markets,
   catalog,
 }: AddWalletDialogProps) {
-  const marketRows = markets
-    .map((market) => ({
-      market,
-      action: getMarketWalletAction(market, catalog),
-    }))
-    .filter(({ action }) => action !== 'none')
+  const walletRows = getAddWalletCatalogRows(markets, catalog)
 
   return (
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
       title="Add a wallet"
-      description="Request access to payment markets and settlement pockets for your account."
+      description="Activate additional settlement pockets for your payment markets."
       maxWidthClassName="max-w-xl"
     >
-      {marketRows.length === 0 ? (
+      {walletRows.length === 0 ? (
         <p className="add-wallet-empty">
-          All available markets are active. Contact support if you need another
-          region enabled.
+          All available wallets are active. Contact support if you need another
+          pocket enabled.
         </p>
       ) : (
         <ul className="add-wallet-list">
-          {marketRows.map(({ market, action }) => (
-            <MarketActionRow
-              key={market.market}
+          {walletRows.map(({ wallet, market, action }) => (
+            <CatalogWalletActionRow
+              key={wallet.id}
+              wallet={wallet}
               market={market}
               action={action}
             />
