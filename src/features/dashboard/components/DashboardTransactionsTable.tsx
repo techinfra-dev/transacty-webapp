@@ -9,9 +9,12 @@ import { TransactionMethodTag } from './transactions/TransactionMethodTag.tsx'
 import {
   formatTransactionMoney,
   getLedgerStatusPillClass,
-  getTransactionCurrency,
   toTitleCase,
 } from './transactions/transactionFormatters.ts'
+import {
+  getTransactionAmountColumnDisplay,
+  getTransactionPaidColumnDisplay,
+} from './transactions/transactionAmountUtils.ts'
 
 function truncateId(id: string) {
   if (id.length <= 12) return id
@@ -109,7 +112,8 @@ export function DashboardTransactionsTable({
             'Ledger'
           const customer = truncateText(customerRaw)
           const isFailed = activity.status === 'failed'
-          const currency = getTransactionCurrency(activity)
+          const amountColumn = getTransactionAmountColumnDisplay(activity)
+          const paidColumn = getTransactionPaidColumnDisplay(activity)
 
           return (
             <tr
@@ -140,7 +144,10 @@ export function DashboardTransactionsTable({
                     isFailed ? 'dashboard-amt-muted' : 'dashboard-cell-mono'
                   }
                 >
-                  {formatTransactionMoney(activity.amount, currency)}
+                  {formatTransactionMoney(
+                    amountColumn.value,
+                    amountColumn.currency,
+                  )}
                 </span>
               </td>
               <td className="num">
@@ -152,8 +159,8 @@ export function DashboardTransactionsTable({
                   }
                 >
                   {formatTransactionMoney(
-                    activity.paidAmount || activity.amount,
-                    currency,
+                    paidColumn.value,
+                    paidColumn.currency,
                   )}
                 </span>
               </td>

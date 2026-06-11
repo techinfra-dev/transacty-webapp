@@ -10,9 +10,12 @@ import {
   formatTransactionDateParts,
   formatTransactionMoney,
   getLedgerStatusPillClass,
-  getTransactionCurrency,
   toTitleCase,
 } from './transactionFormatters.ts'
+import {
+  getTransactionAmountColumnDisplay,
+  getTransactionPaidColumnDisplay,
+} from './transactionAmountUtils.ts'
 
 function OpenRowIcon() {
   return (
@@ -104,7 +107,8 @@ export function TransactionsHistoryTable({
             activity.customerWalletId ||
             '—'
           const isFailed = activity.status === 'failed'
-          const currency = getTransactionCurrency(activity)
+          const amountColumn = getTransactionAmountColumnDisplay(activity)
+          const paidColumn = getTransactionPaidColumnDisplay(activity)
           const { date, time } = formatTransactionDateParts(activity.createdAt)
           return (
             <tr
@@ -137,7 +141,10 @@ export function TransactionsHistoryTable({
               </td>
               <td className="num">
                 <span className={isFailed ? 'tx-history-amt tx-history-amt-mute' : 'tx-history-amt'}>
-                  {formatTransactionMoney(activity.amount, currency)}
+                  {formatTransactionMoney(
+                    amountColumn.value,
+                    amountColumn.currency,
+                  )}
                 </span>
               </td>
               <td className="num">
@@ -149,8 +156,8 @@ export function TransactionsHistoryTable({
                   }
                 >
                   {formatTransactionMoney(
-                    activity.paidAmount || activity.amount,
-                    currency,
+                    paidColumn.value,
+                    paidColumn.currency,
                   )}
                 </span>
               </td>

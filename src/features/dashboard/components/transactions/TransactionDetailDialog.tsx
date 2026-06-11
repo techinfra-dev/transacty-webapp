@@ -10,8 +10,11 @@ import type {
 } from '../../services/transactionsSchemas.ts'
 import { TransactionMethodTag } from './TransactionMethodTag.tsx'
 import {
+  getTransactionAmountDisplay,
+  getTransactionHeaderAmountDisplay,
+} from './transactionAmountUtils.ts'
+import {
   formatTransactionDateParts,
-  getTransactionCurrency,
   getLedgerStatusPillClass,
   toTitleCase,
 } from './transactionFormatters.ts'
@@ -102,11 +105,12 @@ function computeNetAmount(detail: TransactionDetail) {
   if (detail.status === 'failed') {
     return 0
   }
-  const paid = Number(detail.paidAmount ?? detail.amount)
-  const amount = Number(detail.amount)
+  const amounts = getTransactionAmountDisplay(detail)
+  const paid = Number(amounts.settlementAmount)
   if (Number.isFinite(paid)) {
     return paid
   }
+  const amount = Number(detail.amount)
   return Number.isFinite(amount) ? amount : 0
 }
 
@@ -176,7 +180,8 @@ function TransactionDetailBody({
   onClose: () => void
 }) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  const currency = getTransactionCurrency(detail)
+  const amounts = getTransactionAmountDisplay(detail)
+  const headerAmount = getTransactionHeaderAmountDisplay(detail)
   const created = formatTransactionDateParts(detail.createdAt)
   const net = computeNetAmount(detail)
 
@@ -195,7 +200,10 @@ function TransactionDetailBody({
       <header className="tx-detail-head">
         <div className="tx-detail-eyebrow">Transaction</div>
         <h2 className="tx-detail-title">
-          <FormattedMoney currency={currency} value={detail.amount} />
+          <FormattedMoney
+            currency={headerAmount.currency}
+            value={headerAmount.value}
+          />
         </h2>
         <div className="tx-detail-meta">
           <StatusPill status={detail.status} />
@@ -234,16 +242,34 @@ function TransactionDetailBody({
             <TransactionMethodTag transaction={detail} />
           </TxDetailRow>
           <TxDetailRow label="Amount" mono>
-            <FormattedMoney currency={currency} value={detail.amount} />
+            {amounts.isDualCurrency && amounts.localAmount && amounts.localCurrency ? (
+              <FormattedMoney
+                currency={amounts.localCurrency}
+                value={amounts.localAmount}
+              />
+            ) : (
+              <FormattedMoney
+                currency={amounts.settlementCurrency}
+                value={detail.amount}
+              />
+            )}
           </TxDetailRow>
-          <TxDetailRow label="Paid amount" mono dim>
+          <TxDetailRow label="Settled amount" mono dim>
             <FormattedMoney
-              currency={currency}
-              value={detail.paidAmount || detail.amount}
+              currency={amounts.settlementCurrency}
+              value={amounts.settlementAmount}
             />
           </TxDetailRow>
+          {amounts.conversionRate != null ? (
+            <TxDetailRow label="Conversion rate" mono dim>
+              {amounts.conversionRate.toLocaleString('en-US')}
+            </TxDetailRow>
+          ) : null}
           <TxDetailRow label="Net to balance" mono strong>
-            <FormattedMoney currency={currency} value={String(net)} />
+            <FormattedMoney
+              currency={amounts.settlementCurrency}
+              value={String(net)}
+            />
           </TxDetailRow>
           <TxDetailRow label="Status">
             <StatusPill status={detail.status} />
@@ -252,6 +278,11 @@ function TransactionDetailBody({
 
         <div className="tx-detail-sect">Customer</div>
         <div className="tx-detail-dlist">
+          {amounts.payerEmail ? (
+            <TxDetailRow label="Payer email" mono>
+              {amounts.payerEmail}
+            </TxDetailRow>
+          ) : null}
           <TxDetailRow label="Customer wallet" mono dim>
             {detail.customerWalletId || '—'}
           </TxDetailRow>
