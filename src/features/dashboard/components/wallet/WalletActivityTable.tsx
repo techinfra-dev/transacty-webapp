@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
 import { useTransactionsListQuery } from '../../hooks/useTransactionsQueries.ts'
 import type { TransactionRailApi } from '../../services/transactionsSchemas.ts'
-import { getTransactionCurrency } from '../transactions/transactionFormatters.ts'
+import { transactionMatchesCurrency } from '../transactions/transactionFormatters.ts'
 import { TransactionsFooter } from '../transactions/TransactionsFooter.tsx'
 import { DashboardTransactionsTable } from '../DashboardTransactionsTable.tsx'
 
@@ -19,7 +19,8 @@ export function WalletActivityTable({
   walletRail,
 }: WalletActivityTableProps) {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
-  const hasRailFilter = Boolean(walletRail)
+  const walletCurrency = currency.trim().toUpperCase()
+  const canQuery = Boolean(walletRail && walletCurrency)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -27,34 +28,27 @@ export function WalletActivityTable({
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [walletRail, currency])
+  }, [walletRail, walletCurrency])
 
   const transactionsQuery = useTransactionsListQuery(
     {
       rail: walletRail,
+      currency: walletCurrency,
       limit: pageSize,
       offset,
     },
-    { enabled: hasRailFilter },
+    { enabled: canQuery },
   )
 
   const rows = useMemo(() => {
     const items = transactionsQuery.data?.items ?? []
-    if (hasRailFilter) {
-      return items
-    }
-    const code = currency.trim().toUpperCase()
-    return items.filter(
-      (item) => getTransactionCurrency(item).toUpperCase() === code,
-    )
-  }, [currency, hasRailFilter, transactionsQuery.data?.items])
+    return items.filter((item) => transactionMatchesCurrency(item, walletCurrency))
+  }, [transactionsQuery.data?.items, walletCurrency])
 
-  const totalItems = hasRailFilter
-    ? (transactionsQuery.data?.total ?? 0)
-    : rows.length
+  const totalItems = transactionsQuery.data?.total ?? rows.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const startItem = totalItems === 0 ? 0 : offset + 1
-  const pageRowCount = transactionsQuery.data?.items.length ?? rows.length
+  const pageRowCount = rows.length
   const endItem =
     totalItems === 0 ? 0 : Math.min(offset + pageRowCount, totalItems)
 
@@ -63,7 +57,7 @@ export function WalletActivityTable({
       <div className="dashboard-card-head">
         <div>
           <h2 className="dashboard-section-title text-sm">
-            {currency} wallet activity
+            {walletCurrency} wallet activity
           </h2>
           <p className="dashboard-caption">
             Recent transactions for {walletLabel}
@@ -79,15 +73,15 @@ export function WalletActivityTable({
           transactionsQuery={transactionsQuery}
           rows={rows}
           emptyMessage={
-            hasRailFilter
-              ? `No transactions found for ${walletLabel}.`
-              : `Unable to load transactions for this wallet region.`
+            canQuery
+              ? `No ${walletCurrency} transactions found for ${walletLabel}.`
+              : `Unable to load transactions for this wallet.`
           }
           minLoadingHeight="min-h-[240px]"
         />
       </div>
 
-      {hasRailFilter ? (
+      {canQuery ? (
         <TransactionsFooter
           startItem={startItem}
           endItem={endItem}

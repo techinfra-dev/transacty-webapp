@@ -154,7 +154,6 @@ export function DashboardPage() {
                 amount={safeAmount}
                 areBalancesHidden={areBalancesHidden}
                 statusLabel={wallet.status}
-                market={wallet.market ?? wallet.region}
                 displayLabel={wallet.displayLabel}
               />
             )

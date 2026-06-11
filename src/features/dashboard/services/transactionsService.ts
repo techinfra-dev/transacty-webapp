@@ -52,11 +52,13 @@ export async function listTransactions(params: {
   status?: TransactionStatus
   customerId?: string
   rail?: TransactionRailApi
+  currency?: string
   limit: number
   offset: number
 }) {
   try {
-    const { environment, type, status, customerId, rail, limit, offset } = params
+    const { environment, type, status, customerId, rail, currency, limit, offset } =
+      params
     const response = await axiosInstance.get('me/transactions', {
       headers: getAuthHeader(),
       params: {
@@ -67,6 +69,7 @@ export async function listTransactions(params: {
         ...(status ? { status } : {}),
         ...(customerId ? { customerId } : {}),
         ...(rail ? { rail } : {}),
+        ...(currency ? { currency } : {}),
       },
     })
     return transactionsListResponseSchema.parse(response.data)

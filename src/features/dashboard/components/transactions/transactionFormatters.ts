@@ -10,21 +10,32 @@ const RAIL_CURRENCY: Record<string, string> = {
   europe: 'EUR',
 }
 
-/** Prefer payment rail (India / Bangladesh) over optional API currency field. */
+/** Prefer API currency; fall back to rail default when currency is omitted. */
 export function getTransactionCurrency(
   transaction: Pick<TransactionItem, 'rail' | 'currency'>,
 ) {
-  const rail = transaction.rail?.trim().toLowerCase()
-  if (rail && RAIL_CURRENCY[rail]) {
-    return RAIL_CURRENCY[rail]
-  }
-
   const code = transaction.currency?.trim().toUpperCase()
   if (code) {
     return code
   }
 
+  const rail = transaction.rail?.trim().toLowerCase()
+  if (rail && RAIL_CURRENCY[rail]) {
+    return RAIL_CURRENCY[rail]
+  }
+
   return 'BDT'
+}
+
+export function transactionMatchesCurrency(
+  transaction: Pick<TransactionItem, 'rail' | 'currency'>,
+  walletCurrency: string,
+) {
+  const target = walletCurrency.trim().toUpperCase()
+  if (!target) {
+    return true
+  }
+  return getTransactionCurrency(transaction).toUpperCase() === target
 }
 
 export function getStatusClassName(status: TransactionStatus) {

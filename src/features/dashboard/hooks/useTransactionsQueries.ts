@@ -20,6 +20,7 @@ export function useTransactionsListQuery(
     status?: TransactionStatus
     customerId?: string
     rail?: TransactionRailApi
+    currency?: string
     limit: number
     offset: number
   },
@@ -27,7 +28,7 @@ export function useTransactionsListQuery(
 ) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
 
-  const { type, status, customerId, rail, limit, offset } = params
+  const { type, status, customerId, rail, currency, limit, offset } = params
 
   return useQuery({
     queryKey: [
@@ -39,6 +40,7 @@ export function useTransactionsListQuery(
       status ?? null,
       customerId ?? null,
       rail ?? null,
+      currency ?? null,
     ],
     queryFn: () =>
       listTransactions({
@@ -47,6 +49,7 @@ export function useTransactionsListQuery(
         status,
         customerId,
         rail,
+        currency,
         limit,
         offset,
       }),
