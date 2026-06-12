@@ -4,6 +4,7 @@ import { Button } from '../../../../components/ui/Button.tsx'
 interface PayoutFormNavProps {
   step: number
   isSubmitting: boolean
+  continueDisabled?: boolean
   onPrevious: () => void
   onContinue: () => void
   onSubmit: () => void
@@ -12,6 +13,7 @@ interface PayoutFormNavProps {
 export function PayoutFormNav({
   step,
   isSubmitting,
+  continueDisabled = false,
   onPrevious,
   onContinue,
   onSubmit,
@@ -38,7 +40,12 @@ export function PayoutFormNav({
       )}
 
       {step < 4 ? (
-        <Button type="button" className="payout-btn-primary" onClick={onContinue}>
+        <Button
+          type="button"
+          className="payout-btn-primary"
+          onClick={onContinue}
+          disabled={continueDisabled || isSubmitting}
+        >
           Continue
         </Button>
       ) : (

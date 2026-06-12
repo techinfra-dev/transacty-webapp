@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
-import { useTransactionsListQuery } from '../../hooks/useTransactionsQueries.ts'
+import {
+  useWalletActivityQueries,
+  useWalletActivityStatusCounts,
+} from '../../hooks/useWalletActivityQueries.ts'
 import type { TransactionRailApi } from '../../services/transactionsSchemas.ts'
-import { transactionMatchesCurrency } from '../transactions/transactionFormatters.ts'
+import {
+  TransactionStatusTabs,
+  type TransactionStatusTabId,
+} from '../transactions/TransactionStatusTabs.tsx'
 import { TransactionsFooter } from '../transactions/TransactionsFooter.tsx'
 import { DashboardTransactionsTable } from '../DashboardTransactionsTable.tsx'
 
@@ -11,6 +17,23 @@ type WalletActivityTableProps = {
   currency: string
   walletLabel: string
   walletRail: TransactionRailApi | undefined
+}
+
+function emptyMessageForFilter(
+  filter: TransactionStatusTabId,
+  walletCurrency: string,
+  walletLabel: string,
+) {
+  if (filter === 'all') {
+    return `No ${walletCurrency} transactions found for ${walletLabel}.`
+  }
+  const label =
+    filter === 'success'
+      ? 'successful'
+      : filter === 'pending'
+        ? 'pending'
+        : 'failed'
+  return `No ${label} ${walletCurrency} transactions for ${walletLabel}.`
 }
 
 export function WalletActivityTable({
@@ -21,36 +44,56 @@ export function WalletActivityTable({
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const walletCurrency = currency.trim().toUpperCase()
   const canQuery = Boolean(walletRail && walletCurrency)
+  const [statusFilter, setStatusFilter] = useState<TransactionStatusTabId>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  const offset = (currentPage - 1) * pageSize
-
   useEffect(() => {
     setCurrentPage(1)
-  }, [walletRail, walletCurrency])
+  }, [walletRail, walletCurrency, statusFilter])
 
-  const transactionsQuery = useTransactionsListQuery(
-    {
-      rail: walletRail,
-      currency: walletCurrency,
-      limit: pageSize,
-      offset,
-    },
-    { enabled: canQuery },
+  const statusCountsQuery = useWalletActivityStatusCounts({
+    walletRail,
+    walletCurrency,
+    enabled: canQuery,
+  })
+
+  const { rows, totalItems, transactionsQuery } = useWalletActivityQueries({
+    walletRail,
+    walletCurrency,
+    statusFilter,
+    currentPage,
+    pageSize,
+    enabled: canQuery,
+  })
+
+  const tabs = useMemo(
+    () => [
+      { id: 'all' as const, label: 'All', count: statusCountsQuery.counts.all },
+      {
+        id: 'success' as const,
+        label: 'Successful',
+        count: statusCountsQuery.counts.success,
+      },
+      {
+        id: 'pending' as const,
+        label: 'Pending',
+        count: statusCountsQuery.counts.pending,
+      },
+      {
+        id: 'failed' as const,
+        label: 'Failed',
+        count: statusCountsQuery.counts.failed,
+      },
+    ],
+    [statusCountsQuery.counts],
   )
 
-  const rows = useMemo(() => {
-    const items = transactionsQuery.data?.items ?? []
-    return items.filter((item) => transactionMatchesCurrency(item, walletCurrency))
-  }, [transactionsQuery.data?.items, walletCurrency])
-
-  const totalItems = transactionsQuery.data?.total ?? rows.length
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const offset = (currentPage - 1) * pageSize
   const startItem = totalItems === 0 ? 0 : offset + 1
-  const pageRowCount = rows.length
   const endItem =
-    totalItems === 0 ? 0 : Math.min(offset + pageRowCount, totalItems)
+    totalItems === 0 ? 0 : Math.min(offset + rows.length, totalItems)
 
   return (
     <section className="dashboard-card flex min-h-0 flex-col">
@@ -68,13 +111,23 @@ export function WalletActivityTable({
         </Link>
       </div>
 
-      <div className="dashboard-transactions-table-panel dashboard-wallet-activity-table-panel dashboard-table-wrap min-w-0">
+      <TransactionStatusTabs
+        tabs={tabs}
+        activeId={statusFilter}
+        onChange={setStatusFilter}
+        ariaLabel="Filter wallet transactions by status"
+      />
+
+      <div
+        key={`${walletCurrency}-${statusFilter}`}
+        className="dashboard-transactions-table-panel dashboard-wallet-activity-table-panel dashboard-activity-table-panel dashboard-table-wrap min-w-0"
+      >
         <DashboardTransactionsTable
           transactionsQuery={transactionsQuery}
           rows={rows}
           emptyMessage={
             canQuery
-              ? `No ${walletCurrency} transactions found for ${walletLabel}.`
+              ? emptyMessageForFilter(statusFilter, walletCurrency, walletLabel)
               : `Unable to load transactions for this wallet.`
           }
           minLoadingHeight="min-h-[240px]"
@@ -89,7 +142,7 @@ export function WalletActivityTable({
           pageSize={pageSize}
           currentPage={currentPage}
           totalPages={totalPages}
-          isPending={transactionsQuery.isPending}
+          isPending={transactionsQuery.isPending || statusCountsQuery.isPending}
           isFetching={transactionsQuery.isFetching}
           isLiveEnvironment={portalEnvironment === 'live'}
           onPageSizeChange={(value) => {
@@ -97,9 +150,7 @@ export function WalletActivityTable({
             setCurrentPage(1)
           }}
           onPreviousPage={() => setCurrentPage((page) => Math.max(1, page - 1))}
-          onNextPage={() =>
-            setCurrentPage((page) => page + 1)
-          }
+          onNextPage={() => setCurrentPage((page) => page + 1)}
         />
       ) : null}
     </section>

@@ -11,7 +11,7 @@ import {
   type CreatePayoutResponse,
 } from '../services/payoutsSchemas.ts'
 import type { PayoutFormPayload } from '../services/payoutFormTypes.ts'
-import { initialPayoutPayload, minimumPayoutAmount } from '../components/payouts/payoutConstants.ts'
+import { initialPayoutPayload, isPayoutSupportedCurrency, minimumPayoutAmount } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
 
 export function usePayoutFlow() {
@@ -96,7 +96,10 @@ export function usePayoutFlow() {
     if (selectedWalletId && wallets.some((wallet) => wallet.id === selectedWalletId)) {
       return
     }
-    setSelectedWalletId(wallets[0]!.id)
+    const defaultWallet =
+      wallets.find((wallet) => isPayoutSupportedCurrency(wallet.currency)) ??
+      wallets[0]!
+    setSelectedWalletId(defaultWallet.id)
   }, [wallets, selectedWalletId])
 
   function updateBeneficiaryField(
@@ -126,6 +129,9 @@ export function usePayoutFlow() {
     if (step === 1) {
       if (!selectedWallet) {
         return 'Select a merchant wallet to continue.'
+      }
+      if (!isPayoutSupportedCurrency(selectedWallet.currency)) {
+        return 'Payouts are currently available for BDT wallets only.'
       }
       if (selectedWallet.status.toLowerCase() !== 'active') {
         return 'Selected wallet must be active to send a payout.'
@@ -252,13 +258,21 @@ export function usePayoutFlow() {
     setStep((previousStep) => Math.min(previousStep + 1, 4))
   }
 
+  const isSelectedWalletPayoutSupported = selectedWallet
+    ? isPayoutSupportedCurrency(selectedWallet.currency)
+    : false
+
   function handleResetFlow() {
     setStep(1)
     setClientError(null)
     setCreatedPayout(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
-    setSelectedWalletId(wallets[0]?.id ?? null)
+    setSelectedWalletId(
+      wallets.find((wallet) => isPayoutSupportedCurrency(wallet.currency))?.id ??
+        wallets[0]?.id ??
+        null,
+    )
   }
 
   return {
@@ -294,5 +308,6 @@ export function usePayoutFlow() {
     handleNextStep,
     handleResetFlow,
     portalEnvironment,
+    isSelectedWalletPayoutSupported,
   }
 }

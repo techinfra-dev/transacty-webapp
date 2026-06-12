@@ -92,13 +92,13 @@ export function WalletOverviewCard({
         </div>
       </div>
 
-      <div className="p-3 md:p-4">
+      <div className="wallet-overview-body">
         {walletsLoading ? (
           <div className="flex min-h-[120px] items-center justify-center">
             <LoadingSpinner label="Loading wallet balances…" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="wallet-metrics-grid">
             <WalletMetricTile
               label="Balance"
               currency={active.currency}
@@ -119,7 +119,7 @@ export function WalletOverviewCard({
             />
             <div className="wallet-metric-tile">
               <p className="wallet-metric-tile-label">Payin & payout limits</p>
-              <dl className="wallet-metric-tile-body space-y-2">
+              <dl className="wallet-metric-tile-body space-y-1.5">
                 <div>
                   <dt>Payin</dt>
                   <dd className="tabular-nums">

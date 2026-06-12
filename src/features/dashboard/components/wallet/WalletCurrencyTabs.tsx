@@ -20,32 +20,42 @@ export function WalletCurrencyTabs({
       role="tablist"
       aria-label="Merchant wallets by currency"
     >
-      {wallets.map((wallet) => {
-        const isActive = wallet.id === activeWalletId
-        const displayName = getWalletDisplayLabel(wallet)
-        const code = wallet.currency.trim().toUpperCase()
-        const amount = Number(wallet.availableBalance ?? wallet.balance)
-        const safeAmount = Number.isFinite(amount) ? amount : 0
-        return (
-          <Link
-            key={wallet.id}
-            role="tab"
-            aria-selected={isActive}
-            to="/dashboard/wallets/$walletId"
-            params={{ walletId: wallet.id }}
-            className="dashboard-wallet-tab"
-          >
-            <span className="dashboard-wallet-tab-code">{code}</span>
-            <span className="dashboard-wallet-tab-name">{displayName}</span>
-            <FormattedMoney
-              className="dashboard-wallet-tab-balance"
-              currency={wallet.currency}
-              value={safeAmount}
-              masked={areBalancesHidden}
-            />
-          </Link>
-        )
-      })}
+      <div className="dashboard-wallet-tabs-track">
+        {wallets.map((wallet) => {
+          const isActive = wallet.id === activeWalletId
+          const displayName = getWalletDisplayLabel(wallet)
+          const code = wallet.currency.trim().toUpperCase()
+          const amount = Number(wallet.availableBalance ?? wallet.balance)
+          const safeAmount = Number.isFinite(amount) ? amount : 0
+
+          return (
+            <Link
+              key={wallet.id}
+              role="tab"
+              aria-selected={isActive}
+              to="/dashboard/wallets/$walletId"
+              params={{ walletId: wallet.id }}
+              className={`dashboard-wallet-tab ${isActive ? 'dashboard-wallet-tab--active' : ''}`}
+            >
+              <div className="dashboard-wallet-tab-shell">
+                <span className="dashboard-wallet-tab-code">{code}</span>
+                <span
+                  className="dashboard-wallet-tab-name"
+                  aria-hidden={!isActive}
+                >
+                  {displayName}
+                </span>
+                <FormattedMoney
+                  className="dashboard-wallet-tab-balance"
+                  currency={wallet.currency}
+                  value={safeAmount}
+                  masked={areBalancesHidden}
+                />
+              </div>
+            </Link>
+          )
+        })}
+      </div>
     </div>
   )
 }

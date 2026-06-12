@@ -3,6 +3,7 @@ import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
+import { isPayoutSupportedCurrency } from './payoutConstants.ts'
 
 type PayoutWalletStepProps = {
   wallets: BalanceWalletItem[] | undefined
@@ -58,9 +59,10 @@ export function PayoutWalletStep({
     <div className="payout-wallet-list" role="radiogroup" aria-label="Select payout wallet">
       {wallets.map((wallet) => {
         const isSelected = wallet.id === selectedWalletId
+        const code = wallet.currency.trim().toUpperCase()
+        const isSupported = isPayoutSupportedCurrency(code)
         const balance = Number(wallet.availableBalance ?? wallet.balance)
         const safeBalance = Number.isFinite(balance) ? balance : 0
-        const code = wallet.currency.trim().toUpperCase()
 
         return (
           <button
@@ -68,7 +70,7 @@ export function PayoutWalletStep({
             type="button"
             role="radio"
             aria-checked={isSelected}
-            className={`payout-wallet-row ${isSelected ? 'payout-wallet-row--selected' : ''}`}
+            className={`payout-wallet-row ${isSelected ? 'payout-wallet-row--selected' : ''} ${!isSupported ? 'payout-wallet-row--unsupported' : ''}`}
             onClick={() => onSelectWallet(wallet.id)}
           >
             <span className="payout-wallet-radio" aria-hidden>
@@ -77,7 +79,11 @@ export function PayoutWalletStep({
             <span className="payout-wallet-code">{code}</span>
             <span className="payout-wallet-copy">
               <span className="payout-wallet-name">{getCurrencyFullName(code)}</span>
-              <span className="payout-wallet-meta">{walletSubtitle(wallet)}</span>
+              <span className="payout-wallet-meta">
+                {isSupported
+                  ? walletSubtitle(wallet)
+                  : 'Payouts not available for this wallet yet'}
+              </span>
             </span>
             <span className="payout-wallet-balance">
               <FormattedMoney currency={code} value={safeBalance} />

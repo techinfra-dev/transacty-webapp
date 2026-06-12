@@ -27,17 +27,6 @@ export function getTransactionCurrency(
   return 'BDT'
 }
 
-export function transactionMatchesCurrency(
-  transaction: Pick<TransactionItem, 'rail' | 'currency'>,
-  walletCurrency: string,
-) {
-  const target = walletCurrency.trim().toUpperCase()
-  if (!target) {
-    return true
-  }
-  return getTransactionCurrency(transaction).toUpperCase() === target
-}
-
 export function getStatusClassName(status: TransactionStatus) {
   if (status === 'success') {
     return 'bg-[#9FBA9A] text-black'

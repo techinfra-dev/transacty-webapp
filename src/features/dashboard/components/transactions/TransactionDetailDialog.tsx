@@ -278,6 +278,9 @@ function TransactionDetailBody({
 
         <div className="tx-detail-sect">Customer</div>
         <div className="tx-detail-dlist">
+          {amounts.payerName ? (
+            <TxDetailRow label="Payer name">{amounts.payerName}</TxDetailRow>
+          ) : null}
           {amounts.payerEmail ? (
             <TxDetailRow label="Payer email" mono>
               {amounts.payerEmail}

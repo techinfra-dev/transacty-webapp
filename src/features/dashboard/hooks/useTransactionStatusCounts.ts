@@ -11,14 +11,17 @@ type UseTransactionStatusCountsParams = {
   type?: TransactionType
   customerId?: string
   rail?: TransactionRailApi
+  currency?: string
 }
 
 export function useTransactionStatusCounts({
   type,
   customerId,
   rail,
+  currency,
 }: UseTransactionStatusCountsParams) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
+  const normalizedCurrency = currency?.trim().toUpperCase() || undefined
 
   const statuses: Array<TransactionStatus | undefined> = [
     undefined,
@@ -32,7 +35,7 @@ export function useTransactionStatusCounts({
       queryKey: [
         'transactions-list-count',
         environment,
-        { type, customerId, rail, status },
+        { type, customerId, rail, currency: normalizedCurrency, status },
       ],
       queryFn: () =>
         listTransactions({
@@ -40,6 +43,7 @@ export function useTransactionStatusCounts({
           type,
           customerId,
           rail,
+          currency: normalizedCurrency,
           status,
           limit: 1,
           offset: 0,

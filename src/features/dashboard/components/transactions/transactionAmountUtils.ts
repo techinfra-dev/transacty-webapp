@@ -16,6 +16,7 @@ export type TransactionAmountDisplay = {
   settlementCurrency: string
   isDualCurrency: boolean
   conversionRate: number | null
+  payerName: string | null
   payerEmail: string | null
 }
 
@@ -50,9 +51,18 @@ function readNumber(value: unknown) {
   return null
 }
 
+function getPaymentDetailsBlock(tx: Record<string, unknown>) {
+  const metadata = asRecord(tx.metadata)
+  const payinSnapshot = asRecord(metadata?.payinSnapshot)
+  return asRecord(payinSnapshot?.paymentDetails)
+}
+
 function parseAccountsBlock(tx: Record<string, unknown>) {
+  const paymentDetails = getPaymentDetailsBlock(tx)
   const accounts =
-    asRecord(tx.accounts) ?? asRecord(asRecord(tx.metadata)?.accounts)
+    asRecord(tx.accounts) ??
+    asRecord(asRecord(tx.metadata)?.accounts) ??
+    asRecord(paymentDetails?.accounts)
   if (!accounts) {
     return null
   }
@@ -69,9 +79,54 @@ function parseAccountsBlock(tx: Record<string, unknown>) {
   }
 }
 
+function parseUpiPayerName(qrString: string | null) {
+  if (!qrString) {
+    return null
+  }
+
+  try {
+    const payerName = new URL(qrString).searchParams.get('pn')
+    if (payerName) {
+      return decodeURIComponent(payerName.replace(/\+/g, ' ')).trim()
+    }
+  } catch {
+    const match = qrString.match(/[?&]pn=([^&]+)/i)
+    if (match) {
+      try {
+        return decodeURIComponent(match[1].replace(/\+/g, ' ')).trim()
+      } catch {
+        return match[1].trim()
+      }
+    }
+  }
+
+  return null
+}
+
 function getPayerEmail(tx: Record<string, unknown>) {
-  const user = asRecord(tx.user)
-  return readString(user?.email)
+  const topLevelUser = asRecord(tx.user)
+  const fromTopLevel = readString(topLevelUser?.email)
+  if (fromTopLevel) {
+    return fromTopLevel
+  }
+
+  const paymentDetails = getPaymentDetailsBlock(tx)
+  const nestedUser = asRecord(paymentDetails?.user)
+  return readString(nestedUser?.email)
+}
+
+function getPayerName(tx: Record<string, unknown>) {
+  const paymentDetails = getPaymentDetailsBlock(tx)
+  const trade = asRecord(paymentDetails?.trade)
+  const paymentMethod = asRecord(trade?.paymentMethod)
+  const details = asRecord(paymentMethod?.details)
+
+  const fromField = readString(details?.pn)
+  if (fromField) {
+    return fromField
+  }
+
+  return parseUpiPayerName(readString(details?.qrString))
 }
 
 function inferLocalCurrency(
@@ -161,8 +216,37 @@ export function getTransactionAmountDisplay(
     settlementCurrency,
     isDualCurrency,
     conversionRate,
+    payerName: getPayerName(tx),
     payerEmail: getPayerEmail(tx),
   }
+}
+
+export function getTransactionWalletPocketCurrency(
+  transaction: TransactionLike,
+): string {
+  const amounts = getTransactionAmountDisplay(transaction)
+
+  if (amounts.isDualCurrency) {
+    return amounts.settlementCurrency
+  }
+
+  const explicitCurrency = readString(transaction.currency)?.toUpperCase()
+  if (explicitCurrency) {
+    return explicitCurrency
+  }
+
+  return amounts.settlementCurrency
+}
+
+export function transactionMatchesCurrency(
+  transaction: TransactionLike,
+  walletCurrency: string,
+) {
+  const target = walletCurrency.trim().toUpperCase()
+  if (!target) {
+    return true
+  }
+  return getTransactionWalletPocketCurrency(transaction).toUpperCase() === target
 }
 
 export function getTransactionHeaderAmountDisplay(

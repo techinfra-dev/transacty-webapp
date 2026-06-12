@@ -11,6 +11,13 @@ export const payoutStepItems = [
 export const payoutMethodOptions = ['BKASH', 'NAGAD', 'UPAY'] as const
 export const minimumPayoutAmount = 200
 
+/** Payouts are currently supported for Bangladesh (BDT) wallets only. */
+export const PAYOUT_SUPPORTED_CURRENCY = 'BDT'
+
+export function isPayoutSupportedCurrency(currency: string) {
+  return currency.trim().toUpperCase() === PAYOUT_SUPPORTED_CURRENCY
+}
+
 const initialBeneficiaryAccountInfo: BeneficiaryAccountInfo = {
   number: '',
   holderName: '',

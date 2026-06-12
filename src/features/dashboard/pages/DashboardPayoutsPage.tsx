@@ -47,7 +47,13 @@ export function DashboardPayoutsPage() {
                       flow.setClientError(null)
                     }}
                   />
-                  {flow.clientError ? (
+                  {flow.step === 1 &&
+                  flow.selectedWallet &&
+                  !flow.isSelectedWalletPayoutSupported ? (
+                    <p className="payout-alert payout-alert--panel">
+                      Payouts are currently available for BDT wallets only.
+                    </p>
+                  ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
                   ) : null}
                 </div>
@@ -75,6 +81,9 @@ export function DashboardPayoutsPage() {
               <PayoutFormNav
                 step={flow.step}
                 isSubmitting={flow.createPayoutMutation.isPending}
+                continueDisabled={
+                  flow.step === 1 && !flow.isSelectedWalletPayoutSupported
+                }
                 onPrevious={() => {
                   flow.setClientError(null)
                   flow.setStep((previousStep) => Math.max(previousStep - 1, 1))
