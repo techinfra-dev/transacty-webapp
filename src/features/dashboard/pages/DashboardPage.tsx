@@ -13,7 +13,7 @@ import { useMarketsQuery } from '../hooks/useMarketsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 import {
   getActivatedWallets,
-  getAddWalletCatalogRows,
+  getAddWalletCatalogGroups,
   getCatalogWallets,
 } from '../utils/balanceWalletUtils.ts'
 
@@ -67,7 +67,7 @@ export function DashboardPage() {
     if (!marketsQuery.data) {
       return []
     }
-    return getAddWalletCatalogRows(markets, catalog)
+    return getAddWalletCatalogGroups(markets, catalog)
   }, [markets, catalog, marketsQuery.data])
   const canAddWallet = addableWallets.length > 0
 

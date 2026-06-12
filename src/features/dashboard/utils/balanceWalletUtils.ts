@@ -154,23 +154,84 @@ export function getInactiveCatalogWallets(catalog: BalanceWalletItem[]) {
   return catalog.filter((item) => !isWalletActivated(item))
 }
 
+export type AddWalletCatalogGroup = {
+  market: MerchantMarket | null
+  marketRow: PortalMarketRow | undefined
+  wallets: BalanceWalletItem[]
+  action: CatalogWalletAction
+}
+
+export function getAddWalletCatalogGroups(
+  markets: PortalMarketRow[],
+  catalog: BalanceWalletItem[],
+): AddWalletCatalogGroup[] {
+  const marketById = new Map(markets.map((row) => [row.market, row]))
+  const inactive = getInactiveCatalogWallets(catalog)
+  const byMarket = new Map<MerchantMarket, BalanceWalletItem[]>()
+  const withoutMarket: BalanceWalletItem[] = []
+
+  for (const wallet of inactive) {
+    const marketKey = getWalletMarket(wallet)
+    if (!marketKey) {
+      withoutMarket.push(wallet)
+      continue
+    }
+    const list = byMarket.get(marketKey) ?? []
+    list.push(wallet)
+    byMarket.set(marketKey, list)
+  }
+
+  const groups: AddWalletCatalogGroup[] = []
+
+  for (const marketKey of MARKET_ORDER) {
+    const wallets = byMarket.get(marketKey)
+    if (!wallets || wallets.length === 0) {
+      continue
+    }
+    const marketRow = marketById.get(marketKey)
+    const action = marketRow
+      ? getMarketWalletAction(marketRow, catalog)
+      : wallets
+          .map((wallet) => getCatalogWalletAction(wallet, undefined))
+          .find((value) => value !== 'none') ?? 'none'
+    if (action === 'none') {
+      continue
+    }
+    groups.push({
+      market: marketKey,
+      marketRow,
+      wallets,
+      action,
+    })
+  }
+
+  for (const wallet of withoutMarket) {
+    const action = getCatalogWalletAction(wallet, undefined)
+    if (action === 'none') {
+      continue
+    }
+    groups.push({
+      market: null,
+      marketRow: undefined,
+      wallets: [wallet],
+      action,
+    })
+  }
+
+  return groups
+}
+
 export function getAddWalletCatalogRows(
   markets: PortalMarketRow[],
   catalog: BalanceWalletItem[],
 ) {
-  const marketById = new Map(markets.map((row) => [row.market, row]))
-
-  return getInactiveCatalogWallets(catalog)
-    .map((wallet) => {
-      const marketKey = getWalletMarket(wallet)
-      const market = marketKey ? marketById.get(marketKey) : undefined
-      return {
-        wallet,
-        market,
-        action: getCatalogWalletAction(wallet, market),
-      }
-    })
-    .filter((row) => row.action !== 'none')
+  return getAddWalletCatalogGroups(markets, catalog).flatMap((group) =>
+    group.wallets.map((wallet) => ({
+      wallet,
+      market: group.marketRow,
+      action: group.action,
+    })),
+  )
 }
 
 export function getMarketWalletAction(

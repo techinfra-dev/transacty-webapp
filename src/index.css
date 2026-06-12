@@ -1430,6 +1430,14 @@ body {
   color: var(--dash-fg);
 }
 
+.add-wallet-row-icon-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  font-size: 12px;
+  letter-spacing: -0.04em;
+}
+
 .add-wallet-row-info {
   min-width: 0;
   flex: 1;
