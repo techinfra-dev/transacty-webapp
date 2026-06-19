@@ -2,7 +2,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   BDT: '৳',
   INR: '₹',
   USD: '$',
-  USDT: '$',
+  USDT: '₮',
   USDC: '$',
   EUR: '€',
   GBP: '£',

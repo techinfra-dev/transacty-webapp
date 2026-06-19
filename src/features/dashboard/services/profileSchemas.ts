@@ -10,6 +10,8 @@ const businessProfileSchema = z.object({
 
 export const profileResponseSchema = z.object({
   merchantId: z.string().min(1),
+  /** Human-readable slug for UI only — not used in API paths yet. */
+  merchantSlug: z.string().min(1).optional(),
   businessName: z.string().min(1),
   email: z.email(),
   role: z.string().min(1),

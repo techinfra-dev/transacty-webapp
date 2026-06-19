@@ -5,6 +5,7 @@ import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
 import { WebhooksSettingsContent } from './WebhooksSettingsContent.tsx'
 import { MarketsSettingsContent } from './MarketsSettingsContent.tsx'
+import { ReconciliationSettingsContent } from './ReconciliationSettingsContent.tsx'
 
 interface SettingsTabContentPanelProps {
   activeTab: SettingsTabId
@@ -35,13 +36,17 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       {activeTab === 'api-keys' ? <ApiKeysSettingsContent /> : null}
       {activeTab === 'webhooks' ? <WebhooksSettingsContent /> : null}
       {activeTab === 'markets' ? <MarketsSettingsContent /> : null}
+      {activeTab === 'reconciliation-report' ? (
+        <ReconciliationSettingsContent />
+      ) : null}
 
       {activeTab !== 'profile' &&
       activeTab !== 'security' &&
       activeTab !== 'markets' &&
       activeTab !== 'team' &&
       activeTab !== 'api-keys' &&
-      activeTab !== 'webhooks' ? (
+      activeTab !== 'webhooks' &&
+      activeTab !== 'reconciliation-report' ? (
         <article className="settings-card">
           <div className="settings-card-body">
             <p className="settings-placeholder">

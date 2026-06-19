@@ -16,3 +16,8 @@ alwaysApply: true
 - Pages must be defined in `features/x/pages/` and then imported into `src/routes/`.
 - Ensure all API responses are parsed with `.parse()` or `.safeParse()` using Zod schemas to ensure type safety.
 - Always use TypeScript `interface` or `type` generated from Zod schemas.
+
+## API identifiers (June 2026 handoff):
+- `merchantSlug` from `GET /portal/me` is **display-only** (e.g. Settings → Profile). Do **not** use slug in API paths or request bodies yet.
+- Keep using UUID `merchantId` for auth/session and any merchant-scoped API calls.
+- Transaction endpoints always use UUID `transactionId` / item `id` (e.g. `GET me/transactions/:transactionId`) — never slugs.

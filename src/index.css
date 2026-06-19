@@ -4890,6 +4890,143 @@ body {
   color: var(--dash-fg);
 }
 
+.settings-recon-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-recon-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-recon-date-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 10.5rem));
+  gap: 12px;
+}
+
+.settings-recon-download-btn {
+  min-width: 9.5rem;
+}
+
+.settings-recon-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .settings-recon-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.settings-recon-summary-card {
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  background: var(--dash-surface);
+  padding: 10px 12px;
+}
+
+.settings-recon-summary-label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dash-fg-subtle);
+}
+
+.settings-recon-summary-value {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--dash-fg);
+}
+
+.settings-recon-table-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.settings-recon-table-head,
+.settings-recon-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(7.5rem, 1.1fr)
+    minmax(4.5rem, 0.7fr)
+    minmax(5.5rem, 0.8fr)
+    minmax(4.5rem, 0.7fr)
+    minmax(3.5rem, 0.5fr)
+    minmax(5rem, 0.8fr)
+    minmax(6rem, 0.9fr)
+    minmax(6rem, 0.9fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-recon-table-head {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--dash-border);
+  background: var(--dash-surface-2);
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-fg-subtle);
+}
+
+.settings-recon-table-head .num,
+.settings-recon-table-row .num {
+  text-align: right;
+}
+
+.settings-recon-table-body {
+  overflow-x: auto;
+}
+
+.settings-recon-table-row {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--dash-hairline);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dash-fg);
+  min-width: 52rem;
+}
+
+.settings-recon-table-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-recon-table-muted {
+  color: var(--dash-fg-muted);
+}
+
+.settings-recon-table-mono {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.settings-recon-empty {
+  padding: 24px 14px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--dash-fg-muted);
+}
+
+.settings-recon-table-card .tx-history-foot {
+  border-top: 1px solid var(--dash-border);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tx-detail-scrim,
   .tx-detail-modal {

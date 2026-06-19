@@ -56,6 +56,17 @@ export function SettingsIconWhitelist() {
   )
 }
 
+export function SettingsIconReconciliation() {
+  return (
+    <svg {...svgProps}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" {...strokeAttrs} />
+      <path d="M14 2v6h6" {...strokeAttrs} />
+      <path d="M8 13h8" {...strokeAttrs} />
+      <path d="M8 17h5" {...strokeAttrs} />
+    </svg>
+  )
+}
+
 export function SettingsIconApiKeys() {
   return (
     <svg {...svgProps}>

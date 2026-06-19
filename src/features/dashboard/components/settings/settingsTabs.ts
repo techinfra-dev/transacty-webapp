@@ -7,6 +7,7 @@ export type SettingsTabId =
   | 'team'
   | 'permissions'
   | 'whitelisted-ip-addresses'
+  | 'reconciliation-report'
   | 'api-keys'
   | 'webhooks'
 
@@ -21,6 +22,7 @@ export const accountTabs: SettingsTab[] = [
   { id: 'markets', label: 'Markets' },
   { id: 'team', label: 'Directors' },
   { id: 'whitelisted-ip-addresses', label: 'Whitelisted IP addresses' },
+  { id: 'reconciliation-report', label: 'Reconciliation report' },
 ]
 
 export const developerTabs: SettingsTab[] = [
@@ -71,6 +73,11 @@ export const tabContent: Record<
     title: 'Whitelisted IP addresses',
     description:
       'Restrict dashboard and API access by allowing only approved office or server IP addresses.',
+  },
+  'reconciliation-report': {
+    title: 'Reconciliation report',
+    description:
+      'Review settlement activity for a date range (max 93 days) and download a CSV export for accounting.',
   },
   'api-keys': {
     title: 'API keys',

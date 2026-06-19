@@ -59,10 +59,13 @@ export function ProfileSettingsContent() {
   }
 
   const profile = profileQuery.data
+  // Slug is display/copy only; APIs still use profile.merchantId (UUID).
+  const merchantIdDisplay =
+    profile.merchantSlug?.trim() || profile.merchantId
 
   const handleCopyMerchantId = async () => {
     try {
-      await navigator.clipboard.writeText(profile.merchantId)
+      await navigator.clipboard.writeText(merchantIdDisplay)
       setIsMerchantIdCopied(true)
       window.setTimeout(() => setIsMerchantIdCopied(false), 1800)
     } catch {
@@ -147,7 +150,7 @@ export function ProfileSettingsContent() {
             <div className="settings-field settings-field--full">
               <span className={settingsFieldLabelClass}>Merchant ID</span>
               <div className="settings-merchant-row">
-                <code className="settings-merchant-id">{profile.merchantId}</code>
+                <code className="settings-merchant-id">{merchantIdDisplay}</code>
                 <button
                   type="button"
                   className="settings-btn settings-btn--ghost"

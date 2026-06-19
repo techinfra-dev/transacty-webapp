@@ -11,6 +11,7 @@ import {
   SettingsIconProfile,
   SettingsIconSecurity,
   SettingsIconWebhooks,
+  SettingsIconReconciliation,
   SettingsIconWhitelist,
 } from './settingsNavIcons.tsx'
 
@@ -29,6 +30,8 @@ function tabIcon(tabId: SettingsTabId) {
       return <SettingsIconDirectors />
     case 'whitelisted-ip-addresses':
       return <SettingsIconWhitelist />
+    case 'reconciliation-report':
+      return <SettingsIconReconciliation />
     case 'api-keys':
       return <SettingsIconApiKeys />
     case 'webhooks':
