@@ -5,8 +5,10 @@ import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../services/marketSchemas.ts'
 import { useRequestMarketMutation } from '../hooks/useRequestMarketMutation.ts'
 import {
+  formatVisibleWalletCurrencies,
   getAddWalletCatalogGroups,
   getWalletDisplayLabel,
+  isVisibleWallet,
   type AddWalletCatalogGroup,
   type CatalogWalletAction,
 } from '../utils/balanceWalletUtils.ts'
@@ -24,9 +26,7 @@ interface AddWalletDialogProps {
 }
 
 function formatWalletCurrencies(wallets: BalanceWalletItem[]) {
-  return wallets
-    .map((wallet) => wallet.currency.trim().toUpperCase())
-    .join(', ')
+  return formatVisibleWalletCurrencies(wallets)
 }
 
 function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
@@ -42,7 +42,8 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
     : wallets.length === 1
       ? getWalletDisplayLabel(wallets[0]!)
       : currencies
-  const iconGlyphs = wallets.map(
+  const visibleWallets = wallets.filter(isVisibleWallet)
+  const iconGlyphs = visibleWallets.map(
     (wallet) =>
       getCurrencySymbol(wallet.currency.trim().toUpperCase()) ??
       wallet.currency.trim().toUpperCase().slice(0, 1),

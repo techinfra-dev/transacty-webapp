@@ -3,6 +3,43 @@ import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { MARKET_ORDER } from './marketDisplayUtils.ts'
 
+/** INR settlement pockets are hidden from all merchant portal wallet UI. */
+export const HIDDEN_WALLET_CURRENCIES = new Set(['INR'])
+
+export const INDIA_PORTAL_SETTLEMENT_CURRENCY = 'USDT'
+
+export function isVisibleWallet(
+  wallet: Pick<BalanceWalletItem, 'currency'>,
+) {
+  const code = wallet.currency.trim().toUpperCase()
+  return !HIDDEN_WALLET_CURRENCIES.has(code)
+}
+
+export function filterVisibleWallets(items: BalanceWalletItem[]) {
+  return items.filter(isVisibleWallet)
+}
+
+export function getVisibleSettlementCurrencies(
+  market: MerchantMarket | null | undefined,
+  currencies: string[],
+) {
+  const visible = currencies
+    .map((currency) => currency.trim().toUpperCase())
+    .filter((currency) => !HIDDEN_WALLET_CURRENCIES.has(currency))
+
+  if (market === 'india') {
+    return visible.filter((currency) => currency === INDIA_PORTAL_SETTLEMENT_CURRENCY)
+  }
+
+  return visible
+}
+
+export function formatVisibleWalletCurrencies(wallets: BalanceWalletItem[]) {
+  return filterVisibleWallets(wallets)
+    .map((wallet) => wallet.currency.trim().toUpperCase())
+    .join(', ')
+}
+
 export function isSyntheticWalletId(id: string) {
   return id.startsWith('market:')
 }
@@ -15,7 +52,8 @@ export function findBalanceWalletItem(
   balance: BalanceResponse | undefined,
   walletId: string,
 ): BalanceWalletItem | undefined {
-  return balance?.items.find((item) => item.id === walletId)
+  const item = balance?.items.find((wallet) => wallet.id === walletId)
+  return item && isVisibleWallet(item) ? item : undefined
 }
 
 export function findBalanceWalletItemByCurrency(
@@ -23,9 +61,10 @@ export function findBalanceWalletItemByCurrency(
   currency: string,
 ): BalanceWalletItem | undefined {
   const code = currency.trim().toUpperCase()
-  return balance?.items.find(
-    (item) => item.currency.trim().toUpperCase() === code,
+  const item = balance?.items.find(
+    (wallet) => wallet.currency.trim().toUpperCase() === code,
   )
+  return item && isVisibleWallet(item) ? item : undefined
 }
 
 export function getWalletDisplayLabel(
@@ -57,18 +96,18 @@ export function isWalletActivated(wallet: BalanceWalletItem) {
 export function getActivatedWallets(
   balance: BalanceResponse | undefined,
 ): BalanceWalletItem[] {
-  return (balance?.items ?? []).filter(isWalletActivated)
+  return filterVisibleWallets(balance?.items ?? []).filter(isWalletActivated)
 }
 
 export function getCatalogWallets(
   balance: BalanceResponse | undefined,
 ): BalanceWalletItem[] {
-  return balance?.items ?? []
+  return filterVisibleWallets(balance?.items ?? [])
 }
 
 export function groupWalletsByMarket(items: BalanceWalletItem[]) {
   const grouped = new Map<string, BalanceWalletItem[]>()
-  for (const item of items) {
+  for (const item of filterVisibleWallets(items)) {
     const market = (item.market ?? item.region ?? 'other').trim().toLowerCase()
     const list = grouped.get(market) ?? []
     list.push(item)
@@ -151,7 +190,7 @@ export function getCatalogWalletAction(
 }
 
 export function getInactiveCatalogWallets(catalog: BalanceWalletItem[]) {
-  return catalog.filter((item) => !isWalletActivated(item))
+  return filterVisibleWallets(catalog).filter((item) => !isWalletActivated(item))
 }
 
 export type AddWalletCatalogGroup = {

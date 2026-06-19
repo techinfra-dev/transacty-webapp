@@ -56,7 +56,7 @@ function AuthRouteLayout() {
         </aside>
 
         <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-(--auth-content-bg)">
-          <header className="flex shrink-0 items-center justify-between gap-3 border-b border-(--auth-header-border) px-5 py-3 md:px-6">
+          <header className="flex shrink-0 items-center justify-between gap-3 px-5 py-3 md:px-6">
             <img
               src={logoSrc}
               alt="Transacty"

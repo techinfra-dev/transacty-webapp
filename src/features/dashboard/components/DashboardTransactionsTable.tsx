@@ -99,7 +99,7 @@ export function DashboardTransactionsTable({
           <th>Customer</th>
           <th>Type</th>
           <th className="num">Amount</th>
-          <th className="num">Paid</th>
+          <th className="num">Settled</th>
           <th>Status</th>
           <th>Date</th>
         </tr>

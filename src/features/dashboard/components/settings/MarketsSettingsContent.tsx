@@ -3,7 +3,7 @@ import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
 import { useMarketsQuery } from '../../hooks/useMarketsQuery.ts'
 import { useRequestMarketMutation } from '../../hooks/useRequestMarketMutation.ts'
-import { getMarketWalletAction } from '../../utils/balanceWalletUtils.ts'
+import { getMarketWalletAction, getCatalogWallets, getVisibleSettlementCurrencies } from '../../utils/balanceWalletUtils.ts'
 import {
   canRequestMarketAccess,
   formatEntitlementStatusLabel,
@@ -28,7 +28,10 @@ function MarketSettingsRow({
   const action = getMarketWalletAction(market, catalog)
 
   const displayName = getMarketDisplayName(market.market)
-  const currencies = market.settlementCurrencies.join(', ')
+  const currencies = getVisibleSettlementCurrencies(
+    market.market,
+    market.settlementCurrencies,
+  ).join(', ')
 
   return (
     <article className="settings-card">
@@ -103,7 +106,7 @@ function MarketSettingsRow({
 export function MarketsSettingsContent() {
   const marketsQuery = useMarketsQuery(true)
   const balanceQuery = useBalanceQuery(true)
-  const catalog = balanceQuery.data?.items ?? []
+  const catalog = getCatalogWallets(balanceQuery.data)
 
   if (marketsQuery.isPending) {
     return (
