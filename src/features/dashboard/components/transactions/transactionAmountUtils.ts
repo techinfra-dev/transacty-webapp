@@ -1,4 +1,4 @@
-import type { TransactionItem } from '../../services/transactionsSchemas.ts'
+import type { TransactionItem, TransactionFeeStatus } from '../../services/transactionsSchemas.ts'
 import { getTransactionCurrency } from './transactionFormatters.ts'
 
 const RAIL_LOCAL_CURRENCY: Record<string, string> = {
@@ -287,4 +287,36 @@ export function getTransactionPaidColumnDisplay(transaction: TransactionLike) {
     value: amounts.settlementAmount,
     currency: amounts.settlementCurrency,
   }
+}
+
+function readFeeAmount(value: string | undefined) {
+  if (!value?.trim()) {
+    return null
+  }
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+export function getTransactionFeeColumnDisplay(
+  transaction: Pick<TransactionItem, 'fees' | 'currency' | 'rail'>,
+) {
+  const currency = getTransactionCurrency(transaction)
+  const platformFee = transaction.fees?.platformFee
+  const feeAmount = readFeeAmount(platformFee)
+  const hasFee = feeAmount != null && feeAmount > 0
+
+  return {
+    hasFee,
+    value: hasFee ? platformFee! : null,
+    currency,
+    feeStatus: transaction.fees?.feeStatus,
+    feeType: transaction.fees?.feeType,
+  }
+}
+
+export function formatTransactionFeeStatusLabel(status?: TransactionFeeStatus) {
+  if (!status || status === 'none') {
+    return 'None'
+  }
+  return status.charAt(0).toUpperCase() + status.slice(1)
 }

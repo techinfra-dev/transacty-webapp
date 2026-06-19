@@ -14,6 +14,7 @@ import {
 } from './transactionFormatters.ts'
 import {
   getTransactionAmountColumnDisplay,
+  getTransactionFeeColumnDisplay,
   getTransactionPaidColumnDisplay,
 } from './transactionAmountUtils.ts'
 
@@ -84,6 +85,7 @@ export function TransactionsHistoryTable({
         <col className="tx-history-col-type" />
         <col className="tx-history-col-amt" />
         <col className="tx-history-col-amt" />
+        <col className="tx-history-col-amt" />
         <col className="tx-history-col-status" />
         <col className="tx-history-col-date" />
         <col className="tx-history-col-action" />
@@ -94,7 +96,8 @@ export function TransactionsHistoryTable({
           <th>Reference</th>
           <th>Type</th>
           <th className="num">Amount</th>
-          <th className="num">Paid amount</th>
+          <th className="num">Settled</th>
+          <th className="num">Fee</th>
           <th>Status</th>
           <th>Date</th>
           <th aria-label="Actions" />
@@ -109,6 +112,7 @@ export function TransactionsHistoryTable({
           const isFailed = activity.status === 'failed'
           const amountColumn = getTransactionAmountColumnDisplay(activity)
           const paidColumn = getTransactionPaidColumnDisplay(activity)
+          const feeColumn = getTransactionFeeColumnDisplay(activity)
           const { date, time } = formatTransactionDateParts(activity.createdAt)
           return (
             <tr
@@ -159,6 +163,19 @@ export function TransactionsHistoryTable({
                     paidColumn.value,
                     paidColumn.currency,
                   )}
+                </span>
+              </td>
+              <td className="num">
+                <span
+                  className={
+                    isFailed || !feeColumn.hasFee
+                      ? 'tx-history-amt tx-history-amt-mute'
+                      : 'tx-history-amt tx-history-amt-paid'
+                  }
+                >
+                  {feeColumn.hasFee && feeColumn.value
+                    ? formatTransactionMoney(feeColumn.value, feeColumn.currency)
+                    : '—'}
                 </span>
               </td>
               <td>

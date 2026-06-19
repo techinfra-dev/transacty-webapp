@@ -11,11 +11,15 @@ import type {
 import { TransactionMethodTag } from './TransactionMethodTag.tsx'
 import {
   getTransactionAmountDisplay,
+  getTransactionFeeColumnDisplay,
   getTransactionHeaderAmountDisplay,
+  formatTransactionFeeStatusLabel,
 } from './transactionAmountUtils.ts'
 import {
   formatTransactionDateParts,
+  formatTransactionMoney,
   getLedgerStatusPillClass,
+  getTransactionCurrency,
   toTitleCase,
 } from './transactionFormatters.ts'
 
@@ -101,17 +105,48 @@ function TxDetailRow({
   )
 }
 
-function computeNetAmount(detail: TransactionDetail) {
-  if (detail.status === 'failed') {
-    return 0
+function getBalanceImpactDisplay(detail: TransactionDetail) {
+  const currency = getTransactionCurrency(detail)
+
+  if (detail.type === 'payout' && detail.totalWalletDebit) {
+    return {
+      label: 'Total wallet debit',
+      value: detail.totalWalletDebit,
+      currency,
+    }
   }
+
+  if (detail.netAmount != null && detail.netAmount.trim().length > 0) {
+    return {
+      label: 'Net to balance',
+      value: detail.netAmount,
+      currency,
+    }
+  }
+
+  if (detail.status === 'failed') {
+    return {
+      label: 'Net to balance',
+      value: '0',
+      currency,
+    }
+  }
+
   const amounts = getTransactionAmountDisplay(detail)
   const paid = Number(amounts.settlementAmount)
   if (Number.isFinite(paid)) {
-    return paid
+    return {
+      label: 'Net to balance',
+      value: String(paid),
+      currency: amounts.settlementCurrency,
+    }
   }
-  const amount = Number(detail.amount)
-  return Number.isFinite(amount) ? amount : 0
+
+  return {
+    label: 'Net to balance',
+    value: detail.amount,
+    currency,
+  }
 }
 
 function TransactionTimeline({ detail }: { detail: TransactionDetail }) {
@@ -182,8 +217,9 @@ function TransactionDetailBody({
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const amounts = getTransactionAmountDisplay(detail)
   const headerAmount = getTransactionHeaderAmountDisplay(detail)
+  const feeColumn = getTransactionFeeColumnDisplay(detail)
+  const balanceImpact = getBalanceImpactDisplay(detail)
   const created = formatTransactionDateParts(detail.createdAt)
-  const net = computeNetAmount(detail)
 
   async function copy(key: string, value: string) {
     try {
@@ -260,17 +296,29 @@ function TransactionDetailBody({
               value={amounts.settlementAmount}
             />
           </TxDetailRow>
+          <TxDetailRow label="Platform fee" mono dim>
+            {feeColumn.hasFee && feeColumn.value ? (
+              formatTransactionMoney(feeColumn.value, feeColumn.currency)
+            ) : (
+              '—'
+            )}
+          </TxDetailRow>
+          {detail.fees?.feeStatus ? (
+            <TxDetailRow label="Fee status" dim>
+              {formatTransactionFeeStatusLabel(detail.fees.feeStatus)}
+            </TxDetailRow>
+          ) : null}
+          <TxDetailRow label={balanceImpact.label} mono strong>
+            <FormattedMoney
+              currency={balanceImpact.currency}
+              value={balanceImpact.value}
+            />
+          </TxDetailRow>
           {amounts.conversionRate != null ? (
             <TxDetailRow label="Conversion rate" mono dim>
               {amounts.conversionRate.toLocaleString('en-US')}
             </TxDetailRow>
           ) : null}
-          <TxDetailRow label="Net to balance" mono strong>
-            <FormattedMoney
-              currency={amounts.settlementCurrency}
-              value={String(net)}
-            />
-          </TxDetailRow>
           <TxDetailRow label="Status">
             <StatusPill status={detail.status} />
           </TxDetailRow>

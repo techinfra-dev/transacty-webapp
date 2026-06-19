@@ -11,6 +11,20 @@ export const transactionTypeSchema = z.enum([
 
 export const transactionStatusSchema = z.enum(['pending', 'success', 'failed'])
 
+export const transactionFeeTypeSchema = z.enum(['payin', 'payout'])
+
+export const transactionFeeStatusSchema = z.enum([
+  'applied',
+  'estimated',
+  'none',
+])
+
+export const transactionFeesSchema = z.object({
+  platformFee: z.string(),
+  feeType: transactionFeeTypeSchema.optional(),
+  feeStatus: transactionFeeStatusSchema.optional(),
+})
+
 export const transactionRailApiSchema = z.enum(['bangladesh', 'india', 'europe'])
 
 export const transactionRailFilterSchema = z.enum([
@@ -34,6 +48,9 @@ export const transactionItemSchema = z.object({
   currency: z.string().min(1).optional(),
   rail: z.string().min(1).optional(),
   railLabel: z.string().optional(),
+  fees: transactionFeesSchema.optional(),
+  netAmount: z.string().nullable().optional(),
+  totalWalletDebit: z.string().nullable().optional(),
 })
 
 export const transactionsListResponseSchema = z.object({
@@ -66,6 +83,9 @@ export const createRefundPayloadSchema = z.object({
 
 export type TransactionType = z.infer<typeof transactionTypeSchema>
 export type TransactionStatus = z.infer<typeof transactionStatusSchema>
+export type TransactionFeeType = z.infer<typeof transactionFeeTypeSchema>
+export type TransactionFeeStatus = z.infer<typeof transactionFeeStatusSchema>
+export type TransactionFees = z.infer<typeof transactionFeesSchema>
 export type TransactionRailApi = z.infer<typeof transactionRailApiSchema>
 export type TransactionRailFilter = z.infer<typeof transactionRailFilterSchema>
 export type TransactionItem = z.infer<typeof transactionItemSchema>

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { transactionFeesSchema } from './transactionsSchemas.ts'
 
 export const portalEnvironmentSchema = z.enum(['test', 'live'])
 
@@ -48,6 +49,11 @@ export const customerTransactionItemSchema = z
     status: z.string().optional(),
     createdAt: z.string().optional(),
     reference: z.string().optional(),
+    currency: z.string().optional(),
+    rail: z.string().optional(),
+    fees: transactionFeesSchema.optional(),
+    netAmount: z.string().nullable().optional(),
+    totalWalletDebit: z.string().nullable().optional(),
   })
   .passthrough()
 

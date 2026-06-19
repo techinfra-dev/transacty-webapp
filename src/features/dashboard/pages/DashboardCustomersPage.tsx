@@ -21,6 +21,10 @@ import {
 import { RefundTransactionDialog } from '../components/transactions/RefundTransactionDialog.tsx'
 import { TransferTransactionDialog } from '../components/transactions/TransferTransactionDialog.tsx'
 import {
+  getTransactionFeeColumnDisplay,
+} from '../components/transactions/transactionAmountUtils.ts'
+import { formatTransactionMoney } from '../components/transactions/transactionFormatters.ts'
+import {
   useCreateCustomerMutation,
   useCustomerDetailQuery,
   useCustomerTransactionsQuery,
@@ -29,6 +33,7 @@ import {
 import { useCustomersPage } from '../hooks/useCustomersPage.ts'
 import { useTransferRefundActions } from '../hooks/useTransferRefundActions.ts'
 import type { CustomerItem, CustomerStatus } from '../services/customersSchemas.ts'
+import type { TransactionItem } from '../services/transactionsSchemas.ts'
 
 export function DashboardCustomersPage() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
@@ -424,10 +429,11 @@ export function DashboardCustomersPage() {
           </p>
         ) : (
           <div className="rounded-lg border border-(--color-accent)/35 bg-(--color-card)">
-            <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-2 border-b border-(--color-accent)/35 px-3 py-2 [font-family:var(--font-body)] text-[11px] uppercase tracking-wide text-(--color-secondary)">
+            <div className="grid grid-cols-[1.1fr_0.8fr_0.9fr_0.8fr_0.8fr_1fr] gap-2 border-b border-(--color-accent)/35 px-3 py-2 [font-family:var(--font-body)] text-[11px] uppercase tracking-wide text-(--color-secondary)">
               <p>Reference</p>
               <p>Type</p>
               <p>Amount</p>
+              <p>Fee</p>
               <p>Status</p>
               <p>Created</p>
             </div>
@@ -438,12 +444,15 @@ export function DashboardCustomersPage() {
                 const created = tx.createdAt
                   ? formatDateTime(tx.createdAt)
                   : { primary: '—', secondary: '' }
+                const feeColumn = getTransactionFeeColumnDisplay(
+                  tx as TransactionItem,
+                )
                 return (
                   <div
                     key={`${tx.id ?? 'tx'}-${index}`}
                     role={canOpenDetail ? 'button' : undefined}
                     tabIndex={canOpenDetail ? 0 : undefined}
-                    className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0 ${
+                    className={`grid grid-cols-[1.1fr_0.8fr_0.9fr_0.8fr_0.8fr_1fr] gap-2 border-b border-(--color-accent)/20 px-3 py-2.5 [font-family:var(--font-body)] text-sm text-(--color-foreground) last:border-b-0 ${
                       canOpenDetail
                         ? 'cursor-pointer hover:bg-[#F2EFE8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F0700]/15'
                         : ''
@@ -467,6 +476,14 @@ export function DashboardCustomersPage() {
                     <p className="truncate">{tx.reference || tx.id || '—'}</p>
                     <p>{tx.type || '—'}</p>
                     <p>{tx.amount || '—'}</p>
+                    <p>
+                      {feeColumn.hasFee && feeColumn.value
+                        ? formatTransactionMoney(
+                            feeColumn.value,
+                            feeColumn.currency,
+                          )
+                        : '—'}
+                    </p>
                     <p>{tx.status || '—'}</p>
                     <p className="text-xs text-(--color-secondary)">{created.primary}</p>
                   </div>

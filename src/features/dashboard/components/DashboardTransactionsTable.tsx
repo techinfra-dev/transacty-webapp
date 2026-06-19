@@ -13,6 +13,7 @@ import {
 } from './transactions/transactionFormatters.ts'
 import {
   getTransactionAmountColumnDisplay,
+  getTransactionFeeColumnDisplay,
   getTransactionPaidColumnDisplay,
 } from './transactions/transactionAmountUtils.ts'
 
@@ -92,6 +93,7 @@ export function DashboardTransactionsTable({
         <col />
         <col />
         <col />
+        <col />
       </colgroup>
       <thead>
         <tr>
@@ -100,6 +102,7 @@ export function DashboardTransactionsTable({
           <th>Type</th>
           <th className="num">Amount</th>
           <th className="num">Settled</th>
+          <th className="num">Fee</th>
           <th>Status</th>
           <th>Date</th>
         </tr>
@@ -114,6 +117,7 @@ export function DashboardTransactionsTable({
           const isFailed = activity.status === 'failed'
           const amountColumn = getTransactionAmountColumnDisplay(activity)
           const paidColumn = getTransactionPaidColumnDisplay(activity)
+          const feeColumn = getTransactionFeeColumnDisplay(activity)
 
           return (
             <tr
@@ -162,6 +166,19 @@ export function DashboardTransactionsTable({
                     paidColumn.value,
                     paidColumn.currency,
                   )}
+                </span>
+              </td>
+              <td className="num">
+                <span
+                  className={
+                    isFailed || !feeColumn.hasFee
+                      ? 'dashboard-amt-muted'
+                      : 'dashboard-cell-mono-muted'
+                  }
+                >
+                  {feeColumn.hasFee && feeColumn.value
+                    ? formatTransactionMoney(feeColumn.value, feeColumn.currency)
+                    : '—'}
                 </span>
               </td>
               <td>
