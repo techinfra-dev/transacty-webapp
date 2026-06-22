@@ -6,6 +6,7 @@ import { TeamSettingsContent } from './TeamSettingsContent.tsx'
 import { WebhooksSettingsContent } from './WebhooksSettingsContent.tsx'
 import { MarketsSettingsContent } from './MarketsSettingsContent.tsx'
 import { ReconciliationSettingsContent } from './ReconciliationSettingsContent.tsx'
+import { WhitelistedIpSettingsContent } from './WhitelistedIpSettingsContent.tsx'
 
 interface SettingsTabContentPanelProps {
   activeTab: SettingsTabId
@@ -39,6 +40,9 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       {activeTab === 'reconciliation-report' ? (
         <ReconciliationSettingsContent />
       ) : null}
+      {activeTab === 'whitelisted-ip-addresses' ? (
+        <WhitelistedIpSettingsContent />
+      ) : null}
 
       {activeTab !== 'profile' &&
       activeTab !== 'security' &&
@@ -46,7 +50,8 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       activeTab !== 'team' &&
       activeTab !== 'api-keys' &&
       activeTab !== 'webhooks' &&
-      activeTab !== 'reconciliation-report' ? (
+      activeTab !== 'reconciliation-report' &&
+      activeTab !== 'whitelisted-ip-addresses' ? (
         <article className="settings-card">
           <div className="settings-card-body">
             <p className="settings-placeholder">

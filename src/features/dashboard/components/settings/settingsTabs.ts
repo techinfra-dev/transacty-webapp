@@ -72,7 +72,7 @@ export const tabContent: Record<
   'whitelisted-ip-addresses': {
     title: 'Whitelisted IP addresses',
     description:
-      'Restrict dashboard and API access by allowing only approved office or server IP addresses.',
+      'Control which origin IPs can call the merchant API (/v1/*) after HMAC authentication.',
   },
   'reconciliation-report': {
     title: 'Reconciliation report',

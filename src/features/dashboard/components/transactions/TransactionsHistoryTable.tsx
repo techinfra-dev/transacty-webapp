@@ -159,10 +159,12 @@ export function TransactionsHistoryTable({
                       : 'tx-history-amt tx-history-amt-paid'
                   }
                 >
-                  {formatTransactionMoney(
-                    paidColumn.value,
-                    paidColumn.currency,
-                  )}
+                  {paidColumn.hasValue && paidColumn.value
+                    ? formatTransactionMoney(
+                        paidColumn.value,
+                        paidColumn.currency,
+                      )
+                    : '—'}
                 </span>
               </td>
               <td className="num">

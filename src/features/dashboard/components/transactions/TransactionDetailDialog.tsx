@@ -291,10 +291,14 @@ function TransactionDetailBody({
             )}
           </TxDetailRow>
           <TxDetailRow label="Settled amount" mono dim>
-            <FormattedMoney
-              currency={amounts.settlementCurrency}
-              value={amounts.settlementAmount}
-            />
+            {detail.status === 'pending' ? (
+              '—'
+            ) : (
+              <FormattedMoney
+                currency={amounts.settlementCurrency}
+                value={amounts.settlementAmount}
+              />
+            )}
           </TxDetailRow>
           <TxDetailRow label="Platform fee" mono dim>
             {feeColumn.hasFee && feeColumn.value ? (

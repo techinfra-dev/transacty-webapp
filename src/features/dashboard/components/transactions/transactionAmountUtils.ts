@@ -22,7 +22,7 @@ export type TransactionAmountDisplay = {
 
 type TransactionLike = Pick<
   TransactionItem,
-  'amount' | 'paidAmount' | 'rail'
+  'amount' | 'paidAmount' | 'rail' | 'status'
 > & {
   currency?: TransactionItem['currency']
 } & Record<string, unknown>
@@ -282,8 +282,19 @@ export function getTransactionAmountColumnDisplay(
 }
 
 export function getTransactionPaidColumnDisplay(transaction: TransactionLike) {
+  const currency = getTransactionCurrency(transaction as TransactionItem)
+
+  if (transaction.status === 'pending') {
+    return {
+      hasValue: false,
+      value: null,
+      currency,
+    }
+  }
+
   const amounts = getTransactionAmountDisplay(transaction)
   return {
+    hasValue: true,
     value: amounts.settlementAmount,
     currency: amounts.settlementCurrency,
   }
