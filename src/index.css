@@ -5076,6 +5076,14 @@ body {
   color: var(--dash-fg);
 }
 
+.settings-recon-summary-value--muted {
+  font-family: var(--font-body);
+  font-size: var(--dash-outlet-body-sm);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--dash-fg-muted);
+}
+
 .settings-recon-table-card {
   overflow: hidden;
   padding: 0;

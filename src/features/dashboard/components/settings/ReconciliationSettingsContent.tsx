@@ -3,12 +3,16 @@ import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
 import { useReconciliationQuery } from '../../hooks/useReconciliationQuery.ts'
 import { downloadReconciliationCsv } from '../../services/reconciliationService.ts'
-import type { ReconciliationSummary } from '../../services/reconciliationSchemas.ts'
+import type {
+  ReconciliationRow,
+  ReconciliationVolumeByCurrency,
+} from '../../services/reconciliationSchemas.ts'
 import {
   getLedgerStatusPillClass,
   toTitleCase,
 } from '../transactions/transactionFormatters.ts'
 import { validateReconciliationDateRange } from '../../utils/reconciliationDateUtils.ts'
+import { isVisibleWallet } from '../../utils/balanceWalletUtils.ts'
 import { TransactionsFooter } from '../transactions/TransactionsFooter.tsx'
 import { SettingsCard } from './SettingsCard.tsx'
 import { settingsFieldInputClass, settingsFieldLabelClass } from './settingsFieldUtils.ts'
@@ -54,27 +58,72 @@ function truncateId(id: string) {
   return `${id.slice(0, 8)}…${id.slice(-4)}`
 }
 
-function readSummaryNumber(
-  summary: ReconciliationSummary | undefined,
-  key: keyof ReconciliationSummary,
-) {
-  const value = summary?.[key]
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0
-}
-
 function SummaryCard({
   label,
   value,
+  valueClassName,
 }: {
   label: string
   value: string
+  valueClassName?: string
 }) {
   return (
     <div className="settings-recon-summary-card">
       <p className="settings-recon-summary-label">{label}</p>
-      <p className="settings-recon-summary-value">{value}</p>
+      <p
+        className={`settings-recon-summary-value${valueClassName ? ` ${valueClassName}` : ''}`}
+      >
+        {value}
+      </p>
     </div>
   )
+}
+
+function filterVisibleVolumes(
+  volumes: ReconciliationVolumeByCurrency[] | undefined,
+) {
+  return (volumes ?? []).filter((item) => isVisibleWallet(item))
+}
+
+function countVisibleRowsByStatus(rows: ReconciliationRow[]) {
+  return rows.reduce(
+    (counts, row) => {
+      const status = row.status.toLowerCase()
+      if (status === 'success') {
+        counts.success += 1
+      } else if (status === 'failed') {
+        counts.failed += 1
+      } else if (status === 'pending') {
+        counts.pending += 1
+      }
+      return counts
+    },
+    { success: 0, failed: 0, pending: 0 },
+  )
+}
+
+function buildVolumeSummaryCards(
+  type: 'Pay-in' | 'Payout',
+  volumes: ReconciliationVolumeByCurrency[] | undefined,
+) {
+  const items = volumes ?? []
+  if (items.length === 0) {
+    return [
+      {
+        key: `${type}-empty`,
+        label: `${type} volume`,
+        value: 'No successful volume in range',
+        valueClassName: 'settings-recon-summary-value--muted',
+      },
+    ]
+  }
+
+  return items.map((item) => ({
+    key: `${type}-${item.currency}`,
+    label: `${type}: ${item.currency.trim().toUpperCase()}`,
+    value: item.amount,
+    valueClassName: undefined,
+  }))
 }
 
 export function ReconciliationSettingsContent() {
@@ -106,15 +155,35 @@ export function ReconciliationSettingsContent() {
 
   const allRows = reconciliationQuery.data?.rows ?? []
   const summary = reconciliationQuery.data?.summary
-  const totalItems =
-    summary?.totalTransactions ?? reconciliationQuery.data?.total ?? allRows.length
-  const paginatedRows = allRows.slice(offset, offset + pageSize)
+  const visibleRows = useMemo(
+    () => allRows.filter((row) => isVisibleWallet(row)),
+    [allRows],
+  )
+  const visibleStatusCounts = useMemo(
+    () => countVisibleRowsByStatus(visibleRows),
+    [visibleRows],
+  )
+  const totalItems = visibleRows.length
+  const paginatedRows = visibleRows.slice(offset, offset + pageSize)
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
   const startItem = totalItems === 0 ? 0 : offset + 1
   const endItem =
     totalItems === 0 ? 0 : Math.min(offset + paginatedRows.length, totalItems)
 
-  const totalCount = readSummaryNumber(summary, 'totalTransactions') || totalItems
+  const totalCount = totalItems
+  const volumeSummaryCards = useMemo(
+    () => [
+      ...buildVolumeSummaryCards(
+        'Pay-in',
+        filterVisibleVolumes(summary?.payinVolumeByCurrency),
+      ),
+      ...buildVolumeSummaryCards(
+        'Payout',
+        filterVisibleVolumes(summary?.payoutVolumeByCurrency),
+      ),
+    ],
+    [summary?.payinVolumeByCurrency, summary?.payoutVolumeByCurrency],
+  )
 
   async function handleDownloadCsv() {
     if (!rangeValid) {
@@ -197,25 +266,25 @@ export function ReconciliationSettingsContent() {
           <div className="settings-recon-summary-grid">
             <SummaryCard label="Total transactions" value={String(totalCount)} />
             <SummaryCard
-              label="Pay-in volume"
-              value={summary?.payinVolume ?? '—'}
-            />
-            <SummaryCard
-              label="Payout volume"
-              value={summary?.payoutVolume ?? '—'}
-            />
-            <SummaryCard
               label="Successful"
-              value={String(readSummaryNumber(summary, 'successCount'))}
+              value={String(visibleStatusCounts.success)}
             />
             <SummaryCard
               label="Failed"
-              value={String(readSummaryNumber(summary, 'failedCount'))}
+              value={String(visibleStatusCounts.failed)}
             />
             <SummaryCard
               label="Pending"
-              value={String(readSummaryNumber(summary, 'pendingCount'))}
+              value={String(visibleStatusCounts.pending)}
             />
+            {volumeSummaryCards.map((card) => (
+              <SummaryCard
+                key={card.key}
+                label={card.label}
+                value={card.value}
+                valueClassName={card.valueClassName}
+              />
+            ))}
           </div>
 
           <article className="settings-card settings-recon-table-card">

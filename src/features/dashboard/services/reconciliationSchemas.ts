@@ -15,18 +15,21 @@ export const reconciliationRowSchema = z.object({
   completedAt: z.string().nullable().optional(),
 })
 
-export const reconciliationSummarySchema = z
-  .object({
-    totalTransactions: z.number().optional(),
-    payinCount: z.number().optional(),
-    payoutCount: z.number().optional(),
-    payinVolume: z.string().optional(),
-    payoutVolume: z.string().optional(),
-    successCount: z.number().optional(),
-    failedCount: z.number().optional(),
-    pendingCount: z.number().optional(),
-  })
-  .passthrough()
+export const reconciliationVolumeByCurrencySchema = z.object({
+  currency: z.string(),
+  amount: z.string(),
+})
+
+export const reconciliationSummarySchema = z.object({
+  totalTransactions: z.number().optional(),
+  payinCount: z.number().optional(),
+  payoutCount: z.number().optional(),
+  successCount: z.number().optional(),
+  failedCount: z.number().optional(),
+  pendingCount: z.number().optional(),
+  payinVolumeByCurrency: z.array(reconciliationVolumeByCurrencySchema).optional(),
+  payoutVolumeByCurrency: z.array(reconciliationVolumeByCurrencySchema).optional(),
+})
 
 export const reconciliationReportResponseSchema = z.object({
   merchantId: z.string().optional(),
@@ -41,6 +44,9 @@ export const reconciliationReportResponseSchema = z.object({
 })
 
 export type ReconciliationRow = z.infer<typeof reconciliationRowSchema>
+export type ReconciliationVolumeByCurrency = z.infer<
+  typeof reconciliationVolumeByCurrencySchema
+>
 export type ReconciliationSummary = z.infer<typeof reconciliationSummarySchema>
 export type ReconciliationReportResponse = z.infer<
   typeof reconciliationReportResponseSchema

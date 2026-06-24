@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { Toast } from '../../../../components/ui/Toast.tsx'
 import { ToggleSwitch } from '../../../../components/ui/ToggleSwitch.tsx'
 import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
@@ -34,6 +35,15 @@ const enforceModeOptions = [
   },
 ]
 
+function LoadingButtonLabel({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--color-background)/40 border-t-(--color-background)" />
+      {label}
+    </span>
+  )
+}
+
 export function WhitelistedIpSettingsContent() {
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
@@ -52,7 +62,10 @@ export function WhitelistedIpSettingsContent() {
   const [notes, setNotes] = useState('')
   const [newCidr, setNewCidr] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
-  const [mutationError, setMutationError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    variant: 'success' | 'error'
+  } | null>(null)
 
   useEffect(() => {
     if (!rulesQuery.data) {
@@ -92,7 +105,7 @@ export function WhitelistedIpSettingsContent() {
 
   async function handleSave() {
     setValidationError(null)
-    setMutationError(null)
+    setToast(null)
 
     const normalizedCidrs = dedupeCidrs(cidrs)
     if (enabled && normalizedCidrs.length === 0) {
@@ -107,12 +120,18 @@ export function WhitelistedIpSettingsContent() {
         cidrs: normalizedCidrs,
         notes: notes.trim() || undefined,
       })
+      setToast({
+        message: 'API IP allowlist saved successfully.',
+        variant: 'success',
+      })
     } catch (error) {
-      setMutationError(
-        error instanceof Error
-          ? error.message
-          : 'Unable to save API IP allowlist right now.',
-      )
+      setToast({
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to save API IP allowlist right now.',
+        variant: 'error',
+      })
     }
   }
 
@@ -129,7 +148,8 @@ export function WhitelistedIpSettingsContent() {
   }
 
   return (
-    <div className="settings-stack">
+    <>
+      <div className="settings-stack">
       {!isKycVerified ? (
         <SettingsKycGate
           title={
@@ -190,7 +210,11 @@ export function WhitelistedIpSettingsContent() {
                   disabled={updateRulesMutation.isPending}
                   aria-busy={updateRulesMutation.isPending}
                 >
-                  {updateRulesMutation.isPending ? 'Saving…' : 'Save allowlist'}
+                  {updateRulesMutation.isPending ? (
+                    <LoadingButtonLabel label="Saving…" />
+                  ) : (
+                    'Save allowlist'
+                  )}
                 </button>
               </div>
             }
@@ -288,9 +312,6 @@ export function WhitelistedIpSettingsContent() {
             {validationError ? (
               <p className="settings-error settings-error--inline">{validationError}</p>
             ) : null}
-            {mutationError ? (
-              <p className="settings-error settings-error--inline">{mutationError}</p>
-            ) : null}
 
             <p className="settings-hint">
               Changes take effect within about 30 seconds. In strict mode, requests from
@@ -300,6 +321,15 @@ export function WhitelistedIpSettingsContent() {
           </SettingsCard>
         </>
       )}
-    </div>
+      </div>
+
+      {toast ? (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onClose={() => setToast(null)}
+        />
+      ) : null}
+    </>
   )
 }
