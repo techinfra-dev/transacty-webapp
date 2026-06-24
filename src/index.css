@@ -17,6 +17,7 @@
   --color-card: #FFFFFF;
   /* Dashboard sidebar (light nav — n23 / app theme) */
   --sidebar-width: 220px;
+  --dashboard-shell-header-height: 4.3125rem;
   --sidebar-bg: #F0F0F0;
   --dashboard-main-bg: #F6F6F6;
   --sidebar-border: #E5E0D6;
@@ -818,6 +819,17 @@ body {
 
 .dashboard-link-sm:hover {
   color: var(--dash-accent);
+}
+
+.dashboard-shell-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--dashboard-shell-header-height);
+  min-height: var(--dashboard-shell-header-height);
+  border-bottom: 1px solid var(--sidebar-border);
+  background: var(--sidebar-bg);
 }
 
 .dashboard-mobile-nav-scrim {

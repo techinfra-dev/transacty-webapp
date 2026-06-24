@@ -55,7 +55,7 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
 }
 
 const sidebarNavLinkClass =
-  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[12.5px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
+  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[15px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
 
 const sidebarNavLinkActiveClass =
   'bg-(--sidebar-link-active-bg) font-bold text-(--sidebar-link-active) shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
@@ -146,7 +146,7 @@ export function DashboardSidebarNav({
       <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain">
         {dashboardMenuSections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="px-2 [font-family:var(--font-body)] text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
+            <p className="px-2 [font-family:var(--font-body)] text-[10.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
               {section.title}
             </p>
             <div className="space-y-1.5">
@@ -170,7 +170,7 @@ export function DashboardSidebarNav({
                     ) : null}
                     <span
                       aria-hidden
-                      className="inline-flex size-4 shrink-0 items-center justify-center text-inherit"
+                      className="inline-flex size-[18px] shrink-0 items-center justify-center text-inherit"
                     >
                       <SidebarItemIcon to={item.to} active={isActive} />
                     </span>
@@ -226,7 +226,7 @@ export function DashboardSidebarLogo() {
         alt="Transacty"
         width={220}
         height={48}
-        className="h-10 w-auto max-w-[168px] object-contain object-center"
+        className="h-8 w-auto max-w-[150px] object-contain object-center"
         decoding="async"
       />
     </Link>

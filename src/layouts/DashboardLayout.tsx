@@ -222,7 +222,7 @@ export function DashboardLayout() {
     <section className="h-screen bg-(--color-background)">
       <div className="grid h-full lg:grid-cols-[var(--sidebar-width)_1fr]">
         <aside className="hidden h-full w-(--sidebar-width) shrink-0 flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) lg:flex">
-          <header className="flex shrink-0 items-center justify-center border-b border-(--sidebar-border) bg-(--sidebar-bg) px-3 py-3">
+          <header className="dashboard-shell-header justify-center px-3">
             <DashboardSidebarLogo />
           </header>
           <DashboardSidebarNav
@@ -257,7 +257,7 @@ export function DashboardLayout() {
               aria-label="Main navigation"
               aria-hidden={isMobileNavClosing}
             >
-              <header className="flex shrink-0 items-center gap-2 border-b border-(--sidebar-border) bg-(--sidebar-bg) px-3 py-3">
+              <header className="dashboard-shell-header gap-2 px-3">
                 <div className="flex min-w-0 flex-1 items-center justify-center">
                   <DashboardSidebarLogo />
                 </div>

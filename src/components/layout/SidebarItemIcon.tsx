@@ -11,7 +11,7 @@ type SidebarItemIconProps = {
   active?: boolean
 }
 
-const iconClass = 'block h-4 w-4 shrink-0'
+const iconClass = 'block h-[18px] w-[18px] shrink-0'
 
 type IconPaths = {
   outline: string | string[]

@@ -80,7 +80,7 @@ export function DashboardOutletHeader({
   const initials = displayInitials(merchantName, email)
 
   return (
-    <header className="sticky top-0 z-10 flex shrink-0 items-center justify-between gap-4 border-b border-(--sidebar-border) bg-(--sidebar-bg) px-4 py-2.5 md:px-5">
+    <header className="dashboard-shell-header sticky top-0 z-10 justify-between gap-4 px-4 md:px-5">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <button
           type="button"
