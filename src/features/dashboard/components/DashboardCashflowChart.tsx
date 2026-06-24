@@ -42,7 +42,7 @@ export function DashboardCashflowChart() {
       <div className="dashboard-card-head">
         <div>
           <h2 className="dashboard-card-title">Transaction activity</h2>
-          <div className="mt-1.5 flex flex-wrap items-baseline gap-3 [font-family:var(--font-body)] text-xs text-[rgba(15,7,0,0.58)]">
+          <div className="mt-1.5 flex flex-wrap items-baseline gap-3 [font-family:var(--font-body)] text-sm text-[rgba(15,7,0,0.58)]">
             <span className="inline-flex items-center gap-1.5">
               <i className="inline-block h-2 w-2 rounded-sm bg-[#84CC16]" aria-hidden />
               Successful{' '}
@@ -114,7 +114,7 @@ export function DashboardCashflowChart() {
                       x={PAD_X - 6}
                       y={y + 3}
                       textAnchor="end"
-                      className="fill-[rgba(15,7,0,0.4)] [font-family:ui-monospace,monospace] text-[9px]"
+                      className="fill-[rgba(15,7,0,0.4)] [font-family:ui-monospace,monospace] text-[11px]"
                     >
                       {formatChartCount(Math.round(maxValue * tick))}
                     </text>
@@ -160,7 +160,7 @@ export function DashboardCashflowChart() {
                         x={PAD_X + index * groupWidth + groupWidth / 2}
                         y={CHART_HEIGHT - 4}
                         textAnchor="middle"
-                        className="fill-[rgba(15,7,0,0.4)] [font-family:ui-monospace,monospace] text-[9px]"
+                        className="fill-[rgba(15,7,0,0.4)] [font-family:ui-monospace,monospace] text-[11px]"
                       >
                         {bucket.label}
                       </text>
@@ -169,7 +169,7 @@ export function DashboardCashflowChart() {
                 )
               })}
             </svg>
-            <p className="mt-1 text-center [font-family:var(--font-body)] text-[10px] text-[rgba(15,7,0,0.45)]">
+            <p className="mt-1 text-center [font-family:var(--font-body)] text-xs text-[rgba(15,7,0,0.45)]">
               Daily transaction counts (successful vs failed) in the selected period
             </p>
           </div>

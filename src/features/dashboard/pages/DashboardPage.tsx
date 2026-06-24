@@ -23,7 +23,7 @@ function MerchantKycBadge({
   kycStatus: 'pending' | 'verified' | 'rejected' | undefined
 }) {
   const base =
-    'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[10.5px] font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
+    'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[12px] font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
   if (kycStatus === undefined) {
     return (
       <span

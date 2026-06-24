@@ -56,6 +56,36 @@
   --dash-card-pad: 22px;
   --dash-row-y: 14px;
 
+  /* Outlet typography scale (main dashboard content) */
+  --dash-outlet-title: 23px;
+  --dash-outlet-title-lg: 27px;
+  --dash-outlet-subtitle: 14px;
+  --dash-outlet-section: 14px;
+  --dash-outlet-card-title: 15px;
+  --dash-outlet-link-sm: 13px;
+  --dash-outlet-body: 14px;
+  --dash-outlet-body-sm: 13px;
+  --dash-outlet-caption: 12px;
+  --dash-outlet-table: 14px;
+  --dash-outlet-table-head: 11.5px;
+  --dash-outlet-table-head-compact: 12px;
+  --dash-outlet-table-footer: 13px;
+  --dash-outlet-btn: 13px;
+  --dash-outlet-pill: 12.5px;
+  --dash-outlet-pill-compact: 12px;
+  --dash-outlet-tab: 14px;
+  --dash-outlet-tab-badge: 12px;
+  --dash-outlet-mono: 14px;
+  --dash-outlet-muted: 13.5px;
+  --dash-outlet-subtle: 13px;
+  --dash-outlet-wallet-meta: 12px;
+  --dash-outlet-wallet-label: 13px;
+  --dash-outlet-wallet-balance: 1.625rem;
+  --dash-outlet-method-tag: 13px;
+  --dash-outlet-metric-label: 10px;
+  --dash-outlet-chart-seg: 12.5px;
+  --dash-outlet-donut-legend: 11px;
+
   /* Auth form panel */
   --auth-content-bg: #ffffff;
   --auth-header-border: #e8e8e8;
@@ -793,7 +823,7 @@ body {
 .dashboard-card-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--dash-outlet-card-title);
   font-weight: 600;
   letter-spacing: -0.005em;
   color: var(--dash-fg);
@@ -802,7 +832,7 @@ body {
 .dashboard-section-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: var(--dash-outlet-section);
   font-weight: 600;
   color: var(--dash-fg);
   letter-spacing: -0.005em;
@@ -811,7 +841,7 @@ body {
 
 .dashboard-link-sm {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-link-sm);
   font-weight: 500;
   color: var(--dash-fg-muted);
   text-decoration: none;
@@ -987,7 +1017,7 @@ body {
   z-index: 2;
   transform: translateY(-50%);
   font-family: ui-monospace, monospace;
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-pill);
   font-weight: 600;
   letter-spacing: 0.03em;
   transition-property: top, transform, font-weight;
@@ -1011,7 +1041,7 @@ body {
   transform: translateY(6px);
   clip-path: inset(0 0 100% 0);
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   line-height: 1.25;
   color: var(--dash-fg-subtle);
@@ -1040,7 +1070,7 @@ body {
   z-index: 2;
   transform: translateY(-50%);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: var(--dash-outlet-wallet-meta);
   font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
@@ -1061,7 +1091,7 @@ body {
   left: 10px;
   bottom: 8px;
   transform: translateY(0);
-  font-size: 13px;
+  font-size: var(--dash-outlet-body);
   font-weight: 700;
   color: var(--dash-fg);
   max-width: calc(100% - 20px);
@@ -1123,7 +1153,7 @@ body {
   cursor: pointer;
   padding: 12px 12px 10px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-tab);
   font-weight: 500;
   color: var(--dash-fg-subtle);
   transition:
@@ -1152,7 +1182,7 @@ body {
   justify-content: center;
   border-radius: 999px;
   padding: 0 6px;
-  font-size: 11px;
+  font-size: var(--dash-outlet-tab-badge);
   font-weight: 600;
   color: var(--dash-fg-subtle);
   background: color-mix(in srgb, var(--dash-fg) 8%, transparent);
@@ -1272,17 +1302,17 @@ body {
 }
 
 .dashboard-wallets-grid--pair .dashboard-wallet-code {
-  font-size: 11px;
+  font-size: var(--dash-outlet-wallet-meta);
   padding: 2px 5px;
 }
 
 .dashboard-wallets-grid--pair .dashboard-wallet-name {
-  font-size: 11px;
+  font-size: var(--dash-outlet-wallet-meta);
 }
 
 .dashboard-wallets-grid--pair .dashboard-wallet-footer {
   padding-top: 6px;
-  font-size: 10px;
+  font-size: var(--dash-outlet-caption);
 }
 
 .dashboard-wallet {
@@ -1312,7 +1342,7 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: var(--dash-outlet-wallet-balance);
   font-weight: 600;
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
@@ -1322,7 +1352,7 @@ body {
 .dashboard-wallet-code-inline {
   flex-shrink: 0;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: var(--dash-outlet-wallet-meta);
   font-weight: 500;
   color: var(--dash-fg-subtle);
 }
@@ -1338,7 +1368,7 @@ body {
 .dashboard-wallet-footer-note {
   margin-left: auto;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: var(--dash-outlet-wallet-meta);
   color: var(--dash-fg-subtle);
 }
 
@@ -1386,7 +1416,7 @@ body {
 
 .dashboard-add-wallet-title {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-wallet-label);
   font-weight: 600;
   color: var(--dash-fg);
 }
@@ -1394,14 +1424,14 @@ body {
 .dashboard-add-wallet-desc {
   max-width: 12rem;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: var(--dash-outlet-caption);
   line-height: 1.35;
   color: var(--dash-fg-muted);
 }
 
 .add-wallet-empty {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-body);
   color: var(--dash-fg-muted);
   text-align: center;
   padding: 24px 8px;
@@ -1457,21 +1487,21 @@ body {
 
 .add-wallet-row-title {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-body);
   font-weight: 600;
   color: var(--dash-fg);
 }
 
 .add-wallet-row-sub {
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: var(--dash-outlet-body-sm);
   color: var(--dash-fg-muted);
 }
 
 .add-wallet-row-note {
   margin-top: 4px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   line-height: 1.35;
   color: var(--dash-fg-muted);
 }
@@ -1479,7 +1509,7 @@ body {
 .add-wallet-row-error {
   margin-top: 4px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   line-height: 1.35;
   color: #b91c1c;
 }
@@ -1490,7 +1520,7 @@ body {
 
 .add-wallet-row-btn {
   padding: 6px 14px;
-  font-size: 12px;
+  font-size: var(--dash-outlet-body-sm);
   border-radius: 8px;
   cursor: pointer;
 }
@@ -1532,7 +1562,7 @@ body {
   border: 1px solid var(--dash-border-strong);
   padding: 4px 10px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 600;
   color: var(--dash-fg-muted);
   white-space: nowrap;
@@ -1545,7 +1575,7 @@ body {
 
 .dashboard-wallet-code {
   font-family: ui-monospace, monospace;
-  font-size: 12px;
+  font-size: var(--dash-outlet-wallet-label);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--dash-fg-muted);
@@ -1556,7 +1586,7 @@ body {
 
 .dashboard-wallet-name {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-wallet-label);
   font-weight: 400;
   color: var(--dash-fg-muted);
   line-height: 1.3;
@@ -1601,7 +1631,7 @@ body {
   align-items: center;
   gap: 5px;
   font-family: var(--font-body);
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-pill);
   font-weight: 500;
   padding: 2px 8px 2px 6px;
   border-radius: 999px;
@@ -1660,7 +1690,7 @@ body {
   padding: 12px var(--dash-card-pad);
   border-top: 1px solid var(--dash-hairline);
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-table-footer);
   color: var(--dash-fg-subtle);
   background: var(--dash-surface);
 }
@@ -1687,23 +1717,23 @@ body {
 }
 
 .dashboard-card-head--compact .dashboard-section-title {
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-body);
 }
 
 .dashboard-card-head--compact .dashboard-link-sm {
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-pill);
 }
 
 .dashboard-table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-table);
 }
 
 .dashboard-table thead th {
   text-align: left;
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1733,7 +1763,7 @@ body {
   table-layout: fixed;
   width: 100%;
   min-width: 48rem;
-  font-size: 13px;
+  font-size: var(--dash-outlet-table);
 }
 
 .dashboard-table.dashboard-table--compact thead th,
@@ -1765,7 +1795,7 @@ body {
 }
 
 .dashboard-table.dashboard-table--compact thead th {
-  font-size: 11px;
+  font-size: var(--dash-outlet-table-head-compact);
   letter-spacing: 0.06em;
   padding-top: 9px;
   padding-bottom: 9px;
@@ -1809,7 +1839,7 @@ body {
 }
 
 .dashboard-table.dashboard-table--compact .dashboard-pill {
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-pill);
   padding: 2px 8px 2px 6px;
   gap: 5px;
 }
@@ -1820,7 +1850,7 @@ body {
 }
 
 .dashboard-table.dashboard-table--compact .dashboard-amt-muted {
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-muted);
 }
 
 .dashboard-table tbody tr:last-child td {
@@ -1838,7 +1868,7 @@ body {
 
 .dashboard-amt-muted {
   font-family: ui-monospace, monospace;
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-muted);
   font-variant-numeric: tabular-nums;
   color: var(--dash-fg-subtle);
   text-decoration: line-through;
@@ -1847,7 +1877,7 @@ body {
 
 .dashboard-cell-primary {
   font-family: ui-monospace, monospace;
-  font-size: 13px;
+  font-size: var(--dash-outlet-mono);
   color: var(--dash-fg);
 }
 
@@ -1860,13 +1890,13 @@ body {
 }
 
 .dashboard-cell-subtle {
-  font-size: 12px;
+  font-size: var(--dash-outlet-body-sm);
   color: var(--dash-fg-subtle);
 }
 
 .dashboard-cell-mono {
   font-family: ui-monospace, monospace;
-  font-size: 13px;
+  font-size: var(--dash-outlet-mono);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--dash-fg);
@@ -1874,7 +1904,7 @@ body {
 
 .dashboard-cell-mono-muted {
   font-family: ui-monospace, monospace;
-  font-size: 13px;
+  font-size: var(--dash-outlet-mono);
   font-variant-numeric: tabular-nums;
   color: var(--dash-fg-subtle);
 }
@@ -1882,7 +1912,7 @@ body {
 .dashboard-caption {
   margin-top: 2px;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: var(--dash-outlet-caption);
   color: var(--dash-fg-subtle);
 }
 
@@ -1944,7 +1974,7 @@ body {
 
 .wallet-metric-tile-label {
   font-family: var(--font-body);
-  font-size: 9px;
+  font-size: var(--dash-outlet-metric-label);
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1976,7 +2006,7 @@ body {
 
 .dash-page-title {
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: var(--dash-outlet-title);
   font-weight: 600;
   letter-spacing: -0.025em;
   color: var(--dash-fg);
@@ -1984,7 +2014,7 @@ body {
 
 @media (min-width: 768px) {
   .dash-page-title {
-    font-size: 25px;
+    font-size: var(--dash-outlet-title-lg);
   }
 }
 
@@ -1992,7 +2022,7 @@ body {
   margin-top: 4px;
   max-width: 36rem;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-subtitle);
   line-height: 1.625;
   color: var(--dash-fg-muted);
 }
@@ -2004,7 +2034,7 @@ body {
   background: var(--dash-surface) !important;
   padding-left: 10px;
   padding-right: 10px;
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-btn);
   font-weight: 600;
   color: var(--dash-fg) !important;
 }
@@ -2020,7 +2050,7 @@ body {
   background: var(--color-primary) !important;
   padding-left: 10px;
   padding-right: 10px;
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-btn);
   font-weight: 600;
   color: var(--color-background) !important;
 }
@@ -2051,7 +2081,7 @@ body {
 }
 
 .dashboard-donut-legend-amount {
-  font-size: 10px;
+  font-size: var(--dash-outlet-donut-legend);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--dash-fg-muted);
@@ -2070,7 +2100,7 @@ body {
   border: 0;
   background: transparent;
   font-family: ui-monospace, monospace;
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-chart-seg);
   font-weight: 500;
   color: var(--dash-fg-muted);
   padding: 4px 10px;
@@ -2176,7 +2206,7 @@ body {
 .tx-detail-eyebrow {
   margin-bottom: 6px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2221,7 +2251,7 @@ body {
   overflow: visible;
   white-space: nowrap;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-method-tag);
   font-weight: 500;
   color: var(--dash-fg-muted);
   padding: 2px 8px;
@@ -2274,7 +2304,7 @@ body {
   padding: 18px 0 6px;
   border-bottom: 1px solid var(--dash-hairline);
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2806,7 +2836,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-table);
 }
 
 .tx-history-table thead th {
@@ -2814,7 +2844,7 @@ body {
   top: 0;
   z-index: 1;
   text-align: left;
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2909,7 +2939,7 @@ body {
   display: flex;
   align-items: baseline;
   gap: 2px;
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-muted);
 }
 
 .tx-history-mono {
@@ -2924,7 +2954,7 @@ body {
 .tx-history-amt {
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, monospace;
-  font-size: 12.5px;
+  font-size: var(--dash-outlet-muted);
   color: var(--dash-fg);
   font-weight: 500;
 }
@@ -2945,13 +2975,13 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  font-size: 11.5px;
+  font-size: var(--dash-outlet-body-sm);
   line-height: 1.3;
   white-space: normal;
 }
 
 .tx-history-table .dashboard-pill {
-  font-size: 11px;
+  font-size: var(--dash-outlet-pill-compact);
   padding: 2px 7px 2px 5px;
   gap: 4px;
 }
@@ -2990,7 +3020,7 @@ body {
 .tx-history-foot-info {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-body-sm);
   color: var(--dash-fg-muted);
 }
 
@@ -3005,7 +3035,7 @@ body {
   gap: 8px;
   background: var(--dash-warning-soft);
   color: var(--dash-warning);
-  font: 500 12px var(--font-body);
+  font: 500 var(--dash-outlet-body-sm) var(--font-body);
   padding: 6px 12px 6px 10px;
   border-radius: 999px;
 }
@@ -3279,7 +3309,7 @@ body {
 .payout-panel-section-title {
   margin: 0 0 4px;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--dash-fg);
 }
@@ -3287,7 +3317,7 @@ body {
 .payout-panel-section-desc {
   margin: 0 0 16px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-subtitle);
   line-height: 1.5;
   color: var(--dash-fg-muted);
 }
@@ -3311,7 +3341,7 @@ body {
 
 .payout-field-label {
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3320,7 +3350,7 @@ body {
 
 .payout-field-hint {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-body-sm);
   line-height: 1.45;
   color: var(--dash-fg-muted);
 }
@@ -4400,7 +4430,7 @@ body {
 .settings-section-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--dash-fg);
 }
@@ -4409,7 +4439,7 @@ body {
   margin: 0;
   max-width: 32rem;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: var(--dash-outlet-subtitle);
   line-height: 1.45;
   color: var(--dash-fg-muted);
 }
@@ -4441,7 +4471,7 @@ body {
 .settings-card-title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--dash-outlet-card-title);
   font-weight: 600;
   color: var(--dash-fg);
 }
@@ -4449,7 +4479,7 @@ body {
 .settings-card-desc {
   margin: 4px 0 0;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--dash-outlet-body-sm);
   line-height: 1.45;
   color: var(--dash-fg-muted);
 }
@@ -4704,7 +4734,7 @@ body {
   background: var(--dash-surface-2);
   padding: 10px 14px;
   font-family: var(--font-body);
-  font-size: 10.5px;
+  font-size: var(--dash-outlet-table-head);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;

@@ -71,7 +71,7 @@ export function TransactionsHistoryTable({
 
   if (rows.length === 0) {
     return (
-      <p className="px-6 py-12 text-center [font-family:var(--font-body)] text-[13px] text-[var(--dash-fg-subtle)]">
+      <p className="px-6 py-12 text-center [font-family:var(--font-body)] text-sm text-[var(--dash-fg-subtle)]">
         {emptyMessage}
       </p>
     )

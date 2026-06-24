@@ -70,7 +70,7 @@ export function DashboardWalletPage() {
         </p>
         <Link
           to="/dashboard"
-          className="dash-btn-outline mt-4 inline-flex items-center rounded-lg px-3 [font-family:var(--font-body)] text-[11.5px]"
+          className="dash-btn-outline mt-4 inline-flex items-center rounded-lg px-3 [font-family:var(--font-body)]"
         >
           Back to dashboard
         </Link>

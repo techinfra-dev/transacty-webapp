@@ -185,7 +185,7 @@ export function DashboardStatCard({
       <WalletCardWaves />
       <div className="relative z-10 flex flex-1 flex-col">
         <div className="flex items-start justify-between gap-2">
-          <p className="[font-family:var(--font-body)] text-[10px] font-medium text-[#06261B]/75">
+          <p className="[font-family:var(--font-body)] text-xs font-medium text-[#06261B]/75">
             {title}
           </p>
           <WalletIconBadge />
@@ -201,14 +201,14 @@ export function DashboardStatCard({
           ) : null}
         </div>
         <div className="mt-auto flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 pt-2">
-          <span className="[font-family:var(--font-body)] text-[10px] font-medium text-[#06261B]/65">
+          <span className="[font-family:var(--font-body)] text-xs font-medium text-[#06261B]/65">
             {noteDescriptor}
           </span>
-          <span className="text-[10px] text-[#06261B]/40" aria-hidden>
+          <span className="text-xs text-[#06261B]/40" aria-hidden>
             ·
           </span>
           <span
-            className={`inline-flex max-w-full shrink-0 items-center truncate rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[9px] font-semibold capitalize ${pillClass}`}
+            className={`inline-flex max-w-full shrink-0 items-center truncate rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[11px] font-semibold capitalize ${pillClass}`}
           >
             {statusDisplay}
           </span>
@@ -221,21 +221,21 @@ export function DashboardStatCard({
         <StatIcon name={icon} />
       </div>
       <div className="min-w-0">
-        <p className="[font-family:var(--font-body)] text-[10px] font-medium text-[#566167]">
+        <p className="[font-family:var(--font-body)] text-xs font-medium text-[#566167]">
           {title}
         </p>
         <p className="mt-1 wrap-break-word [font-family:var(--font-display)] text-base font-bold leading-tight tracking-tight text-[#06261B]">
           {value}
         </p>
         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
-          <span className="line-clamp-2 [font-family:var(--font-body)] text-[11px] text-[#566167]">
+          <span className="line-clamp-2 [font-family:var(--font-body)] text-[13px] text-[#566167]">
             {noteDescriptor}
           </span>
-          <span className="select-none text-[11px] text-[#9D8F82]" aria-hidden>
+          <span className="select-none text-[13px] text-[#9D8F82]" aria-hidden>
             ·
           </span>
           <span
-            className={`inline-flex max-w-full shrink-0 items-center truncate rounded-full px-2.5 py-0.5 [font-family:var(--font-body)] text-[10px] font-semibold capitalize md:text-xs ${pillClass}`}
+            className={`inline-flex max-w-full shrink-0 items-center truncate rounded-full px-2.5 py-0.5 [font-family:var(--font-body)] text-xs font-semibold capitalize md:text-sm ${pillClass}`}
           >
             {statusDisplay}
           </span>

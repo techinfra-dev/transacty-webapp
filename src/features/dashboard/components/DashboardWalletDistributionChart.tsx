@@ -45,7 +45,7 @@ export function DashboardWalletDistributionChart() {
       <div className="dashboard-card-head dashboard-card-head--compact">
         <div>
           <h2 className="dashboard-section-title">Wallet distribution</h2>
-          <p className="dashboard-caption text-[10px]!">
+          <p className="dashboard-caption">
             Balance share across pockets
           </p>
         </div>
@@ -57,15 +57,15 @@ export function DashboardWalletDistributionChart() {
             <LoadingSpinner label="Loading distribution..." />
           </div>
         ) : walletsQuery.isError ? (
-          <p className="py-8 text-center [font-family:var(--font-body)] text-xs text-[#b91c1c]">
+          <p className="py-8 text-center [font-family:var(--font-body)] text-sm text-[#b91c1c]">
             Unable to load wallet balances.
           </p>
         ) : walletCount === 0 ? (
-          <p className="dashboard-caption py-8 text-center text-xs!">
+          <p className="dashboard-caption py-8 text-center">
             No wallets to display.
           </p>
         ) : !hasPositiveBalance ? (
-          <p className="dashboard-caption py-8 text-center text-xs!">
+          <p className="dashboard-caption py-8 text-center">
             Balances are zero across all pockets.
           </p>
         ) : (
@@ -103,7 +103,7 @@ export function DashboardWalletDistributionChart() {
                   x={CX}
                   y={CY - 6}
                   textAnchor="middle"
-                  className="dashboard-donut-center-label [font-family:var(--font-body)] text-[9px]"
+                  className="dashboard-donut-center-label [font-family:var(--font-body)] text-[11px]"
                 >
                   {walletCount === 1 ? 'Wallet' : 'Wallets'}
                 </text>
@@ -111,7 +111,7 @@ export function DashboardWalletDistributionChart() {
                   x={CX}
                   y={CY + 10}
                   textAnchor="middle"
-                  className="dashboard-donut-center-value [font-family:var(--font-display)] text-[15px] font-semibold"
+                  className="dashboard-donut-center-value [font-family:var(--font-display)] text-base font-semibold"
                 >
                   {walletCount}
                 </text>
@@ -122,10 +122,10 @@ export function DashboardWalletDistributionChart() {
               {slices.map((slice) => (
                 <li
                   key={slice.id}
-                  className="flex items-center gap-2 [font-family:var(--font-body)] text-[11px]"
+                  className="flex items-center gap-2 [font-family:var(--font-body)] text-[13px]"
                 >
                   <span
-                    className="inline-flex min-w-[2.25rem] shrink-0 items-center justify-center rounded px-1 py-0.5 text-[9px] font-semibold text-white"
+                    className="inline-flex min-w-[2.25rem] shrink-0 items-center justify-center rounded px-1 py-0.5 text-[11px] font-semibold text-white"
                     style={{ backgroundColor: slice.color }}
                   >
                     {formatDistributionPercent(slice.percent)}

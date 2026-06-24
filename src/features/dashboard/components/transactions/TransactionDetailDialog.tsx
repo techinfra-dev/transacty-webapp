@@ -92,7 +92,7 @@ function TxDetailRow({
             onClick={onCopy}
           >
             {copied ? (
-              <span className="[font-family:var(--font-body)] text-[9px] font-semibold uppercase">
+              <span className="[font-family:var(--font-body)] text-[11px] font-semibold uppercase">
                 OK
               </span>
             ) : (

@@ -69,7 +69,7 @@ export function DashboardTransactionsTable({
 
   if (transactionsQuery.isError) {
     return (
-      <p className="px-3 py-6 text-center [font-family:var(--font-body)] text-xs text-[#b91c1c]">
+      <p className="px-3 py-6 text-center [font-family:var(--font-body)] text-sm text-[#b91c1c]">
         Unable to load transactions right now.
       </p>
     )

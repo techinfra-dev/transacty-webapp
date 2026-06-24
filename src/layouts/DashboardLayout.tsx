@@ -294,7 +294,7 @@ export function DashboardLayout() {
           />
 
           <div
-            className={`min-h-0 flex-1 overflow-y-auto p-4 md:p-5 ${portalEnvironment === 'test' ? 'pb-32' : ''}`}
+            className={`dashboard-outlet min-h-0 flex-1 overflow-y-auto p-4 md:p-5 ${portalEnvironment === 'test' ? 'pb-32' : ''}`}
           >
           {showKycPendingBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
