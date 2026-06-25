@@ -3,7 +3,12 @@ import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
-import { isPayoutSupportedCurrency } from './payoutConstants.ts'
+import {
+  EUR_PAYOUT_FIAT_CURRENCY,
+  EUR_PAYOUT_SETTLEMENT_CURRENCY,
+  getPayoutRailForWallet,
+  isPayoutSupportedWallet,
+} from './payoutConstants.ts'
 
 type PayoutWalletStepProps = {
   wallets: BalanceWalletItem[] | undefined
@@ -60,7 +65,8 @@ export function PayoutWalletStep({
       {wallets.map((wallet) => {
         const isSelected = wallet.id === selectedWalletId
         const code = wallet.currency.trim().toUpperCase()
-        const isSupported = isPayoutSupportedCurrency(code)
+        const payoutRail = getPayoutRailForWallet(wallet)
+        const isSupported = isPayoutSupportedWallet(wallet)
         const balance = Number(wallet.availableBalance ?? wallet.balance)
         const safeBalance = Number.isFinite(balance) ? balance : 0
 
@@ -81,7 +87,9 @@ export function PayoutWalletStep({
               <span className="payout-wallet-name">{getCurrencyFullName(code)}</span>
               <span className="payout-wallet-meta">
                 {isSupported
-                  ? walletSubtitle(wallet)
+                  ? payoutRail === 'eur'
+                    ? `${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet · ${EUR_PAYOUT_FIAT_CURRENCY} payout`
+                    : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>
             </span>

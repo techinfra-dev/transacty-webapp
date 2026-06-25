@@ -1,14 +1,21 @@
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
+import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
+import {
+  EUR_PAYOUT_FIAT_CURRENCY,
+  type PayoutRail,
+} from './payoutConstants.ts'
 import { PayoutSummarySkeleton } from './PayoutSummarySkeleton.tsx'
 
 interface PayoutPinnedSummaryProps {
   environment: PortalEnvironment
+  payoutRail: PayoutRail | null
   selectedWallet: BalanceWalletItem | null
   formattedWalletBalance: string
   payload: PayoutFormPayload
+  eurPayload: EurPayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -16,20 +23,28 @@ interface PayoutPinnedSummaryProps {
 
 export function PayoutPinnedSummary({
   environment,
+  payoutRail,
   selectedWallet,
   formattedWalletBalance,
   payload,
+  eurPayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
 }: PayoutPinnedSummaryProps) {
   const senderName =
-    `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
-    '—'
+    payoutRail === 'eur'
+      ? `${eurPayload.userDetails.firstName} ${eurPayload.userDetails.lastName}`.trim() ||
+        '—'
+      : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
+        '—'
 
   const walletLabel = selectedWallet
     ? getCurrencyFullName(selectedWallet.currency.trim().toUpperCase())
     : null
+
+  const activeAmount =
+    payoutRail === 'eur' ? eurPayload.amount : payload.amount
 
   return (
     <aside data-payout-pinned className="payout-summary">
@@ -55,49 +70,79 @@ export function PayoutPinnedSummary({
       </div>
 
       <div className="payout-summary-row">
-        <p className="payout-summary-label">Amount</p>
+        <p className="payout-summary-label">
+          {payoutRail === 'eur' ? 'Payout amount (EUR)' : 'Amount'}
+        </p>
         <p
           className={
-            payload.amount.trim()
+            activeAmount.trim()
               ? 'payout-summary-value'
               : 'payout-summary-value payout-summary-value--placeholder'
           }
         >
-          {payload.amount.trim() ? formattedPreviewAmount : 'Not set'}
+          {activeAmount.trim() ? formattedPreviewAmount : 'Not set'}
         </p>
+        {payoutRail === 'eur' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            Settlement in {selectedWallet?.currency.trim().toUpperCase() || 'USDC'}
+          </p>
+        ) : null}
       </div>
 
       <div className="payout-summary-row">
         <p className="payout-summary-label">Beneficiary</p>
         {hasBeneficiaryDetails ? (
-          <div className="space-y-1">
-            <p className="payout-summary-value">
-              {payload.benificiaryAccountInfo.holderName || '—'}
-            </p>
-            <p className="payout-summary-value payout-summary-value--muted">
-              {payload.benificiaryAccountInfo.number || '—'}
-            </p>
-            <p className="payout-summary-value payout-summary-value--muted">
-              {payload.benificiaryAccountInfo.orgName || '—'}
-            </p>
-          </div>
+          payoutRail === 'eur' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{eurPayload.iban || '—'}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {EUR_PAYOUT_FIAT_CURRENCY} bank transfer
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <p className="payout-summary-value">
+                {payload.benificiaryAccountInfo.holderName || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {payload.benificiaryAccountInfo.number || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {payload.benificiaryAccountInfo.orgName || '—'}
+              </p>
+            </div>
+          )
         ) : (
           <PayoutSummarySkeleton />
         )}
       </div>
 
       <div className="payout-summary-row">
-        <p className="payout-summary-label">Sender</p>
+        <p className="payout-summary-label">
+          {payoutRail === 'eur' ? 'Beneficiary identity' : 'Sender'}
+        </p>
         {hasSenderDetails ? (
-          <div className="space-y-1">
-            <p className="payout-summary-value">{senderName}</p>
-            <p className="payout-summary-value payout-summary-value--muted">
-              {payload.cardHolderInfo.email || '—'}
-            </p>
-            <p className="payout-summary-value payout-summary-value--muted">
-              {payload.cardHolderInfo.phone || '—'}
-            </p>
-          </div>
+          payoutRail === 'eur' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {eurPayload.userDetails.email || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {eurPayload.userDetails.country || '—'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {payload.cardHolderInfo.email || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {payload.cardHolderInfo.phone || '—'}
+              </p>
+            </div>
+          )
         ) : (
           <PayoutSummarySkeleton />
         )}
