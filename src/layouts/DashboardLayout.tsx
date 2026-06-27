@@ -90,13 +90,16 @@ export function DashboardLayout() {
   const hasSubmittedBusinessProfile =
     profileQuery.data?.businessProfile?.status === 'submitted'
   const isKycPending = profileQuery.data?.kycStatus === 'pending'
+  const isKycRejected = profileQuery.data?.kycStatus === 'rejected'
   const isKycVerified = profileQuery.data?.kycStatus === 'verified'
   const isBusinessVerified = profileQuery.data?.businessProfile?.status === 'verified'
   const isFullyVerified = isKycVerified && isBusinessVerified
   const showKycPendingBanner =
     !isFullyVerified && hasSubmittedBusinessProfile && isKycPending
   const showActivationBanner =
-    !isFullyVerified && !showKycPendingBanner && authUser?.needsActivation
+    !isFullyVerified &&
+    !showKycPendingBanner &&
+    (authUser?.needsActivation || isKycRejected)
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthSessionUpdates(() => {
@@ -318,12 +321,15 @@ export function DashboardLayout() {
                   <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-amber-400" aria-hidden="true">
                     <path d="M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Zm0 2.75a.75.75 0 0 1 .75.75v4a.75.75 0 0 1-1.5 0V6a.75.75 0 0 1 .75-.75Zm0 8.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
                   </svg>
-                  Urgent: Submit Additional Information
+                  {isKycRejected
+                    ? 'Action required: Resubmit KYC verification'
+                    : 'Urgent: Submit Additional Information'}
                 </span>
                 <div className="text-center">
                   <span>
-                    To keep your account active, you need to provide additional
-                    business information.
+                    {isKycRejected
+                      ? 'Your KYC submission was rejected. Please review your details and resubmit.'
+                      : 'To keep your account active, you need to provide additional business information.'}
                   </span>{' '}
                   <button
                     type="button"

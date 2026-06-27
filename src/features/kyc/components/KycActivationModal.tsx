@@ -16,6 +16,7 @@ import {
   useSubmitKycMutation,
   useUpsertKycBusinessMutation,
 } from '../hooks/useKycMutations.ts'
+import { useProfileQuery } from '../../dashboard/hooks/useProfileQuery.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import { useKycDocumentsQuery, useKycPersonsQuery } from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
@@ -193,6 +194,8 @@ export function KycActivationModal({
   const addDocumentMutation = useAddKycDocumentMutation()
   const createDocumentUploadUrlMutation = useCreateKycDocumentUploadUrlMutation()
   const submitKycMutation = useSubmitKycMutation()
+  const profileQuery = useProfileQuery(isOpen)
+  const isKycRejected = profileQuery.data?.kycStatus === 'rejected'
   const personsQuery = useKycPersonsQuery(isOpen)
   const documentsQuery = useKycDocumentsQuery(isOpen)
   const ipCountryCodeQuery = useIpCountryCodeQuery(isOpen)
@@ -234,7 +237,8 @@ export function KycActivationModal({
   const documentCount = documentsQuery.data?.items.length ?? 0
 
   const isSubmitted =
-    merchantProgress?.isSubmitted || submitKycMutation.data?.status === 'submitted'
+    !isKycRejected &&
+    (merchantProgress?.isSubmitted || submitKycMutation.data?.status === 'submitted')
 
   const canAccessPersons =
     merchantProgress?.lastSuccessfulStep === 'business' ||
@@ -1216,6 +1220,13 @@ export function KycActivationModal({
                   )}
                 </div>
               </div>
+
+              {isKycRejected && !isSubmitted ? (
+                <div className="rounded-lg border border-rose-400/50 bg-rose-50 p-3 [font-family:var(--font-body)] text-sm text-rose-800">
+                  Your KYC submission was rejected. Review your information below and
+                  submit again when ready.
+                </div>
+              ) : null}
 
               {isSubmitted ? (
                 <div className="rounded-lg border border-(--color-primary)/35 bg-(--color-primary) p-3 [font-family:var(--font-body)] text-sm text-(--color-background)">
