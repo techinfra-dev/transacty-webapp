@@ -351,6 +351,8 @@ export function DashboardLayout() {
           isOpen={isKycModalOpen}
           merchantId={authUser.merchantId}
           onClose={closeKycDialog}
+          kycStatus={profileQuery.data?.kycStatus}
+          businessProfileStatus={profileQuery.data?.businessProfile?.status}
         />
       ) : null}
 

@@ -25,6 +25,8 @@ interface KycActivationModalProps {
   isOpen: boolean
   merchantId: string
   onClose: () => void
+  kycStatus?: 'pending' | 'verified' | 'rejected'
+  businessProfileStatus?: string
 }
 
 const stepOrder: KycWizardStep[] = ['business', 'persons', 'documents', 'submit']
@@ -126,12 +128,17 @@ export function KycActivationModal({
   isOpen,
   merchantId,
   onClose,
+  kycStatus,
+  businessProfileStatus,
 }: KycActivationModalProps) {
   const merchantProgress = useKycFlowStore(
     (state) => state.progressByMerchant[merchantId],
   )
   const markStepSuccessful = useKycFlowStore((state) => state.markStepSuccessful)
   const markSubmitted = useKycFlowStore((state) => state.markSubmitted)
+  const resetMerchantProgress = useKycFlowStore(
+    (state) => state.resetMerchantProgress,
+  )
 
   const [activeStep, setActiveStep] = useState<KycWizardStep>('business')
   const [businessError, setBusinessError] = useState<string | null>(null)
@@ -195,7 +202,11 @@ export function KycActivationModal({
   const createDocumentUploadUrlMutation = useCreateKycDocumentUploadUrlMutation()
   const submitKycMutation = useSubmitKycMutation()
   const profileQuery = useProfileQuery(isOpen)
-  const isKycRejected = profileQuery.data?.kycStatus === 'rejected'
+  const resolvedKycStatus = kycStatus ?? profileQuery.data?.kycStatus
+  const resolvedBusinessProfileStatus =
+    businessProfileStatus ?? profileQuery.data?.businessProfile?.status
+  const isKycOrKybRejected =
+    resolvedKycStatus === 'rejected' || resolvedBusinessProfileStatus === 'rejected'
   const personsQuery = useKycPersonsQuery(isOpen)
   const documentsQuery = useKycDocumentsQuery(isOpen)
   const ipCountryCodeQuery = useIpCountryCodeQuery(isOpen)
@@ -204,7 +215,13 @@ export function KycActivationModal({
     if (!isOpen) {
       return
     }
+    if (isKycOrKybRejected) {
+      resetMerchantProgress(merchantId)
+      setActiveStep('business')
+      return
+    }
     setActiveStep(getResumeStep(merchantProgress))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only resume step when modal opens
   }, [isOpen, merchantId])
 
   useEffect(() => {
@@ -236,9 +253,11 @@ export function KycActivationModal({
   const personCount = personsQuery.data?.items.length ?? 0
   const documentCount = documentsQuery.data?.items.length ?? 0
 
-  const isSubmitted =
-    !isKycRejected &&
-    (merchantProgress?.isSubmitted || submitKycMutation.data?.status === 'submitted')
+  const isPendingVerification =
+    !isKycOrKybRejected &&
+    (submitKycMutation.data?.status === 'submitted' ||
+      (resolvedKycStatus === 'pending' &&
+        resolvedBusinessProfileStatus === 'submitted'))
 
   const canAccessPersons =
     merchantProgress?.lastSuccessfulStep === 'business' ||
@@ -496,7 +515,7 @@ export function KycActivationModal({
                   'Save and continue'
                 )}
               </Button>
-            ) : activeStep === 'submit' && !isSubmitted ? (
+            ) : activeStep === 'submit' && !isPendingVerification ? (
               <Button
                 onClick={handleSubmitKyc}
                 disabled={submitKycMutation.isPending}
@@ -526,7 +545,7 @@ export function KycActivationModal({
             {stepOrder.map((step, index) => {
               const isActive = step === activeStep
               const isDone =
-                merchantProgress?.isSubmitted ||
+                (isPendingVerification && step === 'submit') ||
                 (merchantProgress?.lastSuccessfulStep
                   ? stepOrder.indexOf(merchantProgress.lastSuccessfulStep) >= index
                   : false)
@@ -1221,14 +1240,14 @@ export function KycActivationModal({
                 </div>
               </div>
 
-              {isKycRejected && !isSubmitted ? (
+              {isKycOrKybRejected ? (
                 <div className="rounded-lg border border-rose-400/50 bg-rose-50 p-3 [font-family:var(--font-body)] text-sm text-rose-800">
                   Your KYC submission was rejected. Review your information below and
                   submit again when ready.
                 </div>
               ) : null}
 
-              {isSubmitted ? (
+              {isPendingVerification ? (
                 <div className="rounded-lg border border-(--color-primary)/35 bg-(--color-primary) p-3 [font-family:var(--font-body)] text-sm text-(--color-background)">
                   Pending verification. Your KYC submission is under review.
                 </div>
