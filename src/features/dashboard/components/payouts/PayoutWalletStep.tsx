@@ -6,6 +6,7 @@ import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
+  INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   getPayoutRailForWallet,
   isPayoutSupportedWallet,
 } from './payoutConstants.ts'
@@ -89,7 +90,9 @@ export function PayoutWalletStep({
                 {isSupported
                   ? payoutRail === 'eur'
                     ? `${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet · ${EUR_PAYOUT_FIAT_CURRENCY} payout`
-                    : walletSubtitle(wallet)
+                    : payoutRail === 'cpg'
+                      ? `${INDIA_PAYOUT_SETTLEMENT_CURRENCY} wallet · on-chain payout`
+                      : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>
             </span>

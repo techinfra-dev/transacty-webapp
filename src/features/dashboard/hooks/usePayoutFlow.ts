@@ -10,6 +10,10 @@ import {
   useEurPayoutInstanceQuery,
 } from './useEurPayoutMutations.ts'
 import {
+  useCreateCpgPayoutMutation,
+  useCpgPayoutRequestQuery,
+} from './useCpgPayoutMutations.ts'
+import {
   createPayoutPayloadSchema,
   type BeneficiaryAccountInfo,
   type CardHolderInfo,
@@ -22,16 +26,24 @@ import {
   type EurPayoutUserDetails,
 } from '../services/eurPayoutSchemas.ts'
 import type { EurPayoutFormPayload } from '../services/eurPayoutFormTypes.ts'
+import type { CpgPayoutFormPayload } from '../services/cpgPayoutFormTypes.ts'
+import {
+  createCpgPayoutPayloadSchema,
+  type CpgPayoutInstance,
+} from '../services/cpgPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../services/payoutFormTypes.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
+  INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   getDefaultMerchantUrl,
   getPayoutRailForWallet,
   getPayoutReturnUrl,
+  initialCpgPayoutPayload,
   initialEurPayoutPayload,
   initialPayoutPayload,
   isPayoutSupportedWallet,
+  minimumCpgPayoutAmount,
   minimumEurPayoutAmount,
   minimumPayoutAmount,
   type PayoutRail,
@@ -44,14 +56,17 @@ export function usePayoutFlow() {
   const [clientError, setClientError] = useState<string | null>(null)
   const [createdPayout, setCreatedPayout] = useState<CreatePayoutResponse | null>(null)
   const [createdEurPayout, setCreatedEurPayout] = useState<EurPayoutInstance | null>(null)
+  const [createdCpgPayout, setCreatedCpgPayout] = useState<CpgPayoutInstance | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null)
   const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
   const [eurPayload, setEurPayload] = useState<EurPayoutFormPayload>(initialEurPayoutPayload)
+  const [cpgPayload, setCpgPayload] = useState<CpgPayoutFormPayload>(initialCpgPayoutPayload)
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
 
   const createPayoutMutation = useCreatePayoutMutation()
   const createEurPayoutMutation = useCreateEurPayoutMutation()
+  const createCpgPayoutMutation = useCreateCpgPayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
   const marketsQuery = useMarketsQuery(true)
@@ -72,13 +87,26 @@ export function usePayoutFlow() {
 
   const settlementCurrency = selectedWallet?.currency.trim().toUpperCase() ?? ''
   const displayCurrency =
-    payoutRail === 'eur' ? EUR_PAYOUT_FIAT_CURRENCY : settlementCurrency
+    payoutRail === 'eur'
+      ? EUR_PAYOUT_FIAT_CURRENCY
+      : payoutRail === 'cpg'
+        ? INDIA_PAYOUT_SETTLEMENT_CURRENCY
+        : settlementCurrency
 
   const isEuropeMarketApproved = useMemo(
     () =>
       marketsQuery.data?.some(
         (market) =>
           market.market === 'europe' && market.entitlementStatus === 'approved',
+      ) ?? false,
+    [marketsQuery.data],
+  )
+
+  const isIndiaMarketApproved = useMemo(
+    () =>
+      marketsQuery.data?.some(
+        (market) =>
+          market.market === 'india' && market.entitlementStatus === 'approved',
       ) ?? false,
     [marketsQuery.data],
   )
@@ -98,7 +126,9 @@ export function usePayoutFlow() {
   const effectiveMinimumAmount =
     payoutRail === 'eur'
       ? Math.max(minimumEurPayoutAmount, payoutLimits?.min ?? 0)
-      : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
+      : payoutRail === 'cpg'
+        ? Math.max(minimumCpgPayoutAmount, payoutLimits?.min ?? 0)
+        : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
 
   const effectiveMaximumAmount = useMemo(() => {
     if (payoutRail === 'eur') {
@@ -115,7 +145,11 @@ export function usePayoutFlow() {
   }, [payoutLimits?.max, payoutRail, walletBalance])
 
   const activeAmount =
-    payoutRail === 'eur' ? eurPayload.amount : payload.amount
+    payoutRail === 'eur'
+      ? eurPayload.amount
+      : payoutRail === 'cpg'
+        ? cpgPayload.amount
+        : payload.amount
 
   const formattedPreviewAmount = useMemo(
     () =>
@@ -132,6 +166,7 @@ export function usePayoutFlow() {
   )
 
   const createdTransactionId =
+    createdCpgPayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
     createdPayout?.id
@@ -141,16 +176,28 @@ export function usePayoutFlow() {
     step === 5 && payoutRail === 'eur',
   )
 
+  const cpgPayoutStatusQuery = useCpgPayoutRequestQuery(
+    createdCpgPayout?.transactionId,
+    step === 5 && payoutRail === 'cpg',
+  )
+
   const hasBeneficiaryDetails =
     payoutRail === 'eur'
       ? eurPayload.iban.trim().length > 0
-      : payload.benificiaryAccountInfo.number.trim().length > 0 ||
-        payload.benificiaryAccountInfo.holderName.trim().length > 0
+      : payoutRail === 'cpg'
+        ? cpgPayload.destinationAddress.trim().length > 0 ||
+          cpgPayload.beneficiaryName.trim().length > 0
+        : payload.benificiaryAccountInfo.number.trim().length > 0 ||
+          payload.benificiaryAccountInfo.holderName.trim().length > 0
 
   const hasSenderDetails =
     payoutRail === 'eur'
       ? eurPayload.userDetails.firstName.trim().length > 0 ||
         eurPayload.userDetails.lastName.trim().length > 0
+      : payoutRail === 'cpg'
+        ? cpgPayload.networkSymbol.trim().length > 0 &&
+          cpgPayload.destinationAddress.trim().length > 0 &&
+          cpgPayload.beneficiaryName.trim().length > 0
       : payload.cardHolderInfo.firstName.trim().length > 0 ||
         payload.cardHolderInfo.lastName.trim().length > 0
 
@@ -205,7 +252,7 @@ export function usePayoutFlow() {
       return 'Select a merchant wallet to continue.'
     }
     if (!isPayoutSupportedWallet(selectedWallet)) {
-      return 'Payouts are available for BDT (Bangladesh) and USDC (Europe) wallets only.'
+      return 'Payouts are available for BDT (Bangladesh), USDT (India), and USDC (Europe) wallets only.'
     }
     if (selectedWallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
@@ -215,6 +262,12 @@ export function usePayoutFlow() {
       !isEuropeMarketApproved
     ) {
       return 'Europe market access must be approved before sending EUR payouts.'
+    }
+    if (
+      getPayoutRailForWallet(selectedWallet) === 'cpg' &&
+      !isIndiaMarketApproved
+    ) {
+      return 'India market access must be approved before sending USDT payouts.'
     }
     if (
       getWalletMarket(selectedWallet) === 'europe' &&
@@ -256,6 +309,16 @@ export function usePayoutFlow() {
     }
     if (
       payoutRail === 'eur' &&
+      effectiveMaximumAmount !== undefined &&
+      amountNumber > effectiveMaximumAmount
+    ) {
+      return `Amount cannot exceed ${formatPayoutMoney(
+        displayCurrency,
+        String(effectiveMaximumAmount),
+      )}.`
+    }
+    if (
+      payoutRail === 'eur' &&
       portalEnvironment === 'live' &&
       walletBalance !== null &&
       walletBalance <= 0
@@ -274,6 +337,19 @@ export function usePayoutFlow() {
       return null
     }
 
+    if (payoutRail === 'cpg') {
+      if (!cpgPayload.networkSymbol.trim()) {
+        return 'Select a blockchain network.'
+      }
+      if (cpgPayload.destinationAddress.trim().length === 0) {
+        return 'Enter the beneficiary wallet address.'
+      }
+      if (cpgPayload.beneficiaryName.trim().length === 0) {
+        return 'Enter the beneficiary name.'
+      }
+      return null
+    }
+
     const beneficiary = payload.benificiaryAccountInfo
     if (
       beneficiary.number.trim().length === 0 ||
@@ -288,6 +364,10 @@ export function usePayoutFlow() {
   }
 
   function validateSenderStep() {
+    if (payoutRail === 'cpg') {
+      return null
+    }
+
     if (payoutRail === 'eur') {
       const user = eurPayload.userDetails
       if (
@@ -355,6 +435,8 @@ export function usePayoutFlow() {
     setApproveError(null)
 
     if (payoutRail === 'eur') {
+      const beneficiaryName =
+        `${eurPayload.userDetails.firstName.trim()} ${eurPayload.userDetails.lastName.trim()}`.trim()
       const normalizedPayload = {
         environment: portalEnvironment,
         amount: eurPayload.amount.trim(),
@@ -370,6 +452,8 @@ export function usePayoutFlow() {
         },
         payeeDetails: {
           iban: eurPayload.iban,
+          name: beneficiaryName || undefined,
+          country: eurPayload.userDetails.country.trim() || undefined,
         },
         autoMerchantApproval: eurPayload.autoMerchantApproval,
       }
@@ -385,6 +469,36 @@ export function usePayoutFlow() {
       try {
         const response = await createEurPayoutMutation.mutateAsync(parsedPayload.data)
         setCreatedEurPayout(response)
+        setStep(5)
+      } catch {
+        // API error is surfaced via mutation state.
+      }
+      return
+    }
+
+    if (payoutRail === 'cpg') {
+      const normalizedPayload = {
+        environment: portalEnvironment,
+        amount: cpgPayload.amount.trim(),
+        settledCurrency: 'USDT' as const,
+        networkSymbol: cpgPayload.networkSymbol.trim(),
+        destinationDetails: {
+          address: cpgPayload.destinationAddress.trim(),
+          beneficiaryName: cpgPayload.beneficiaryName.trim(),
+        },
+      }
+
+      const parsedPayload = createCpgPayoutPayloadSchema.safeParse(normalizedPayload)
+      if (!parsedPayload.success) {
+        setClientError(
+          parsedPayload.error.issues[0]?.message || 'Invalid USDT payout request.',
+        )
+        return
+      }
+
+      try {
+        const response = await createCpgPayoutMutation.mutateAsync(parsedPayload.data)
+        setCreatedCpgPayout(response)
         setStep(5)
       } catch {
         // API error is surfaced via mutation state.
@@ -432,10 +546,7 @@ export function usePayoutFlow() {
     }
     setApproveError(null)
     try {
-      const response = await approveEurPayoutMutation.mutateAsync(
-        createdEurPayout.transactionId,
-      )
-      setCreatedEurPayout(response)
+      await approveEurPayoutMutation.mutateAsync(createdEurPayout.transactionId)
     } catch (error) {
       setApproveError(
         error instanceof Error
@@ -457,20 +568,27 @@ export function usePayoutFlow() {
 
   const isSelectedWalletPayoutSupported = selectedWallet
     ? isPayoutSupportedWallet(selectedWallet) &&
-      (getPayoutRailForWallet(selectedWallet) !== 'eur' || isEuropeMarketApproved)
+      (getPayoutRailForWallet(selectedWallet) !== 'eur' || isEuropeMarketApproved) &&
+      (getPayoutRailForWallet(selectedWallet) !== 'cpg' || isIndiaMarketApproved)
     : false
 
   const isSubmitting =
-    createPayoutMutation.isPending || createEurPayoutMutation.isPending
+    createPayoutMutation.isPending ||
+    createEurPayoutMutation.isPending ||
+    createCpgPayoutMutation.isPending
 
   const mutationErrorMessage =
     payoutRail === 'eur'
       ? createEurPayoutMutation.isError
         ? createEurPayoutMutation.error.message
         : undefined
-      : createPayoutMutation.isError
-        ? createPayoutMutation.error.message
-        : undefined
+      : payoutRail === 'cpg'
+        ? createCpgPayoutMutation.isError
+          ? createCpgPayoutMutation.error.message
+          : undefined
+        : createPayoutMutation.isError
+          ? createPayoutMutation.error.message
+          : undefined
 
   function handleResetFlow() {
     setStep(1)
@@ -478,9 +596,11 @@ export function usePayoutFlow() {
     setApproveError(null)
     setCreatedPayout(null)
     setCreatedEurPayout(null)
+    setCreatedCpgPayout(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
     setEurPayload(initialEurPayoutPayload)
+    setCpgPayload(initialCpgPayoutPayload)
     setSelectedWalletId(
       wallets.find((wallet) => isPayoutSupportedWallet(wallet))?.id ??
         wallets[0]?.id ??
@@ -495,16 +615,21 @@ export function usePayoutFlow() {
     setClientError,
     createdPayout,
     createdEurPayout,
+    createdCpgPayout,
     payload,
     setPayload,
     eurPayload,
     setEurPayload,
+    cpgPayload,
+    setCpgPayload,
     payoutRail,
     displayCurrency,
     createPayoutMutation,
     createEurPayoutMutation,
+    createCpgPayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
+    cpgPayoutStatusQuery,
     balanceQuery,
     marketsQuery,
     wallets,

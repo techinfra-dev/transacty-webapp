@@ -81,13 +81,17 @@ export function EurPayoutSuccessView({
             {formatOptionalMoney(
               payout.settlementCurrency?.trim().toUpperCase() ||
                 EUR_PAYOUT_SETTLEMENT_CURRENCY,
-              payout.totalWalletDebit ?? payout.cryptoAmount,
+              payout.totalWalletDebit ?? payout.debitAmount ?? payout.cryptoAmount,
             )}
           </p>
         </div>
         <div>
           <p className="payout-summary-label">Rate</p>
-          <p className="payout-summary-value">{payout.rate?.trim() || '—'}</p>
+          <p className="payout-summary-value">
+            {payout.rate !== undefined && payout.rate !== null
+              ? String(payout.rate)
+              : '—'}
+          </p>
         </div>
         <div>
           <p className="payout-summary-label">Beneficiary IBAN</p>

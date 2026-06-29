@@ -3,10 +3,13 @@ import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import type { BalanceResponse } from '../../services/balanceSchemas.ts'
 import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
+import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
+  INDIA_PAYOUT_SETTLEMENT_CURRENCY,
+  cpgNetworkDropdownOptions,
   minimumPayoutAmount,
   payoutMethodOptions,
   type PayoutRail,
@@ -21,6 +24,8 @@ interface PayoutFormStepsProps {
   setPayload: React.Dispatch<React.SetStateAction<PayoutFormPayload>>
   eurPayload: EurPayoutFormPayload
   setEurPayload: React.Dispatch<React.SetStateAction<EurPayoutFormPayload>>
+  cpgPayload: CpgPayoutFormPayload
+  setCpgPayload: React.Dispatch<React.SetStateAction<CpgPayoutFormPayload>>
   displayCurrency: string
   settlementCurrency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
@@ -41,6 +46,8 @@ export function PayoutFormSteps({
   setPayload,
   eurPayload,
   setEurPayload,
+  cpgPayload,
+  setCpgPayload,
   displayCurrency,
   settlementCurrency,
   payoutLimits,
@@ -70,6 +77,9 @@ export function PayoutFormSteps({
     if (payoutRail === 'eur') {
       return `Enter the EUR amount sent to the beneficiary bank account. Your ${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet (${formattedWalletBalance}) will be debited at the quoted rate when you submit. Minimum ${minLabel}.`
     }
+    if (payoutRail === 'cpg') {
+      return `Send USDT from your India settlement pocket to an on-chain address. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
+    }
     if (payoutLimits?.max) {
       const maxLabel = formatPayoutMoney(displayCurrency, String(payoutLimits.max))
       return `Allowed range: ${minLabel} – ${maxLabel}. Available: ${formattedWalletBalance}.`
@@ -94,7 +104,9 @@ export function PayoutFormSteps({
             <p className="payout-panel-section-desc sm:col-span-2">
               {payoutRail === 'eur'
                 ? `Enter how much EUR to send to the beneficiary IBAN. Settlement debits your ${settlementCurrency} wallet.`
-                : 'Enter how much to send from the selected wallet.'}
+                : payoutRail === 'cpg'
+                  ? `Enter how much ${INDIA_PAYOUT_SETTLEMENT_CURRENCY} to send to the beneficiary crypto wallet.`
+                  : 'Enter how much to send from the selected wallet.'}
             </p>
 
             <div className="payout-field sm:col-span-2">
@@ -104,17 +116,34 @@ export function PayoutFormSteps({
                 <span className="payout-field-hint">
                   Settlement wallet: {settlementCurrency || EUR_PAYOUT_SETTLEMENT_CURRENCY}
                 </span>
+              ) : payoutRail === 'cpg' ? (
+                <span className="payout-field-hint">
+                  India settlement pocket · on-chain USDT payout
+                </span>
               ) : null}
             </div>
 
             <label className="payout-field sm:col-span-2">
               <span className="payout-field-label">Amount</span>
               <Input
-                value={payoutRail === 'eur' ? eurPayload.amount : payload.amount}
+                value={
+                  payoutRail === 'eur'
+                    ? eurPayload.amount
+                    : payoutRail === 'cpg'
+                      ? cpgPayload.amount
+                      : payload.amount
+                }
                 onChange={(event) => {
                   const nextAmount = event.target.value
                   if (payoutRail === 'eur') {
                     setEurPayload((previousPayload) => ({
+                      ...previousPayload,
+                      amount: nextAmount,
+                    }))
+                    return
+                  }
+                  if (payoutRail === 'cpg') {
+                    setCpgPayload((previousPayload) => ({
                       ...previousPayload,
                       amount: nextAmount,
                     }))
@@ -157,6 +186,64 @@ export function PayoutFormSteps({
                   }
                   className="payout-field-input"
                   autoCapitalize="characters"
+                />
+              </label>
+            </div>
+          ) : payoutRail === 'cpg' ? (
+            <div className="payout-field-grid">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                Destination wallet
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Enter the on-chain address and network for this USDT payout.
+              </p>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Network</span>
+                <DropdownSelect
+                  ariaLabel="Select blockchain network"
+                  options={cpgNetworkDropdownOptions}
+                  value={cpgPayload.networkSymbol}
+                  onChange={(value) =>
+                    setCpgPayload((previousPayload) => ({
+                      ...previousPayload,
+                      networkSymbol: value,
+                    }))
+                  }
+                  className="payout-field-select w-full max-w-md"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Wallet address</span>
+                <Input
+                  placeholder="Beneficiary wallet address"
+                  value={cpgPayload.destinationAddress}
+                  onChange={(event) =>
+                    setCpgPayload((previousPayload) => ({
+                      ...previousPayload,
+                      destinationAddress: event.target.value,
+                    }))
+                  }
+                  className="payout-field-input font-[ui-monospace,monospace] text-sm"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Beneficiary name</span>
+                <Input
+                  placeholder="Jane Doe"
+                  value={cpgPayload.beneficiaryName}
+                  onChange={(event) =>
+                    setCpgPayload((previousPayload) => ({
+                      ...previousPayload,
+                      beneficiaryName: event.target.value,
+                    }))
+                  }
+                  className="payout-field-input"
                 />
               </label>
             </div>
@@ -214,7 +301,33 @@ export function PayoutFormSteps({
         ) : null}
 
         {step === 4 ? (
-          payoutRail === 'eur' ? (
+          payoutRail === 'cpg' ? (
+            <div className="payout-field-grid">
+              <h2 className="payout-panel-section-title sm:col-span-2">Review payout</h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Confirm the USDT amount, network, and destination address before submitting.
+                Fees may apply and will be shown after creation when returned by the API.
+              </p>
+              <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                <p>
+                  <span className="text-(--color-secondary)">Amount:</span>{' '}
+                  {cpgPayload.amount || '—'} {INDIA_PAYOUT_SETTLEMENT_CURRENCY}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Network:</span>{' '}
+                  {cpgPayload.networkSymbol || '—'}
+                </p>
+                <p className="mt-2 break-all">
+                  <span className="text-(--color-secondary)">Address:</span>{' '}
+                  {cpgPayload.destinationAddress || '—'}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Beneficiary:</span>{' '}
+                  {cpgPayload.beneficiaryName || '—'}
+                </p>
+              </div>
+            </div>
+          ) : payoutRail === 'eur' ? (
             <div className="payout-field-grid payout-field-grid--two">
               <h2 className="payout-panel-section-title sm:col-span-2">
                 Beneficiary identity

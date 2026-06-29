@@ -20,6 +20,8 @@ export const eurPayoutPayeeDetailsSchema = z.object({
     .min(15, 'Enter a valid IBAN.')
     .max(34, 'Enter a valid IBAN.')
     .transform((value) => value.replace(/\s+/g, '').toUpperCase()),
+  name: z.string().min(1).optional(),
+  country: z.string().min(1).optional(),
 })
 
 export const createEurPayoutPayloadSchema = z.object({
@@ -54,7 +56,9 @@ export const eurPayoutInstanceSchema = z
     settlementCurrency: z.string().optional(),
     checkoutUrl: z.string().url().optional(),
     cryptoAmount: z.string().optional(),
-    rate: z.string().optional(),
+    rate: z.union([z.string(), z.number()]).optional(),
+    fiatCurrency: z.string().optional(),
+    debitAmount: z.string().optional(),
     fees: eurPayoutFeesSchema.optional(),
     totalWalletDebit: z.string().optional(),
     requiresMerchantApproval: z.boolean().optional(),
@@ -68,3 +72,13 @@ export type EurPayoutUserDetails = z.infer<typeof eurPayoutUserDetailsSchema>
 export type EurPayoutPayeeDetails = z.infer<typeof eurPayoutPayeeDetailsSchema>
 export type CreateEurPayoutPayload = z.infer<typeof createEurPayoutPayloadSchema>
 export type EurPayoutInstance = z.infer<typeof eurPayoutInstanceSchema>
+
+export const eurPayoutApproveResponseSchema = z
+  .object({
+    transactionId: z.string(),
+    acknowledged: z.boolean().optional(),
+    environment: payoutEnvironmentSchema.optional(),
+  })
+  .passthrough()
+
+export type EurPayoutApproveResponse = z.infer<typeof eurPayoutApproveResponseSchema>

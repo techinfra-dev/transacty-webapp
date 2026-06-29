@@ -4,8 +4,10 @@ import { getAuthToken } from '../../auth/services/authSession.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createEurPayoutPayloadSchema,
+  eurPayoutApproveResponseSchema,
   eurPayoutInstanceSchema,
   type CreateEurPayoutPayload,
+  type EurPayoutApproveResponse,
   type EurPayoutInstance,
 } from './eurPayoutSchemas.ts'
 
@@ -17,6 +19,10 @@ function getAuthHeader() {
   return {
     Authorization: `Bearer ${token}`,
   }
+}
+
+function createIdempotencyKey() {
+  return crypto.randomUUID()
 }
 
 function getEurPayoutApiErrorMessage(error: unknown) {
@@ -50,7 +56,10 @@ export async function createEurPayout(
   try {
     const body = createEurPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/eur/payout-instances', body, {
-      headers: getAuthHeader(),
+      headers: {
+        ...getAuthHeader(),
+        'Idempotency-Key': createIdempotencyKey(),
+      },
     })
     return eurPayoutInstanceSchema.parse(response.data)
   } catch (error) {
@@ -61,7 +70,7 @@ export async function createEurPayout(
 export async function approveEurPayout(params: {
   transactionId: string
   environment: PortalEnvironment
-}): Promise<EurPayoutInstance> {
+}): Promise<EurPayoutApproveResponse> {
   try {
     const response = await axiosInstance.post(
       `me/eur/payout-instances/${encodeURIComponent(params.transactionId)}/approve`,
@@ -73,7 +82,7 @@ export async function approveEurPayout(params: {
         },
       },
     )
-    return eurPayoutInstanceSchema.parse(response.data)
+    return eurPayoutApproveResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getEurPayoutApiErrorMessage(error))
   }

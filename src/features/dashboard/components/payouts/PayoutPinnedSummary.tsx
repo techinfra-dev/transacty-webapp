@@ -1,10 +1,12 @@
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
+import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
+  INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   type PayoutRail,
 } from './payoutConstants.ts'
 import { PayoutSummarySkeleton } from './PayoutSummarySkeleton.tsx'
@@ -16,6 +18,7 @@ interface PayoutPinnedSummaryProps {
   formattedWalletBalance: string
   payload: PayoutFormPayload
   eurPayload: EurPayoutFormPayload
+  cpgPayload: CpgPayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -28,6 +31,7 @@ export function PayoutPinnedSummary({
   formattedWalletBalance,
   payload,
   eurPayload,
+  cpgPayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
@@ -36,15 +40,21 @@ export function PayoutPinnedSummary({
     payoutRail === 'eur'
       ? `${eurPayload.userDetails.firstName} ${eurPayload.userDetails.lastName}`.trim() ||
         '—'
-      : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
-        '—'
+      : payoutRail === 'cpg'
+        ? cpgPayload.beneficiaryName.trim() || '—'
+        : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
+          '—'
 
   const walletLabel = selectedWallet
     ? getCurrencyFullName(selectedWallet.currency.trim().toUpperCase())
     : null
 
   const activeAmount =
-    payoutRail === 'eur' ? eurPayload.amount : payload.amount
+    payoutRail === 'eur'
+      ? eurPayload.amount
+      : payoutRail === 'cpg'
+        ? cpgPayload.amount
+        : payload.amount
 
   return (
     <aside data-payout-pinned className="payout-summary">
@@ -71,7 +81,11 @@ export function PayoutPinnedSummary({
 
       <div className="payout-summary-row">
         <p className="payout-summary-label">
-          {payoutRail === 'eur' ? 'Payout amount (EUR)' : 'Amount'}
+          {payoutRail === 'eur'
+            ? 'Payout amount (EUR)'
+            : payoutRail === 'cpg'
+              ? `Payout amount (${INDIA_PAYOUT_SETTLEMENT_CURRENCY})`
+              : 'Amount'}
         </p>
         <p
           className={
@@ -86,6 +100,10 @@ export function PayoutPinnedSummary({
           <p className="payout-summary-value payout-summary-value--muted">
             Settlement in {selectedWallet?.currency.trim().toUpperCase() || 'USDC'}
           </p>
+        ) : payoutRail === 'cpg' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            On-chain USDT payout
+          </p>
         ) : null}
       </div>
 
@@ -97,6 +115,16 @@ export function PayoutPinnedSummary({
               <p className="payout-summary-value">{eurPayload.iban || '—'}</p>
               <p className="payout-summary-value payout-summary-value--muted">
                 {EUR_PAYOUT_FIAT_CURRENCY} bank transfer
+              </p>
+            </div>
+          ) : payoutRail === 'cpg' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{cpgPayload.beneficiaryName || '—'}</p>
+              <p className="payout-summary-value payout-summary-value--muted break-all font-[ui-monospace,monospace] text-xs">
+                {cpgPayload.destinationAddress || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {cpgPayload.networkSymbol || '—'}
               </p>
             </div>
           ) : (
@@ -119,7 +147,11 @@ export function PayoutPinnedSummary({
 
       <div className="payout-summary-row">
         <p className="payout-summary-label">
-          {payoutRail === 'eur' ? 'Beneficiary identity' : 'Sender'}
+          {payoutRail === 'eur'
+            ? 'Beneficiary identity'
+            : payoutRail === 'cpg'
+              ? 'Destination'
+              : 'Sender'}
         </p>
         {hasSenderDetails ? (
           payoutRail === 'eur' ? (
@@ -130,6 +162,13 @@ export function PayoutPinnedSummary({
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
                 {eurPayload.userDetails.country || '—'}
+              </p>
+            </div>
+          ) : payoutRail === 'cpg' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{cpgPayload.networkSymbol || '—'}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                Crypto wallet transfer
               </p>
             </div>
           ) : (
