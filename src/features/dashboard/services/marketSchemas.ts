@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-export const merchantMarketSchema = z.enum(['bangladesh', 'india', 'europe'])
+export const merchantMarketSchema = z.enum([
+  'bangladesh',
+  'india',
+  'europe',
+  'brazil',
+])
 
 export const marketEntitlementStatusSchema = z.enum([
   'disabled',

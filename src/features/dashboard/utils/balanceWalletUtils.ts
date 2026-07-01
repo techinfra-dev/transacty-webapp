@@ -121,7 +121,12 @@ export function groupWalletsByMarket(items: BalanceWalletItem[]) {
 
 export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | null {
   const raw = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
-  if (raw === 'bangladesh' || raw === 'india' || raw === 'europe') {
+  if (
+    raw === 'bangladesh' ||
+    raw === 'india' ||
+    raw === 'europe' ||
+    raw === 'brazil'
+  ) {
     return raw
   }
   return null

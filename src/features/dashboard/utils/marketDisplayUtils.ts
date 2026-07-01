@@ -5,12 +5,18 @@ import type {
   PortalMarketRow,
 } from '../services/marketSchemas.ts'
 
-export const MARKET_ORDER: MerchantMarket[] = ['bangladesh', 'india', 'europe']
+export const MARKET_ORDER: MerchantMarket[] = [
+  'bangladesh',
+  'india',
+  'europe',
+  'brazil',
+]
 
 export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   bangladesh: 'Bangladesh',
   india: 'India',
   europe: 'Europe',
+  brazil: 'Brazil',
 }
 
 export function getMarketDisplayName(market: string) {
