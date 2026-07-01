@@ -1,4 +1,4 @@
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
@@ -10,12 +10,14 @@ import {
   getActivatedWallets,
   getWalletDisplayLabel,
 } from '../utils/balanceWalletUtils.ts'
+import { isPayoutSupportedWallet } from '../components/payouts/payoutConstants.ts'
 import { resolveWalletTransactionRail } from '../utils/transactionRailUtils.ts'
 
 const outlineBtn = 'dash-btn-outline'
 
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
+  const navigate = useNavigate()
   const areBalancesHidden = useUiPreferencesStore(
     (state) => state.areBalancesHidden,
   )
@@ -98,6 +100,14 @@ export function DashboardWalletPage() {
           <Button variant="ghost" className={outlineBtn} onClick={toggleBalancesVisibility}>
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
+          {activeWallet && isPayoutSupportedWallet(activeWallet) ? (
+            <Button
+              className="dash-btn-primary"
+              onClick={() => void navigate({ to: '/dashboard/payouts' })}
+            >
+              Request payout
+            </Button>
+          ) : null}
         </div>
       </header>
 

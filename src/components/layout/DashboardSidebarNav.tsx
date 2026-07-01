@@ -55,10 +55,10 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
 }
 
 const sidebarNavLinkClass =
-  'relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 [font-family:var(--font-body)] text-[15px] text-(--sidebar-link) transition-[color,background-color,box-shadow] duration-150'
+  'relative flex h-9 items-center gap-2.5 rounded-lg border border-transparent px-3 [font-family:var(--font-body)] text-[15px] text-(--sidebar-link) transition-[color,background-color,border-color] duration-150'
 
 const sidebarNavLinkActiveClass =
-  'bg-(--sidebar-link-active-bg) font-bold text-(--sidebar-link-active) shadow-[0_1px_4px_rgba(0,0,0,0.14)] ring-1 ring-(--sidebar-link-active-ring)'
+  'sidebar-nav-link--active font-semibold text-(--dash-fg)'
 
 const sidebarNavLinkInactiveClass =
   'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'
@@ -162,12 +162,6 @@ export function DashboardSidebarNav({
                       isActive ? sidebarNavLinkActiveClass : sidebarNavLinkInactiveClass
                     }`}
                   >
-                    {isActive ? (
-                      <span
-                        className="sidebar-nav-accent absolute top-1/2 -left-3 h-[70%] w-[3px] -translate-y-1/2 rounded-r-sm bg-(--sidebar-nav-accent)"
-                        aria-hidden
-                      />
-                    ) : null}
                     <span
                       aria-hidden
                       className="inline-flex size-[18px] shrink-0 items-center justify-center text-inherit"

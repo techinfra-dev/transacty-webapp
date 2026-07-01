@@ -1,5 +1,6 @@
 const CURRENCY_SYMBOLS: Record<string, string> = {
   BDT: '৳',
+  BRL: 'R$',
   INR: '₹',
   USD: '$',
   USDT: '₮',
@@ -10,6 +11,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 
 const CURRENCY_FULL_NAMES: Record<string, string> = {
   BDT: 'Bangladeshi Taka',
+  BRL: 'Brazilian Real',
   INR: 'Indian Rupee',
   USD: 'US Dollar',
   EUR: 'Euro',

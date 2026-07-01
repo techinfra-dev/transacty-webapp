@@ -25,13 +25,19 @@ export const transactionFeesSchema = z.object({
   feeStatus: transactionFeeStatusSchema.optional(),
 })
 
-export const transactionRailApiSchema = z.enum(['bangladesh', 'india', 'europe'])
+export const transactionRailApiSchema = z.enum([
+  'bangladesh',
+  'india',
+  'europe',
+  'brazil',
+])
 
 export const transactionRailFilterSchema = z.enum([
   'all',
   'bangladesh',
   'india',
   'europe',
+  'brazil',
 ])
 
 export const transactionItemSchema = z.object({

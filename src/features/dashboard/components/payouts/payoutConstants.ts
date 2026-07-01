@@ -1,5 +1,6 @@
 import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
+import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
@@ -14,13 +15,15 @@ export const payoutStepItems = [
 
 export const payoutMethodOptions = ['BKASH', 'NAGAD', 'UPAY'] as const
 export const minimumPayoutAmount = 200
+export const minimumPixPayoutAmount = 10
 export const minimumEurPayoutAmount = 1
 export const minimumCpgPayoutAmount = 1
 export const EUR_PAYOUT_FIAT_CURRENCY = 'EUR'
 export const EUR_PAYOUT_SETTLEMENT_CURRENCY = 'USDC'
 export const INDIA_PAYOUT_SETTLEMENT_CURRENCY = 'USDT'
+export const BRAZIL_PAYOUT_CURRENCY = 'BRL'
 
-export type PayoutRail = 'bdt' | 'eur' | 'cpg'
+export type PayoutRail = 'bdt' | 'eur' | 'cpg' | 'pix'
 
 /** Bangladesh BDT payouts via POST /portal/me/payouts. */
 export const PAYOUT_SUPPORTED_CURRENCY = 'BDT'
@@ -44,15 +47,17 @@ export function getPayoutRailForWallet(
   wallet: Pick<BalanceWalletItem, 'currency' | 'market' | 'region'>,
 ): PayoutRail | null {
   const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
   if (code === PAYOUT_SUPPORTED_CURRENCY) {
     return 'bdt'
   }
+  if (code === BRAZIL_PAYOUT_CURRENCY && market === 'brazil') {
+    return 'pix'
+  }
   if (code === EUR_PAYOUT_SETTLEMENT_CURRENCY) {
-    const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
     return market === 'europe' ? 'eur' : null
   }
   if (code === INDIA_PAYOUT_SETTLEMENT_CURRENCY) {
-    const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
     return market === 'india' ? 'cpg' : null
   }
   return null
@@ -69,6 +74,7 @@ export function isPayoutSupportedCurrency(currency: string) {
   const code = currency.trim().toUpperCase()
   return (
     code === PAYOUT_SUPPORTED_CURRENCY ||
+    code === BRAZIL_PAYOUT_CURRENCY ||
     code === EUR_PAYOUT_SETTLEMENT_CURRENCY ||
     code === INDIA_PAYOUT_SETTLEMENT_CURRENCY
   )
@@ -129,4 +135,10 @@ export const initialCpgPayoutPayload: CpgPayoutFormPayload = {
   networkSymbol: '',
   destinationAddress: '',
   beneficiaryName: '',
+}
+
+export const initialBrPayoutPayload: BrPayoutFormPayload = {
+  amount: '',
+  benificiaryAccountInfo: initialBeneficiaryAccountInfo,
+  cardHolderInfo: initialCardHolderInfo,
 }

@@ -9,6 +9,7 @@ import {
   useCreateEurPayoutMutation,
   useEurPayoutInstanceQuery,
 } from './useEurPayoutMutations.ts'
+import { useCreateBrPayoutMutation } from './useBrPayoutMutations.ts'
 import {
   useCreateCpgPayoutMutation,
   useCpgPayoutRequestQuery,
@@ -32,6 +33,11 @@ import {
   type CpgPayoutInstance,
 } from '../services/cpgPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../services/payoutFormTypes.ts'
+import type { BrPayoutFormPayload } from '../services/brPayoutFormTypes.ts'
+import {
+  createBrPayoutPayloadSchema,
+  type BrPayoutResponse,
+} from '../services/brPayoutSchemas.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
@@ -39,6 +45,7 @@ import {
   getDefaultMerchantUrl,
   getPayoutRailForWallet,
   getPayoutReturnUrl,
+  initialBrPayoutPayload,
   initialCpgPayoutPayload,
   initialEurPayoutPayload,
   initialPayoutPayload,
@@ -46,6 +53,7 @@ import {
   minimumCpgPayoutAmount,
   minimumEurPayoutAmount,
   minimumPayoutAmount,
+  minimumPixPayoutAmount,
   type PayoutRail,
 } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
@@ -57,9 +65,11 @@ export function usePayoutFlow() {
   const [createdPayout, setCreatedPayout] = useState<CreatePayoutResponse | null>(null)
   const [createdEurPayout, setCreatedEurPayout] = useState<EurPayoutInstance | null>(null)
   const [createdCpgPayout, setCreatedCpgPayout] = useState<CpgPayoutInstance | null>(null)
+  const [createdBrPayout, setCreatedBrPayout] = useState<BrPayoutResponse | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null)
   const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
+  const [brPayload, setBrPayload] = useState<BrPayoutFormPayload>(initialBrPayoutPayload)
   const [eurPayload, setEurPayload] = useState<EurPayoutFormPayload>(initialEurPayoutPayload)
   const [cpgPayload, setCpgPayload] = useState<CpgPayoutFormPayload>(initialCpgPayoutPayload)
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
@@ -67,6 +77,7 @@ export function usePayoutFlow() {
   const createPayoutMutation = useCreatePayoutMutation()
   const createEurPayoutMutation = useCreateEurPayoutMutation()
   const createCpgPayoutMutation = useCreateCpgPayoutMutation()
+  const createBrPayoutMutation = useCreateBrPayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
   const marketsQuery = useMarketsQuery(true)
@@ -111,6 +122,15 @@ export function usePayoutFlow() {
     [marketsQuery.data],
   )
 
+  const isBrazilMarketApproved = useMemo(
+    () =>
+      marketsQuery.data?.some(
+        (market) =>
+          market.market === 'brazil' && market.entitlementStatus === 'approved',
+      ) ?? false,
+    [marketsQuery.data],
+  )
+
   const walletBalance = useMemo(() => {
     if (!selectedWallet) {
       return null
@@ -128,7 +148,9 @@ export function usePayoutFlow() {
       ? Math.max(minimumEurPayoutAmount, payoutLimits?.min ?? 0)
       : payoutRail === 'cpg'
         ? Math.max(minimumCpgPayoutAmount, payoutLimits?.min ?? 0)
-        : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
+        : payoutRail === 'pix'
+          ? Math.max(minimumPixPayoutAmount, payoutLimits?.min ?? 0)
+          : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
 
   const effectiveMaximumAmount = useMemo(() => {
     if (payoutRail === 'eur') {
@@ -149,7 +171,9 @@ export function usePayoutFlow() {
       ? eurPayload.amount
       : payoutRail === 'cpg'
         ? cpgPayload.amount
-        : payload.amount
+        : payoutRail === 'pix'
+          ? brPayload.amount
+          : payload.amount
 
   const formattedPreviewAmount = useMemo(
     () =>
@@ -166,6 +190,9 @@ export function usePayoutFlow() {
   )
 
   const createdTransactionId =
+    createdBrPayout?.transactionId ||
+    createdBrPayout?.id ||
+    createdBrPayout?.reference ||
     createdCpgPayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
@@ -187,8 +214,11 @@ export function usePayoutFlow() {
       : payoutRail === 'cpg'
         ? cpgPayload.destinationAddress.trim().length > 0 ||
           cpgPayload.beneficiaryName.trim().length > 0
-        : payload.benificiaryAccountInfo.number.trim().length > 0 ||
-          payload.benificiaryAccountInfo.holderName.trim().length > 0
+        : payoutRail === 'pix'
+          ? brPayload.benificiaryAccountInfo.number.trim().length > 0 ||
+            brPayload.benificiaryAccountInfo.holderName.trim().length > 0
+          : payload.benificiaryAccountInfo.number.trim().length > 0 ||
+            payload.benificiaryAccountInfo.holderName.trim().length > 0
 
   const hasSenderDetails =
     payoutRail === 'eur'
@@ -198,8 +228,11 @@ export function usePayoutFlow() {
         ? cpgPayload.networkSymbol.trim().length > 0 &&
           cpgPayload.destinationAddress.trim().length > 0 &&
           cpgPayload.beneficiaryName.trim().length > 0
-      : payload.cardHolderInfo.firstName.trim().length > 0 ||
-        payload.cardHolderInfo.lastName.trim().length > 0
+        : payoutRail === 'pix'
+          ? brPayload.cardHolderInfo.firstName.trim().length > 0 ||
+            brPayload.cardHolderInfo.lastName.trim().length > 0
+          : payload.cardHolderInfo.firstName.trim().length > 0 ||
+            payload.cardHolderInfo.lastName.trim().length > 0
 
   useEffect(() => {
     if (wallets.length === 0) {
@@ -237,6 +270,29 @@ export function usePayoutFlow() {
     }))
   }
 
+  function updateBrBeneficiaryField(
+    field: keyof BeneficiaryAccountInfo,
+    value: string,
+  ) {
+    setBrPayload((previousPayload) => ({
+      ...previousPayload,
+      benificiaryAccountInfo: {
+        ...previousPayload.benificiaryAccountInfo,
+        [field]: value,
+      },
+    }))
+  }
+
+  function updateBrCardHolderField(field: keyof CardHolderInfo, value: string) {
+    setBrPayload((previousPayload) => ({
+      ...previousPayload,
+      cardHolderInfo: {
+        ...previousPayload.cardHolderInfo,
+        [field]: value,
+      },
+    }))
+  }
+
   function updateEurUserField(field: keyof EurPayoutUserDetails, value: string) {
     setEurPayload((previousPayload) => ({
       ...previousPayload,
@@ -252,7 +308,7 @@ export function usePayoutFlow() {
       return 'Select a merchant wallet to continue.'
     }
     if (!isPayoutSupportedWallet(selectedWallet)) {
-      return 'Payouts are available for BDT (Bangladesh), USDT (India), and USDC (Europe) wallets only.'
+      return 'Payouts are available for BDT (Bangladesh), BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'
     }
     if (selectedWallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
@@ -268,6 +324,12 @@ export function usePayoutFlow() {
       !isIndiaMarketApproved
     ) {
       return 'India market access must be approved before sending USDT payouts.'
+    }
+    if (
+      getPayoutRailForWallet(selectedWallet) === 'pix' &&
+      !isBrazilMarketApproved
+    ) {
+      return 'Brazil market access must be approved before sending PIX payouts.'
     }
     if (
       getWalletMarket(selectedWallet) === 'europe' &&
@@ -350,6 +412,20 @@ export function usePayoutFlow() {
       return null
     }
 
+    if (payoutRail === 'pix') {
+      const beneficiary = brPayload.benificiaryAccountInfo
+      if (
+        beneficiary.number.trim().length === 0 ||
+        beneficiary.holderName.trim().length === 0 ||
+        beneficiary.orgName.trim().length === 0 ||
+        beneficiary.orgCode.trim().length === 0 ||
+        beneficiary.orgId.trim().length === 0
+      ) {
+        return 'Complete all PIX recipient and institution fields to continue.'
+      }
+      return null
+    }
+
     const beneficiary = payload.benificiaryAccountInfo
     if (
       beneficiary.number.trim().length === 0 ||
@@ -387,7 +463,8 @@ export function usePayoutFlow() {
       return null
     }
 
-    const cardHolder = payload.cardHolderInfo
+    const cardHolder =
+      payoutRail === 'pix' ? brPayload.cardHolderInfo : payload.cardHolderInfo
     if (
       cardHolder.firstName.trim().length === 0 ||
       cardHolder.lastName.trim().length === 0 ||
@@ -506,6 +583,43 @@ export function usePayoutFlow() {
       return
     }
 
+    if (payoutRail === 'pix') {
+      const normalizedPayload = {
+        environment: portalEnvironment,
+        amount: brPayload.amount.trim(),
+        benificiaryAccountInfo: {
+          number: brPayload.benificiaryAccountInfo.number.trim(),
+          holderName: brPayload.benificiaryAccountInfo.holderName.trim(),
+          orgName: brPayload.benificiaryAccountInfo.orgName.trim(),
+          orgCode: brPayload.benificiaryAccountInfo.orgCode.trim(),
+          orgId: brPayload.benificiaryAccountInfo.orgId.trim(),
+        },
+        cardHolderInfo: {
+          firstName: brPayload.cardHolderInfo.firstName.trim(),
+          lastName: brPayload.cardHolderInfo.lastName.trim(),
+          email: brPayload.cardHolderInfo.email.trim(),
+          phone: brPayload.cardHolderInfo.phone.trim(),
+        },
+      }
+
+      const parsedPayload = createBrPayoutPayloadSchema.safeParse(normalizedPayload)
+      if (!parsedPayload.success) {
+        setClientError(
+          parsedPayload.error.issues[0]?.message || 'Invalid Brazil PIX payout request.',
+        )
+        return
+      }
+
+      try {
+        const response = await createBrPayoutMutation.mutateAsync(parsedPayload.data)
+        setCreatedBrPayout(response)
+        setStep(5)
+      } catch {
+        // API error is surfaced via mutation state.
+      }
+      return
+    }
+
     const normalizedPayload: CreatePayoutPayload = {
       ...payload,
       environment: portalEnvironment,
@@ -569,13 +683,15 @@ export function usePayoutFlow() {
   const isSelectedWalletPayoutSupported = selectedWallet
     ? isPayoutSupportedWallet(selectedWallet) &&
       (getPayoutRailForWallet(selectedWallet) !== 'eur' || isEuropeMarketApproved) &&
-      (getPayoutRailForWallet(selectedWallet) !== 'cpg' || isIndiaMarketApproved)
+      (getPayoutRailForWallet(selectedWallet) !== 'cpg' || isIndiaMarketApproved) &&
+      (getPayoutRailForWallet(selectedWallet) !== 'pix' || isBrazilMarketApproved)
     : false
 
   const isSubmitting =
     createPayoutMutation.isPending ||
     createEurPayoutMutation.isPending ||
-    createCpgPayoutMutation.isPending
+    createCpgPayoutMutation.isPending ||
+    createBrPayoutMutation.isPending
 
   const mutationErrorMessage =
     payoutRail === 'eur'
@@ -586,9 +702,13 @@ export function usePayoutFlow() {
         ? createCpgPayoutMutation.isError
           ? createCpgPayoutMutation.error.message
           : undefined
-        : createPayoutMutation.isError
-          ? createPayoutMutation.error.message
-          : undefined
+        : payoutRail === 'pix'
+          ? createBrPayoutMutation.isError
+            ? createBrPayoutMutation.error.message
+            : undefined
+          : createPayoutMutation.isError
+            ? createPayoutMutation.error.message
+            : undefined
 
   function handleResetFlow() {
     setStep(1)
@@ -597,8 +717,10 @@ export function usePayoutFlow() {
     setCreatedPayout(null)
     setCreatedEurPayout(null)
     setCreatedCpgPayout(null)
+    setCreatedBrPayout(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
+    setBrPayload(initialBrPayoutPayload)
     setEurPayload(initialEurPayoutPayload)
     setCpgPayload(initialCpgPayoutPayload)
     setSelectedWalletId(
@@ -616,8 +738,11 @@ export function usePayoutFlow() {
     createdPayout,
     createdEurPayout,
     createdCpgPayout,
+    createdBrPayout,
     payload,
     setPayload,
+    brPayload,
+    setBrPayload,
     eurPayload,
     setEurPayload,
     cpgPayload,
@@ -627,6 +752,7 @@ export function usePayoutFlow() {
     createPayoutMutation,
     createEurPayoutMutation,
     createCpgPayoutMutation,
+    createBrPayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
     cpgPayoutStatusQuery,
@@ -648,6 +774,8 @@ export function usePayoutFlow() {
     hasSenderDetails,
     updateBeneficiaryField,
     updateCardHolderField,
+    updateBrBeneficiaryField,
+    updateBrCardHolderField,
     updateEurUserField,
     handleCreatePayout,
     executeCreatePayout,

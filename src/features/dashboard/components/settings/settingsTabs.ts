@@ -47,7 +47,7 @@ export const tabContent: Record<
   markets: {
     title: 'Markets',
     description:
-      'Request and manage payment market entitlements for Bangladesh, India, and Europe.',
+      'Request and manage payment market entitlements for Bangladesh, India, Europe, and Brazil.',
   },
   'business-preference': {
     title: 'Business preference',

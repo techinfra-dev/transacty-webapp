@@ -1,5 +1,6 @@
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
+import { BrPixPayoutSuccessView } from '../components/payouts/BrPixPayoutSuccessView.tsx'
 import { CpgPayoutSuccessView } from '../components/payouts/CpgPayoutSuccessView.tsx'
 import { EurPayoutSuccessView } from '../components/payouts/EurPayoutSuccessView.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
@@ -16,7 +17,15 @@ export function DashboardPayoutsPage() {
   return (
     <section className="payout-page app-page-enter">
       {flow.step === 5 ? (
-        flow.payoutRail === 'cpg' && flow.createdCpgPayout ? (
+        flow.payoutRail === 'pix' && flow.createdBrPayout ? (
+          <BrPixPayoutSuccessView
+            environment={flow.portalEnvironment}
+            brPayload={flow.brPayload}
+            createdPayout={flow.createdBrPayout}
+            formattedPreviewAmount={flow.formattedPreviewAmount}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.payoutRail === 'cpg' && flow.createdCpgPayout ? (
           <CpgPayoutSuccessView
             environment={flow.portalEnvironment}
             cpgPayload={flow.cpgPayload}
@@ -51,8 +60,9 @@ export function DashboardPayoutsPage() {
           <header className="payout-page-head">
             <h1 className="payout-page-title">New payout</h1>
             <p className="payout-page-subtitle">
-              Send Bangladesh BDT payouts, India USDT on-chain payouts, or Europe
-              USDC → EUR bank transfers from your activated merchant wallets.
+              Send Bangladesh BDT payouts, Brazil PIX payouts, India USDT on-chain
+              payouts, or Europe USDC → EUR bank transfers from your activated
+              merchant wallets.
             </p>
           </header>
 
@@ -80,7 +90,9 @@ export function DashboardPayoutsPage() {
                         ? 'Europe market access must be approved before EUR payouts are available.'
                         : flow.payoutRail === 'cpg' && !flow.marketsQuery.isPending
                           ? 'India market access must be approved before USDT payouts are available.'
-                          : 'Payouts are available for BDT (Bangladesh), USDT (India), and USDC (Europe) wallets only.'}
+                          : flow.payoutRail === 'pix' && !flow.marketsQuery.isPending
+                            ? 'Brazil market access must be approved before PIX payouts are available.'
+                            : 'Payouts are available for BDT (Bangladesh), BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'}
                     </p>
                   ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
@@ -96,6 +108,8 @@ export function DashboardPayoutsPage() {
                   setEurPayload={flow.setEurPayload}
                   cpgPayload={flow.cpgPayload}
                   setCpgPayload={flow.setCpgPayload}
+                  brPayload={flow.brPayload}
+                  setBrPayload={flow.setBrPayload}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
                   payoutLimits={flow.payoutLimits}
@@ -104,6 +118,8 @@ export function DashboardPayoutsPage() {
                   formattedWalletBalance={flow.formattedWalletBalance}
                   updateBeneficiaryField={flow.updateBeneficiaryField}
                   updateCardHolderField={flow.updateCardHolderField}
+                  updateBrBeneficiaryField={flow.updateBrBeneficiaryField}
+                  updateBrCardHolderField={flow.updateBrCardHolderField}
                   updateEurUserField={flow.updateEurUserField}
                   clientError={flow.clientError}
                   mutationErrorMessage={flow.mutationErrorMessage}
@@ -133,6 +149,7 @@ export function DashboardPayoutsPage() {
               payload={flow.payload}
               eurPayload={flow.eurPayload}
               cpgPayload={flow.cpgPayload}
+              brPayload={flow.brPayload}
               formattedPreviewAmount={flow.formattedPreviewAmount}
               hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
               hasSenderDetails={flow.hasSenderDetails}
@@ -154,7 +171,9 @@ export function DashboardPayoutsPage() {
             ? 'You are about to submit a real Europe EUR payout in the live environment. USDC will be debited from your wallet.'
             : flow.payoutRail === 'cpg'
               ? 'You are about to submit a real India USDT payout in the live environment. USDT will be debited from your wallet.'
-              : 'You are about to submit a real payout in the live environment. This may move real funds.'
+              : flow.payoutRail === 'pix'
+                ? 'You are about to submit a real Brazil PIX payout in the live environment. BRL will be debited from your wallet.'
+                : 'You are about to submit a real payout in the live environment. This may move real funds.'
         }
         maxWidthClassName="max-w-md"
         footer={

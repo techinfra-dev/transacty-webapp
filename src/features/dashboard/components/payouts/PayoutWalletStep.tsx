@@ -4,6 +4,7 @@ import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import {
+  BRAZIL_PAYOUT_CURRENCY,
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
@@ -92,7 +93,9 @@ export function PayoutWalletStep({
                     ? `${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet · ${EUR_PAYOUT_FIAT_CURRENCY} payout`
                     : payoutRail === 'cpg'
                       ? `${INDIA_PAYOUT_SETTLEMENT_CURRENCY} wallet · on-chain payout`
-                      : walletSubtitle(wallet)
+                      : payoutRail === 'pix'
+                        ? `${BRAZIL_PAYOUT_CURRENCY} wallet · PIX payout`
+                        : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>
             </span>

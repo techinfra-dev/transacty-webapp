@@ -12,6 +12,7 @@ export const transactionRailFilterOptions: {
   { value: 'bangladesh', label: 'Bangladesh' },
   { value: 'india', label: 'India' },
   { value: 'europe', label: 'Europe' },
+  { value: 'brazil', label: 'Brazil' },
 ]
 
 export function transactionRailFilterToApiParam(
@@ -34,7 +35,8 @@ export function resolveWalletTransactionRail(
   if (
     region === 'bangladesh' ||
     region === 'india' ||
-    region === 'europe'
+    region === 'europe' ||
+    region === 'brazil'
   ) {
     return region
   }
@@ -42,6 +44,9 @@ export function resolveWalletTransactionRail(
   const currency = wallet.currency.trim().toUpperCase()
   if (currency === 'BDT') {
     return 'bangladesh'
+  }
+  if (currency === 'BRL') {
+    return 'brazil'
   }
   if (currency === 'INR') {
     return 'india'

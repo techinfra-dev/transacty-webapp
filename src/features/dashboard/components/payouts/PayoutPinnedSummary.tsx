@@ -1,11 +1,13 @@
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
+import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
+  BRAZIL_PAYOUT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   type PayoutRail,
 } from './payoutConstants.ts'
@@ -19,6 +21,7 @@ interface PayoutPinnedSummaryProps {
   payload: PayoutFormPayload
   eurPayload: EurPayoutFormPayload
   cpgPayload: CpgPayoutFormPayload
+  brPayload: BrPayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -32,6 +35,7 @@ export function PayoutPinnedSummary({
   payload,
   eurPayload,
   cpgPayload,
+  brPayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
@@ -42,8 +46,11 @@ export function PayoutPinnedSummary({
         '—'
       : payoutRail === 'cpg'
         ? cpgPayload.beneficiaryName.trim() || '—'
-        : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
-          '—'
+        : payoutRail === 'pix'
+          ? `${brPayload.cardHolderInfo.firstName} ${brPayload.cardHolderInfo.lastName}`.trim() ||
+            '—'
+          : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
+            '—'
 
   const walletLabel = selectedWallet
     ? getCurrencyFullName(selectedWallet.currency.trim().toUpperCase())
@@ -54,7 +61,9 @@ export function PayoutPinnedSummary({
       ? eurPayload.amount
       : payoutRail === 'cpg'
         ? cpgPayload.amount
-        : payload.amount
+        : payoutRail === 'pix'
+          ? brPayload.amount
+          : payload.amount
 
   return (
     <aside data-payout-pinned className="payout-summary">
@@ -85,7 +94,9 @@ export function PayoutPinnedSummary({
             ? 'Payout amount (EUR)'
             : payoutRail === 'cpg'
               ? `Payout amount (${INDIA_PAYOUT_SETTLEMENT_CURRENCY})`
-              : 'Amount'}
+              : payoutRail === 'pix'
+                ? `Payout amount (${BRAZIL_PAYOUT_CURRENCY})`
+                : 'Amount'}
         </p>
         <p
           className={
@@ -103,6 +114,10 @@ export function PayoutPinnedSummary({
         ) : payoutRail === 'cpg' ? (
           <p className="payout-summary-value payout-summary-value--muted">
             On-chain USDT payout
+          </p>
+        ) : payoutRail === 'pix' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            Brazil PIX payout
           </p>
         ) : null}
       </div>
@@ -125,6 +140,18 @@ export function PayoutPinnedSummary({
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
                 {cpgPayload.networkSymbol || '—'}
+              </p>
+            </div>
+          ) : payoutRail === 'pix' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">
+                {brPayload.benificiaryAccountInfo.holderName || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs break-all">
+                {brPayload.benificiaryAccountInfo.number || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {brPayload.benificiaryAccountInfo.orgName || '—'}
               </p>
             </div>
           ) : (
@@ -151,7 +178,9 @@ export function PayoutPinnedSummary({
             ? 'Beneficiary identity'
             : payoutRail === 'cpg'
               ? 'Destination'
-              : 'Sender'}
+              : payoutRail === 'pix'
+                ? 'Originator'
+                : 'Sender'}
         </p>
         {hasSenderDetails ? (
           payoutRail === 'eur' ? (
@@ -169,6 +198,16 @@ export function PayoutPinnedSummary({
               <p className="payout-summary-value">{cpgPayload.networkSymbol || '—'}</p>
               <p className="payout-summary-value payout-summary-value--muted">
                 Crypto wallet transfer
+              </p>
+            </div>
+          ) : payoutRail === 'pix' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {brPayload.cardHolderInfo.email || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {brPayload.cardHolderInfo.phone || '—'}
               </p>
             </div>
           ) : (

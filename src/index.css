@@ -2757,7 +2757,8 @@ body {
   min-width: 0;
 }
 
-.tx-history-field:focus-within {
+.tx-history-field:focus-within,
+.sidebar-nav-link--active {
   border-color: var(--dash-border-strong);
   background: var(--dash-surface);
 }

@@ -4,6 +4,7 @@ import type { BalanceResponse } from '../../services/balanceSchemas.ts'
 import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
+import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
@@ -26,6 +27,8 @@ interface PayoutFormStepsProps {
   setEurPayload: React.Dispatch<React.SetStateAction<EurPayoutFormPayload>>
   cpgPayload: CpgPayoutFormPayload
   setCpgPayload: React.Dispatch<React.SetStateAction<CpgPayoutFormPayload>>
+  brPayload: BrPayoutFormPayload
+  setBrPayload: React.Dispatch<React.SetStateAction<BrPayoutFormPayload>>
   displayCurrency: string
   settlementCurrency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
@@ -34,6 +37,8 @@ interface PayoutFormStepsProps {
   formattedWalletBalance: string
   updateBeneficiaryField: (field: keyof BeneficiaryAccountInfo, value: string) => void
   updateCardHolderField: (field: keyof CardHolderInfo, value: string) => void
+  updateBrBeneficiaryField: (field: keyof BeneficiaryAccountInfo, value: string) => void
+  updateBrCardHolderField: (field: keyof CardHolderInfo, value: string) => void
   updateEurUserField: (field: keyof EurPayoutUserDetails, value: string) => void
   clientError: string | null
   mutationErrorMessage: string | undefined
@@ -48,6 +53,8 @@ export function PayoutFormSteps({
   setEurPayload,
   cpgPayload,
   setCpgPayload,
+  brPayload,
+  setBrPayload,
   displayCurrency,
   settlementCurrency,
   payoutLimits,
@@ -56,6 +63,8 @@ export function PayoutFormSteps({
   formattedWalletBalance,
   updateBeneficiaryField,
   updateCardHolderField,
+  updateBrBeneficiaryField,
+  updateBrCardHolderField,
   updateEurUserField,
   clientError,
   mutationErrorMessage,
@@ -79,6 +88,9 @@ export function PayoutFormSteps({
     }
     if (payoutRail === 'cpg') {
       return `Send USDT from your India settlement pocket to an on-chain address. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
+    }
+    if (payoutRail === 'pix') {
+      return `Send BRL from your Brazil wallet via PIX. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
     }
     if (payoutLimits?.max) {
       const maxLabel = formatPayoutMoney(displayCurrency, String(payoutLimits.max))
@@ -106,7 +118,9 @@ export function PayoutFormSteps({
                 ? `Enter how much EUR to send to the beneficiary IBAN. Settlement debits your ${settlementCurrency} wallet.`
                 : payoutRail === 'cpg'
                   ? `Enter how much ${INDIA_PAYOUT_SETTLEMENT_CURRENCY} to send to the beneficiary crypto wallet.`
-                  : 'Enter how much to send from the selected wallet.'}
+                  : payoutRail === 'pix'
+                    ? 'Enter how much BRL to send via PIX from your Brazil wallet.'
+                    : 'Enter how much to send from the selected wallet.'}
             </p>
 
             <div className="payout-field sm:col-span-2">
@@ -120,6 +134,10 @@ export function PayoutFormSteps({
                 <span className="payout-field-hint">
                   India settlement pocket · on-chain USDT payout
                 </span>
+              ) : payoutRail === 'pix' ? (
+                <span className="payout-field-hint">
+                  Brazil (PIX) settlement pocket
+                </span>
               ) : null}
             </div>
 
@@ -131,7 +149,9 @@ export function PayoutFormSteps({
                     ? eurPayload.amount
                     : payoutRail === 'cpg'
                       ? cpgPayload.amount
-                      : payload.amount
+                      : payoutRail === 'pix'
+                        ? brPayload.amount
+                        : payload.amount
                 }
                 onChange={(event) => {
                   const nextAmount = event.target.value
@@ -144,6 +164,13 @@ export function PayoutFormSteps({
                   }
                   if (payoutRail === 'cpg') {
                     setCpgPayload((previousPayload) => ({
+                      ...previousPayload,
+                      amount: nextAmount,
+                    }))
+                    return
+                  }
+                  if (payoutRail === 'pix') {
+                    setBrPayload((previousPayload) => ({
                       ...previousPayload,
                       amount: nextAmount,
                     }))
@@ -242,6 +269,76 @@ export function PayoutFormSteps({
                       ...previousPayload,
                       beneficiaryName: event.target.value,
                     }))
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+            </div>
+          ) : payoutRail === 'pix' ? (
+            <div className="payout-field-grid payout-field-grid--two">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                PIX recipient
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Enter the recipient PIX key and bank institution details. Confirm valid
+                org codes with Transacty before going live.
+              </p>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">PIX key</span>
+                <Input
+                  placeholder="CPF, email, phone, or random PIX key"
+                  value={brPayload.benificiaryAccountInfo.number}
+                  onChange={(event) =>
+                    updateBrBeneficiaryField('number', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Account holder name</span>
+                <Input
+                  placeholder="Recipient legal name"
+                  value={brPayload.benificiaryAccountInfo.holderName}
+                  onChange={(event) =>
+                    updateBrBeneficiaryField('holderName', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field">
+                <span className="payout-field-label">Institution ID</span>
+                <Input
+                  placeholder="orgId"
+                  value={brPayload.benificiaryAccountInfo.orgId}
+                  onChange={(event) =>
+                    updateBrBeneficiaryField('orgId', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field">
+                <span className="payout-field-label">Institution code</span>
+                <Input
+                  placeholder="orgCode"
+                  value={brPayload.benificiaryAccountInfo.orgCode}
+                  onChange={(event) =>
+                    updateBrBeneficiaryField('orgCode', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Institution name</span>
+                <Input
+                  placeholder="Bank or institution name"
+                  value={brPayload.benificiaryAccountInfo.orgName}
+                  onChange={(event) =>
+                    updateBrBeneficiaryField('orgName', event.target.value)
                   }
                   className="payout-field-input"
                 />
@@ -383,6 +480,63 @@ export function PayoutFormSteps({
                   type="date"
                   value={eurPayload.userDetails.dob}
                   onChange={(event) => updateEurUserField('dob', event.target.value)}
+                  className="payout-field-input"
+                />
+              </label>
+            </div>
+          ) : payoutRail === 'pix' ? (
+            <div className="payout-field-grid payout-field-grid--two">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                Originator identity
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Required for Brazil PIX payout compliance (Travel Rule).
+              </p>
+
+              <label className="payout-field">
+                <span className="payout-field-label">First name</span>
+                <Input
+                  placeholder="First name"
+                  value={brPayload.cardHolderInfo.firstName}
+                  onChange={(event) =>
+                    updateBrCardHolderField('firstName', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field">
+                <span className="payout-field-label">Last name</span>
+                <Input
+                  placeholder="Last name"
+                  value={brPayload.cardHolderInfo.lastName}
+                  onChange={(event) =>
+                    updateBrCardHolderField('lastName', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Email</span>
+                <Input
+                  placeholder="Email address"
+                  value={brPayload.cardHolderInfo.email}
+                  onChange={(event) =>
+                    updateBrCardHolderField('email', event.target.value)
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Phone</span>
+                <Input
+                  placeholder="+5511999999999"
+                  value={brPayload.cardHolderInfo.phone}
+                  onChange={(event) =>
+                    updateBrCardHolderField('phone', event.target.value)
+                  }
                   className="payout-field-input"
                 />
               </label>
