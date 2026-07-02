@@ -57,8 +57,7 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
 const sidebarNavLinkClass =
   'relative flex h-9 items-center gap-2.5 rounded-lg border border-transparent px-3 [font-family:var(--font-body)] text-[15px] text-(--sidebar-link) transition-[color,background-color,border-color] duration-150'
 
-const sidebarNavLinkActiveClass =
-  'sidebar-nav-link--active font-semibold text-(--dash-fg)'
+const sidebarNavLinkActiveClass = 'sidebar-nav-link--active font-semibold'
 
 const sidebarNavLinkInactiveClass =
   'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'

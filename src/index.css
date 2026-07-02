@@ -2757,10 +2757,15 @@ body {
   min-width: 0;
 }
 
-.tx-history-field:focus-within,
-.sidebar-nav-link--active {
+.tx-history-field:focus-within {
   border-color: var(--dash-border-strong);
   background: var(--dash-surface);
+}
+
+.sidebar-nav-link--active {
+  border-color: var(--dash-border-strong);
+  background: #fbfaf7;
+  color: #0f0700;
 }
 
 .tx-history-field input,
