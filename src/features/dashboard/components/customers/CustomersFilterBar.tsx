@@ -1,4 +1,11 @@
 import { pageSizeOptions, statusFilterOptions } from './customerViewUtils.tsx'
+import { InputClearButton } from '../../../../components/ui/InputClearButton.tsx'
+import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
+
+const customerPageSizeOptions = pageSizeOptions.map((option) => ({
+  ...option,
+  label: `${option.value} per page`,
+}))
 
 function SearchIcon() {
   return (
@@ -14,25 +21,6 @@ function SearchIcon() {
     >
       <circle cx="11" cy="11" r="8" />
       <path d="M21 21l-4.35-4.35" />
-    </svg>
-  )
-}
-
-function SelectChevron() {
-  return (
-    <svg
-      className="customers-field-chev"
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
     </svg>
   )
 }
@@ -59,43 +47,37 @@ export function CustomersFilterBar({
       <label className="customers-field customers-field--search">
         <SearchIcon />
         <input
-          type="search"
+          type="text"
           placeholder="Search by name or wallet ID"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           aria-label="Search customers"
         />
+        {searchQuery ? (
+          <InputClearButton
+            label="Clear customer search"
+            onClear={() => onSearchQueryChange('')}
+          />
+        ) : null}
       </label>
 
-      <label className="customers-field customers-field-select">
-        <select
-          aria-label="Filter customers by status"
-          value={statusFilter}
-          onChange={(event) => onStatusFilterChange(event.target.value)}
-        >
-          {statusFilterOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <SelectChevron />
-      </label>
+      <DropdownSelect
+        options={statusFilterOptions}
+        value={statusFilter}
+        onChange={onStatusFilterChange}
+        ariaLabel="Filter customers by status"
+        className="w-full min-w-0"
+        variant="filter"
+      />
 
-      <label className="customers-field customers-field-select">
-        <select
-          aria-label="Customers per page"
-          value={String(pageSize)}
-          onChange={(event) => onPageSizeChange(Number(event.target.value))}
-        >
-          {pageSizeOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.value} per page
-            </option>
-          ))}
-        </select>
-        <SelectChevron />
-      </label>
+      <DropdownSelect
+        options={customerPageSizeOptions}
+        value={String(pageSize)}
+        onChange={(value) => onPageSizeChange(Number(value))}
+        ariaLabel="Customers per page"
+        className="w-full min-w-0"
+        variant="filter"
+      />
     </div>
   )
 }

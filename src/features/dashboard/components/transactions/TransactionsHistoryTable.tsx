@@ -64,7 +64,8 @@ export function TransactionsHistoryTable({
   if (transactionsQuery.isError) {
     return (
       <p className="px-6 py-10 text-center [font-family:var(--font-body)] text-xs text-[#b91c1c]">
-        Unable to load transactions right now.
+        {transactionsQuery.error.message ||
+          'Unable to load transactions right now.'}
       </p>
     )
   }
@@ -93,7 +94,7 @@ export function TransactionsHistoryTable({
       <thead>
         <tr>
           <th>Transaction</th>
-          <th>Reference</th>
+          <th>Customer wallet</th>
           <th>Type</th>
           <th className="num">Amount</th>
           <th className="num">Settled</th>
@@ -105,10 +106,7 @@ export function TransactionsHistoryTable({
       </thead>
       <tbody>
         {rows.map((activity) => {
-          const reference =
-            activity.platformOrderId ||
-            activity.customerWalletId ||
-            '—'
+          const customerWalletId = activity.customerWalletId || '—'
           const isFailed = activity.status === 'failed'
           const amountColumn = getTransactionAmountColumnDisplay(activity)
           const paidColumn = getTransactionPaidColumnDisplay(activity)
@@ -135,10 +133,10 @@ export function TransactionsHistoryTable({
                 </div>
               </td>
               <td
-                title={reference}
+                title={customerWalletId}
                 className="tx-history-td-ref tx-history-mono tx-history-dim"
               >
-                {reference}
+                {customerWalletId}
               </td>
               <td className="tx-history-td-type">
                 <TransactionMethodTag transaction={activity} />

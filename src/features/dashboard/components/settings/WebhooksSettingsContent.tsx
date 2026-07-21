@@ -167,7 +167,7 @@ export function WebhooksSettingsContent() {
           <p className="settings-hint">
             Use{' '}
             <a
-              href={`${DEVELOPER_DOCS_URL}/webhook`}
+              href={`${DEVELOPER_DOCS_URL}/webhooks`}
               target="_blank"
               rel="noreferrer"
               className="settings-link"

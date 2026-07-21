@@ -116,6 +116,14 @@ function getBalanceImpactDisplay(detail: TransactionDetail) {
     }
   }
 
+  if (detail.type === 'transfer') {
+    return {
+      label: 'Total wallet debit',
+      value: detail.totalWalletDebit?.trim() || detail.amount,
+      currency,
+    }
+  }
+
   if (detail.netAmount != null && detail.netAmount.trim().length > 0) {
     return {
       label: 'Net to balance',

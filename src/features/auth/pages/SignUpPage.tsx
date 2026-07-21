@@ -5,6 +5,10 @@ import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { Toast } from '../../../components/ui/Toast.tsx'
 import { useSignupMutation } from '../hooks/useAuthMutations.ts'
+import {
+  getSignupFormErrorMessage,
+  signupRequestSchema,
+} from '../services/authSchemas.ts'
 
 export function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -21,13 +25,19 @@ export function SignUpPage() {
 
     setErrorMessage(null)
     const formData = new FormData(event.currentTarget)
+    const payload = {
+      businessName: String(formData.get('businessName') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      password: String(formData.get('password') ?? ''),
+    }
+    const parsed = signupRequestSchema.safeParse(payload)
+    if (!parsed.success) {
+      setErrorMessage(getSignupFormErrorMessage(payload, parsed.error))
+      return
+    }
 
     try {
-      await signupMutation.mutateAsync({
-        businessName: String(formData.get('businessName') ?? ''),
-        email: String(formData.get('email') ?? ''),
-        password: String(formData.get('password') ?? ''),
-      })
+      await signupMutation.mutateAsync(parsed.data)
       await navigate({ to: '/dashboard' })
     } catch (error) {
       setErrorMessage(
@@ -40,7 +50,7 @@ export function SignUpPage() {
 
   return (
     <>
-      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit}>
+      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit} noValidate>
         <div className="space-y-1.5">
           <label
             htmlFor="businessName"
@@ -52,6 +62,7 @@ export function SignUpPage() {
             id="businessName"
             name="businessName"
             type="text"
+            autoComplete="organization"
             placeholder="Acme Inc"
           />
         </div>
@@ -67,6 +78,7 @@ export function SignUpPage() {
             id="email"
             name="email"
             type="email"
+            autoComplete="email"
             placeholder="you@company.com"
           />
         </div>
@@ -82,8 +94,16 @@ export function SignUpPage() {
             id="password"
             name="password"
             type="password"
+            autoComplete="new-password"
             placeholder="Create password"
+            aria-describedby="password-requirements"
           />
+          <p
+            id="password-requirements"
+            className="[font-family:var(--font-body)] text-xs leading-5 text-[#566167]"
+          >
+            Use 8+ characters with uppercase, lowercase, number, and special character.
+          </p>
         </div>
 
         <Button type="submit" className="w-full" disabled={signupMutation.isPending}>

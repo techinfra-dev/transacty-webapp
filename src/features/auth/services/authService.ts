@@ -6,6 +6,7 @@ import {
   authSessionResponseSchema,
   forgotPasswordRequestSchema,
   forgotPasswordResponseSchema,
+  getForgotPasswordFormErrorMessage,
   getLoginFormErrorMessage,
   loginRequestSchema,
   loginResponseSchema,
@@ -76,11 +77,15 @@ export async function signup(payload: SignupRequest) {
 }
 
 export async function forgotPassword(payload: ForgotPasswordRequest) {
+  const parsed = forgotPasswordRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(getForgotPasswordFormErrorMessage(payload.email))
+  }
+
   try {
-    const validatedPayload = forgotPasswordRequestSchema.parse(payload)
     const response = await axiosInstance.post(
       'auth/forgot-password',
-      validatedPayload,
+      parsed.data,
     )
     return forgotPasswordResponseSchema.parse(response.data)
   } catch (error) {

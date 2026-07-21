@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue.ts'
 import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
 import type { TransactionStatusTabId } from '../components/transactions/TransactionStatusTabs.tsx'
 import { useTransactionStatusCounts } from './useTransactionStatusCounts.ts'
@@ -8,6 +9,7 @@ import type {
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
+import { customerWalletIdFilterSchema } from '../services/transactionsSchemas.ts'
 import { transactionRailFilterToApiParam } from '../utils/transactionRailUtils.ts'
 
 export function useTransactionsPage() {
@@ -38,6 +40,16 @@ export function useTransactionsPage() {
     }
   }
   const normalizedCustomerId = customerIdFilter.trim()
+  const debouncedCustomerId = useDebouncedValue(normalizedCustomerId, 350)
+  const isCustomerIdValid =
+    normalizedCustomerId.length === 0 ||
+    customerWalletIdFilterSchema.safeParse(normalizedCustomerId).success
+  const isDebouncedCustomerIdValid =
+    debouncedCustomerId.length > 0 &&
+    customerWalletIdFilterSchema.safeParse(debouncedCustomerId).success
+  const customerIdFilterError = isCustomerIdValid
+    ? null
+    : 'Enter a valid customer wallet UUID.'
   const normalizedQuery = query.trim().toLowerCase()
   const offset = (currentPage - 1) * pageSize
   const listType =
@@ -45,7 +57,9 @@ export function useTransactionsPage() {
   const listStatus =
     selectedStatus === 'all' ? undefined : (selectedStatus as TransactionStatus)
   const listCustomerId =
-    normalizedCustomerId.length > 0 ? normalizedCustomerId : undefined
+    isCustomerIdValid && isDebouncedCustomerIdValid
+      ? debouncedCustomerId
+      : undefined
   const listRail = transactionRailFilterToApiParam(selectedRail)
 
   const statusCountsQuery = useTransactionStatusCounts({
@@ -68,7 +82,8 @@ export function useTransactionsPage() {
         const matchesQuery =
           normalizedQuery.length === 0 ||
           transaction.id.toLowerCase().includes(normalizedQuery) ||
-          (transaction.platformOrderId || '').toLowerCase().includes(normalizedQuery)
+          (transaction.platformOrderId || '').toLowerCase().includes(normalizedQuery) ||
+          (transaction.customerWalletId || '').toLowerCase().includes(normalizedQuery)
 
         const transactionTime = new Date(transaction.createdAt).getTime()
         const startTime = appliedStartDate
@@ -145,6 +160,7 @@ export function useTransactionsPage() {
     selectedStatus,
     setSelectedStatus,
     customerIdFilter,
+    customerIdFilterError,
     setCustomerIdFilter,
     isFilterDialogOpen,
     openFilterDialog,

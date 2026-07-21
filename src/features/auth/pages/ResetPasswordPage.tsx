@@ -4,6 +4,7 @@ import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { Toast } from '../../../components/ui/Toast.tsx'
 import { useResetPasswordMutation } from '../hooks/useAuthMutations.ts'
+import { resetPasswordRequestSchema } from '../services/authSchemas.ts'
 
 export function ResetPasswordPage() {
   const navigate = useNavigate()
@@ -38,8 +39,17 @@ export function ResetPasswordPage() {
       return
     }
 
+    const parsed = resetPasswordRequestSchema.safeParse({ token, password })
+    if (!parsed.success) {
+      setErrorMessage(
+        parsed.error.issues.find((issue) => issue.path[0] === 'password')?.message ??
+          'Please enter a stronger password.',
+      )
+      return
+    }
+
     try {
-      await resetMutation.mutateAsync({ token, password })
+      await resetMutation.mutateAsync(parsed.data)
       setSuccessMessage('Your password has been updated. You can sign in now.')
       window.setTimeout(() => {
         void navigate({ to: '/login' })
@@ -81,7 +91,7 @@ export function ResetPasswordPage() {
 
   return (
     <>
-      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit}>
+      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit} noValidate>
         <div className="space-y-1.5">
           <label
             htmlFor="password"
@@ -97,9 +107,9 @@ export function ResetPasswordPage() {
               autoComplete="new-password"
               minLength={8}
               maxLength={128}
-              placeholder="At least 8 characters"
+              placeholder="Create a strong password"
               className="pr-12"
-              required
+              aria-describedby="reset-password-requirements"
             />
             <Button
               type="button"
@@ -111,6 +121,12 @@ export function ResetPasswordPage() {
               {showPassword ? 'Hide' : 'Show'}
             </Button>
           </div>
+          <p
+            id="reset-password-requirements"
+            className="[font-family:var(--font-body)] text-xs leading-5 text-[#566167]"
+          >
+            Use 8+ characters with uppercase, lowercase, number, and special character.
+          </p>
         </div>
 
         <div className="space-y-1.5">
@@ -128,7 +144,6 @@ export function ResetPasswordPage() {
             minLength={8}
             maxLength={128}
             placeholder="Repeat your password"
-            required
           />
         </div>
 

@@ -42,7 +42,7 @@ export function useTransactionsListQuery(
       rail ?? null,
       currency ?? null,
     ],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       listTransactions({
         environment,
         type,
@@ -52,8 +52,10 @@ export function useTransactionsListQuery(
         currency,
         limit,
         offset,
+        signal,
       }),
     enabled: options?.enabled ?? true,
+    retry: false,
   })
 }
 

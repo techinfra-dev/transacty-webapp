@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { Button } from '../ui/Button.tsx'
 import type { PortalEnvironment } from '../../types/portalEnvironment.ts'
+import { useBrandLogoPath } from '../../theme/useBrandLogo.ts'
 import { LogoutIcon, SidebarItemIcon } from './SidebarItemIcon.tsx'
 
 export interface DashboardNavItem {
@@ -67,21 +68,31 @@ function PortalEnvironmentSegmentedControl({
   onRequestEnvironment,
   isKycVerified,
   className,
+  collapsed = false,
 }: {
   portalEnvironment: PortalEnvironment
   onRequestEnvironment: (next: PortalEnvironment) => void
   isKycVerified: boolean
   className?: string
+  collapsed?: boolean
 }) {
   const liveSwitchBlocked = !isKycVerified && portalEnvironment !== 'live'
   return (
     <div className={className} role="group" aria-label="Portal environment">
-      <p className="mb-1 px-1 [font-family:var(--font-body)] text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
-        Environment
-      </p>
-      <div className="grid grid-cols-2 gap-1 rounded-lg border border-(--sidebar-border) bg-(--sidebar-segment-inactive) p-0.5">
+      {!collapsed ? (
+        <p className="mb-1 px-1 [font-family:var(--font-body)] text-[9.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
+          Environment
+        </p>
+      ) : null}
+      <div
+        className={`grid gap-1 rounded-lg border border-(--sidebar-border) bg-(--sidebar-segment-inactive) p-0.5 ${
+          collapsed ? 'grid-cols-1' : 'grid-cols-2'
+        }`}
+      >
         <button
           type="button"
+          title="Test environment"
+          aria-label="Use test environment"
           onClick={() => onRequestEnvironment('test')}
           className={`rounded-md px-2 py-1.5 [font-family:var(--font-body)] text-[11.5px] font-semibold transition-colors ${
             portalEnvironment === 'test'
@@ -89,15 +100,16 @@ function PortalEnvironmentSegmentedControl({
               : 'bg-transparent text-(--sidebar-segment-inactive-text) hover:bg-(--sidebar-segment-hover)'
           }`}
         >
-          Test
+          {collapsed ? 'T' : 'Test'}
         </button>
         <button
           type="button"
           title={
             liveSwitchBlocked
               ? 'Complete KYC verification to use the live environment'
-              : undefined
+              : 'Live environment'
           }
+          aria-label="Use live environment"
           disabled={liveSwitchBlocked}
           onClick={() => onRequestEnvironment('live')}
           className={`rounded-md px-2 py-1.5 [font-family:var(--font-body)] text-[11px] font-semibold transition-colors ${
@@ -106,7 +118,7 @@ function PortalEnvironmentSegmentedControl({
               : 'bg-transparent text-(--sidebar-segment-inactive-text) hover:bg-(--sidebar-segment-hover)'
           } ${liveSwitchBlocked ? 'cursor-not-allowed opacity-45' : ''}`}
         >
-          Live
+          {collapsed ? 'L' : 'Live'}
         </button>
       </div>
     </div>
@@ -123,6 +135,7 @@ export interface DashboardSidebarNavProps {
   onNavigate?: () => void
   /** Extra bottom padding when a fixed test-mode banner may overlap (mobile drawer). */
   reserveTestBannerSpace?: boolean
+  collapsed?: boolean
 }
 
 export function DashboardSidebarNav({
@@ -134,6 +147,7 @@ export function DashboardSidebarNav({
   isLoggingOut,
   onNavigate,
   reserveTestBannerSpace = false,
+  collapsed = false,
 }: DashboardSidebarNavProps) {
   const footerPadClass =
     reserveTestBannerSpace && portalEnvironment === 'test'
@@ -141,13 +155,19 @@ export function DashboardSidebarNav({
       : ''
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-2.5 py-4">
+    <div
+      className={`flex min-h-0 flex-1 flex-col py-4 ${
+        collapsed ? 'px-2' : 'px-2.5'
+      }`}
+    >
       <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain">
         {dashboardMenuSections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="px-2 [font-family:var(--font-body)] text-[10.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
-              {section.title}
-            </p>
+            {!collapsed ? (
+              <p className="px-2 [font-family:var(--font-body)] text-[10.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
+                {section.title}
+              </p>
+            ) : null}
             <div className="space-y-1.5">
               {section.items.map((item) => {
                 const isActive = isDashboardNavItemActive(item.to, pathname)
@@ -157,7 +177,11 @@ export function DashboardSidebarNav({
                     to={item.to}
                     activeOptions={{ exact: item.to === '/dashboard' }}
                     onClick={onNavigate}
+                    aria-label={collapsed ? item.label : undefined}
+                    title={collapsed ? item.label : undefined}
                     className={`${sidebarNavLinkClass} ${
+                      collapsed ? 'justify-center gap-0 px-0' : ''
+                    } ${
                       isActive ? sidebarNavLinkActiveClass : sidebarNavLinkInactiveClass
                     }`}
                   >
@@ -167,7 +191,7 @@ export function DashboardSidebarNav({
                     >
                       <SidebarItemIcon to={item.to} active={isActive} />
                     </span>
-                    <span>{item.label}</span>
+                    {!collapsed ? <span>{item.label}</span> : null}
                   </Link>
                 )
               })}
@@ -183,22 +207,27 @@ export function DashboardSidebarNav({
           portalEnvironment={portalEnvironment}
           onRequestEnvironment={onRequestEnvironment}
           isKycVerified={isKycVerified}
+          collapsed={collapsed}
         />
         <Button
           variant="ghost"
-          className="h-[38px]! min-h-0! w-full rounded-lg border border-(--sidebar-border) bg-(--color-card) px-3 text-[11.5px]! text-(--sidebar-link)! hover:border-(--color-accent) hover:bg-(--sidebar-segment-hover) hover:text-(--sidebar-link-active)!"
+          className={`h-[38px]! min-h-0! w-full rounded-lg border border-(--sidebar-border) bg-(--color-card) text-[11.5px]! text-(--sidebar-link)! hover:border-(--color-accent) hover:bg-(--sidebar-segment-hover) hover:text-(--sidebar-link-active)! ${
+            collapsed ? 'px-0!' : 'px-3'
+          }`}
           onClick={onLogout}
           disabled={isLoggingOut}
+          aria-label={collapsed ? 'Log out' : undefined}
+          title={collapsed ? 'Log out' : undefined}
         >
           {isLoggingOut ? (
             <span className="inline-flex items-center gap-1.5">
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-(--sidebar-link)/35 border-t-(--sidebar-link-active)" />
-              Logging out...
+              {!collapsed ? 'Logging out...' : null}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5">
               <LogoutIcon />
-              Logout
+              {!collapsed ? 'Logout' : null}
             </span>
           )}
         </Button>
@@ -207,19 +236,25 @@ export function DashboardSidebarNav({
   )
 }
 
-export function DashboardSidebarLogo() {
+export function DashboardSidebarLogo({ collapsed = false }: { collapsed?: boolean }) {
+  const logoSrc = useBrandLogoPath()
+
   return (
     <Link
       to="/dashboard"
       aria-label="Go to dashboard home"
-      className="inline-flex w-full max-w-full shrink-0 items-center justify-center rounded-md py-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg)"
+      className={`inline-flex max-w-full shrink-0 items-center rounded-md py-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg) ${
+        collapsed ? 'h-9 w-9 justify-start overflow-hidden' : 'w-full justify-center'
+      }`}
     >
       <img
-        src="/TRANSACTY-LOGO-OBSIDIAN-BROWN.png"
+        src={logoSrc}
         alt="Transacty"
         width={220}
         height={48}
-        className="h-8 w-auto max-w-[150px] object-contain object-center"
+        className={`h-8 max-w-none object-contain ${
+          collapsed ? 'w-auto shrink-0 object-left' : 'w-auto max-w-[150px] object-center'
+        }`}
         decoding="async"
       />
     </Link>

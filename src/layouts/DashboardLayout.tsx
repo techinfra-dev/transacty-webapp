@@ -28,6 +28,7 @@ import {
   DashboardSidebarLogo,
   DashboardSidebarNav,
 } from '../components/layout/DashboardSidebarNav.tsx'
+import { useUiPreferencesStore } from '../store/uiPreferencesStore.ts'
 
 const MOBILE_NAV_ANIMATION_MS = 280
 
@@ -55,6 +56,12 @@ export function DashboardLayout() {
     (state) => state.setEnvironment,
   )
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const isSidebarCollapsed = useUiPreferencesStore(
+    (state) => state.isDashboardSidebarCollapsed,
+  )
+  const toggleSidebar = useUiPreferencesStore(
+    (state) => state.toggleDashboardSidebar,
+  )
   const [isMobileNavMounted, setIsMobileNavMounted] = useState(false)
   const [isMobileNavClosing, setIsMobileNavClosing] = useState(false)
   const isMobileNavOpen = isMobileNavMounted && !isMobileNavClosing
@@ -223,11 +230,41 @@ export function DashboardLayout() {
 
   return (
     <section className="h-screen bg-(--color-background)">
-      <div className="grid h-full lg:grid-cols-[var(--sidebar-width)_1fr]">
-        <aside className="hidden h-full w-(--sidebar-width) shrink-0 flex-col border-r border-(--sidebar-border) bg-(--sidebar-bg) lg:flex">
+      <div
+        className={`grid h-full transition-[grid-template-columns] duration-300 ease-in-out motion-reduce:transition-none ${
+          isSidebarCollapsed
+            ? 'lg:grid-cols-[var(--sidebar-collapsed-width)_1fr]'
+            : 'lg:grid-cols-[var(--sidebar-width)_1fr]'
+        }`}
+      >
+        <aside
+          className={`relative z-50 hidden h-full shrink-0 flex-col overflow-visible border-r border-(--sidebar-border) bg-(--sidebar-bg) transition-[width] duration-300 ease-in-out motion-reduce:transition-none lg:flex ${
+            isSidebarCollapsed
+              ? 'w-(--sidebar-collapsed-width)'
+              : 'w-(--sidebar-width)'
+          }`}
+        >
           <header className="dashboard-shell-header justify-center px-3">
-            <DashboardSidebarLogo />
+            <DashboardSidebarLogo collapsed={isSidebarCollapsed} />
           </header>
+          <button
+            type="button"
+            className="absolute top-13 -right-3.5 z-60 inline-flex size-7 items-center justify-center rounded-full border border-(--sidebar-border) bg-(--dash-surface) text-(--sidebar-link) shadow-sm transition-[color,background-color,transform] duration-200 hover:scale-105 hover:bg-(--dash-surface-2) hover:text-(--sidebar-link-hover) active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 motion-reduce:transition-none"
+            onClick={toggleSidebar}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!isSidebarCollapsed}
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <svg
+              viewBox="0 0 20 20"
+              className={`size-4 fill-current transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
+                isSidebarCollapsed ? 'rotate-180' : ''
+              }`}
+              aria-hidden
+            >
+              <path d="M12.8 4.7a.75.75 0 0 1 0 1.06L8.56 10l4.24 4.24a.75.75 0 1 1-1.06 1.06l-4.77-4.77a.75.75 0 0 1 0-1.06l4.77-4.77a.75.75 0 0 1 1.06 0Z" />
+            </svg>
+          </button>
           <DashboardSidebarNav
             pathname={pathname}
             portalEnvironment={portalEnvironment}
@@ -235,6 +272,7 @@ export function DashboardLayout() {
             isKycVerified={isKycVerified}
             onLogout={() => void handleLogout()}
             isLoggingOut={isLoggingOut}
+            collapsed={isSidebarCollapsed}
           />
         </aside>
 

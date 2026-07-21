@@ -1,10 +1,35 @@
 import { z } from 'zod'
 
+export const creationPasswordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters.')
+  .max(128, 'Password must be no more than 128 characters.')
+  .regex(/[a-z]/, 'Password must include a lowercase letter.')
+  .regex(/[A-Z]/, 'Password must include an uppercase letter.')
+  .regex(/\d/, 'Password must include a number.')
+  .regex(/[^A-Za-z0-9]/, 'Password must include a special character.')
+
 export const signupRequestSchema = z.object({
   businessName: z.string().min(1).max(200),
   email: z.email(),
-  password: z.string().min(8).max(128),
+  password: creationPasswordSchema,
 })
+
+export function getSignupFormErrorMessage(
+  input: { businessName: string; email: string; password: string },
+  error: z.ZodError,
+): string {
+  if (!input.businessName.trim()) return 'Please enter your business name.'
+  if (!input.email.trim()) return 'Please enter your email address.'
+  if (!z.email().safeParse(input.email.trim()).success) {
+    return 'Please enter a valid email address.'
+  }
+  if (!input.password) return 'Please enter a password.'
+  return (
+    error.issues.find((issue) => issue.path[0] === 'password')?.message ??
+    'Please check your details and try again.'
+  )
+}
 
 export const loginRequestSchema = z.object({
   email: z.email(),
@@ -77,8 +102,14 @@ export const mfaVerifyRequestSchema = z.object({
 })
 
 export const forgotPasswordRequestSchema = z.object({
-  email: z.email(),
+  email: z.string().trim().pipe(z.email()),
 })
+
+export function getForgotPasswordFormErrorMessage(email: string): string {
+  return email.trim()
+    ? 'Please enter a valid email address.'
+    : 'Please enter your email address.'
+}
 
 export const forgotPasswordResponseSchema = z.object({
   ok: z.boolean(),
@@ -87,7 +118,7 @@ export const forgotPasswordResponseSchema = z.object({
 
 export const resetPasswordRequestSchema = z.object({
   token: z.string().min(1),
-  password: z.string().min(8).max(128),
+  password: creationPasswordSchema,
 })
 
 export const resetPasswordResponseSchema = z.object({

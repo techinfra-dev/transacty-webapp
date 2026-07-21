@@ -17,6 +17,7 @@
   --color-card: #FFFFFF;
   /* Dashboard sidebar (light nav — n23 / app theme) */
   --sidebar-width: 220px;
+  --sidebar-collapsed-width: 72px;
   --dashboard-shell-header-height: 4.3125rem;
   --sidebar-bg: #F0F0F0;
   --dashboard-main-bg: #F6F6F6;

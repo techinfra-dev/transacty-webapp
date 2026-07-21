@@ -37,7 +37,7 @@ export function useTransactionStatusCounts({
         environment,
         { type, customerId, rail, currency: normalizedCurrency, status },
       ],
-      queryFn: () =>
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
         listTransactions({
           environment,
           type,
@@ -47,8 +47,10 @@ export function useTransactionStatusCounts({
           status,
           limit: 1,
           offset: 0,
+          signal,
         }),
       staleTime: 30_000,
+      retry: false,
     })),
   })
 

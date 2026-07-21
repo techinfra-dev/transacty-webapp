@@ -1,31 +1,41 @@
-import { useState, type ComponentProps } from 'react'
+import { useRef, useState, type ComponentProps } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { Toast } from '../../../components/ui/Toast.tsx'
 import { useForgotPasswordMutation } from '../hooks/useAuthMutations.ts'
+import {
+  forgotPasswordRequestSchema,
+  getForgotPasswordFormErrorMessage,
+} from '../services/authSchemas.ts'
 
 export function ForgotPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const requestInFlightRef = useRef(false)
   const forgotMutation = useForgotPasswordMutation()
 
   const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = async (
     event,
   ) => {
     event.preventDefault()
-    if (forgotMutation.isPending) {
+    if (requestInFlightRef.current || forgotMutation.isPending) {
       return
     }
 
     setErrorMessage(null)
     setInfoMessage(null)
     const formData = new FormData(event.currentTarget)
+    const email = String(formData.get('email') ?? '')
+    const parsed = forgotPasswordRequestSchema.safeParse({ email })
+    if (!parsed.success) {
+      setErrorMessage(getForgotPasswordFormErrorMessage(email))
+      return
+    }
 
+    requestInFlightRef.current = true
     try {
-      const result = await forgotMutation.mutateAsync({
-        email: String(formData.get('email') ?? ''),
-      })
+      const result = await forgotMutation.mutateAsync(parsed.data)
       setInfoMessage(result.message)
     } catch (error) {
       setErrorMessage(
@@ -33,12 +43,19 @@ export function ForgotPasswordPage() {
           ? error.message
           : 'Unable to send reset instructions. Please try again.',
       )
+    } finally {
+      requestInFlightRef.current = false
     }
   }
 
   return (
     <>
-      <form className="auth-form-enter space-y-5" onSubmit={handleSubmit}>
+      <form
+        className="auth-form-enter space-y-5"
+        onSubmit={handleSubmit}
+        noValidate
+        aria-busy={forgotMutation.isPending}
+      >
         <div className="space-y-1.5">
           <label
             htmlFor="email"

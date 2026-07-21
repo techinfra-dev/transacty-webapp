@@ -14,6 +14,7 @@ interface DropdownSelectProps {
   className?: string
   menuPlacement?: 'bottom' | 'top'
   disabled?: boolean
+  variant?: 'default' | 'filter'
 }
 
 function joinClasses(...classNames: Array<string | undefined>) {
@@ -28,6 +29,7 @@ export function DropdownSelect({
   className,
   menuPlacement = 'bottom',
   disabled = false,
+  variant = 'default',
 }: DropdownSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
@@ -116,7 +118,11 @@ export function DropdownSelect({
       role="listbox"
       aria-label={ariaLabel}
       style={menuStyle}
-      className="min-w-40 overflow-y-auto overflow-x-hidden rounded-lg border border-(--color-accent)/45 bg-(--color-card) py-1 shadow-[0_4px_16px_rgba(15,7,0,0.16)]"
+      className={
+        variant === 'filter'
+          ? 'min-w-40 overflow-y-auto overflow-x-hidden rounded-lg border border-(--dash-border-strong) bg-(--dash-surface) py-1 shadow-[0_8px_24px_rgba(15,7,0,0.14)]'
+          : 'min-w-40 overflow-y-auto overflow-x-hidden rounded-lg border border-(--color-accent)/45 bg-(--color-card) py-1 shadow-[0_4px_16px_rgba(15,7,0,0.16)]'
+      }
     >
       {options.map((option) => {
         const isSelected = option.value === value
@@ -129,8 +135,12 @@ export function DropdownSelect({
             aria-selected={isSelected}
             className={`block w-full cursor-pointer px-3 py-2 text-left [font-family:var(--font-body)] text-sm transition ${
               isSelected
-                ? 'bg-(--color-primary) text-(--color-background)'
-                : 'text-(--color-foreground) hover:bg-(--color-background)'
+                ? variant === 'filter'
+                  ? 'bg-(--dash-surface-3) font-semibold text-(--dash-fg)'
+                  : 'bg-(--color-primary) text-(--color-background)'
+                : variant === 'filter'
+                  ? 'text-(--dash-fg-muted) hover:bg-(--dash-surface-2) hover:text-(--dash-fg)'
+                  : 'text-(--color-foreground) hover:bg-(--color-background)'
             }`}
             onClick={() => {
               onChange(option.value)
@@ -153,10 +163,12 @@ export function DropdownSelect({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         disabled={disabled}
-        className={`h-10 min-w-40 rounded-lg border px-3 [font-family:var(--font-body)] text-left text-xs font-semibold outline-none transition ${
+        className={`${variant === 'filter' ? 'h-9 w-full min-w-0 text-sm font-normal' : 'h-10 min-w-40 text-xs font-semibold'} rounded-lg border px-3 [font-family:var(--font-body)] text-left outline-none transition ${
           disabled
             ? 'cursor-not-allowed border-(--color-accent)/35 bg-(--color-background) text-(--color-secondary)'
-            : 'cursor-pointer border-(--color-accent)/45 bg-(--color-card) text-(--color-foreground) hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20'
+            : variant === 'filter'
+              ? 'cursor-pointer border-(--dash-border) bg-(--dash-surface-2) text-(--dash-fg) hover:border-(--dash-border-strong) focus:border-(--dash-border-strong) focus:bg-(--dash-surface)'
+              : 'cursor-pointer border-(--color-accent)/45 bg-(--color-card) text-(--color-foreground) hover:border-(--color-secondary)/55 focus:border-(--color-secondary) focus:ring-2 focus:ring-(--color-secondary)/20'
         }`}
         onClick={() => {
           if (!disabled) {

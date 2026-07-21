@@ -2,6 +2,8 @@ import { transactionMethodOptions } from './transactionConstants.ts'
 import { transactionRailFilterOptions } from '../../utils/transactionRailUtils.ts'
 import type { TransactionRailFilter } from '../../services/transactionsSchemas.ts'
 import { TransactionDateFilterDialog } from './TransactionDateFilterDialog.tsx'
+import { InputClearButton } from '../../../../components/ui/InputClearButton.tsx'
+import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 
 function SearchIcon() {
   return (
@@ -39,47 +41,11 @@ function FilterIcon() {
   )
 }
 
-function DownloadIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  )
-}
-
-function SelectChevron() {
-  return (
-    <svg
-      className="tx-history-field-chev"
-      width="10"
-      height="10"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
-  )
-}
-
 type TransactionsPageHeaderProps = {
   query: string
   onQueryChange: (value: string) => void
   customerIdFilter: string
+  customerIdFilterError: string | null
   onCustomerIdFilterChange: (value: string) => void
   selectedRail: TransactionRailFilter
   onSelectedRailChange: (value: TransactionRailFilter) => void
@@ -102,6 +68,7 @@ export function TransactionsPageHeader({
   query,
   onQueryChange,
   customerIdFilter,
+  customerIdFilterError,
   onCustomerIdFilterChange,
   selectedRail,
   onSelectedRailChange,
@@ -129,10 +96,6 @@ export function TransactionsPageHeader({
           </p>
         </div>
         <div className="tx-history-head-meta">
-          <button type="button" className="tx-history-icon-btn" aria-label="Export">
-            <DownloadIcon />
-            Export
-          </button>
           <button
             type="button"
             className={`tx-history-icon-btn ${isFilterDialogOpen ? 'tx-history-icon-btn--active' : ''}`}
@@ -163,44 +126,54 @@ export function TransactionsPageHeader({
             onChange={(event) => onQueryChange(event.target.value)}
           />
         </label>
-        <label className="tx-history-field">
-          <input
-            type="text"
-            placeholder="Customer wallet ID"
-            value={customerIdFilter}
-            onChange={(event) => onCustomerIdFilterChange(event.target.value)}
-          />
-        </label>
-        <label className="tx-history-field tx-history-field-select">
-          <select
-            aria-label="Filter transactions by rail"
-            value={selectedRail}
-            onChange={(event) =>
-              onSelectedRailChange(event.target.value as TransactionRailFilter)
-            }
+        <div className="relative min-w-0">
+          <label
+            className={`tx-history-field w-full ${
+              customerIdFilterError ? 'border-red-500!' : ''
+            }`}
           >
-            {transactionRailFilterOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <SelectChevron />
-        </label>
-        <label className="tx-history-field tx-history-field-select">
-          <select
-            aria-label="Filter transactions by type"
-            value={selectedMethod}
-            onChange={(event) => onSelectedMethodChange(event.target.value)}
-          >
-            {transactionMethodOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <SelectChevron />
-        </label>
+            <input
+              type="text"
+              placeholder="Customer wallet ID"
+              value={customerIdFilter}
+              onChange={(event) => onCustomerIdFilterChange(event.target.value)}
+              aria-invalid={Boolean(customerIdFilterError)}
+              aria-describedby={
+                customerIdFilterError ? 'customer-wallet-filter-error' : undefined
+              }
+            />
+            {customerIdFilter ? (
+              <InputClearButton
+                label="Clear customer wallet ID"
+                onClear={() => onCustomerIdFilterChange('')}
+              />
+            ) : null}
+          </label>
+          {customerIdFilterError ? (
+            <p
+              id="customer-wallet-filter-error"
+              className="absolute top-full left-1 z-10 mt-1 rounded bg-red-50 px-1.5 py-0.5 [font-family:var(--font-body)] text-[11px] text-red-700 shadow-sm"
+            >
+              {customerIdFilterError}
+            </p>
+          ) : null}
+        </div>
+        <DropdownSelect
+          options={transactionRailFilterOptions}
+          value={selectedRail}
+          onChange={(value) => onSelectedRailChange(value as TransactionRailFilter)}
+          ariaLabel="Filter transactions by rail"
+          className="w-full min-w-0"
+          variant="filter"
+        />
+        <DropdownSelect
+          options={transactionMethodOptions}
+          value={selectedMethod}
+          onChange={onSelectedMethodChange}
+          ariaLabel="Filter transactions by type"
+          className="w-full min-w-0"
+          variant="filter"
+        />
       </div>
 
       <TransactionDateFilterDialog

@@ -16,6 +16,7 @@ export function DashboardTransactionsPage() {
           tx.setCurrentPage(1)
         }}
         customerIdFilter={tx.customerIdFilter}
+        customerIdFilterError={tx.customerIdFilterError}
         onCustomerIdFilterChange={(value) => {
           tx.setCustomerIdFilter(value)
           tx.setCurrentPage(1)

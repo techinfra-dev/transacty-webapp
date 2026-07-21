@@ -55,12 +55,23 @@ export async function listTransactions(params: {
   currency?: string
   limit: number
   offset: number
+  signal?: AbortSignal
 }) {
   try {
-    const { environment, type, status, customerId, rail, currency, limit, offset } =
-      params
+    const {
+      environment,
+      type,
+      status,
+      customerId,
+      rail,
+      currency,
+      limit,
+      offset,
+      signal,
+    } = params
     const response = await axiosInstance.get('me/transactions', {
       headers: getAuthHeader(),
+      signal,
       params: {
         environment,
         limit,

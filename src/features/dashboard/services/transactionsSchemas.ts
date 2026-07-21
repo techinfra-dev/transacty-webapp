@@ -40,6 +40,8 @@ export const transactionRailFilterSchema = z.enum([
   'brazil',
 ])
 
+export const customerWalletIdFilterSchema = z.uuid()
+
 export const transactionItemSchema = z.object({
   id: z.string().min(1),
   type: transactionTypeSchema,
@@ -68,7 +70,7 @@ export const transactionsListResponseSchema = z.object({
 
 export const transactionDetailSchema = transactionItemSchema
   .extend({
-    metadata: z.record(z.string(), z.unknown()).optional(),
+    metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   })
   .passthrough()
 
