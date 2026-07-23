@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
@@ -9,9 +9,17 @@ import {
   useRevokeApiKeyMutation,
 } from '../../hooks/useApiKeysQuery.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
-import type { ApiKeyItem, CreateApiKeyResponse } from '../../services/apiKeysSchemas.ts'
+import {
+  API_KEY_SCOPE_OPTIONS,
+  normalizeApiKeyScopes,
+  type ApiKeyItem,
+  type ApiKeyScope,
+  type CreateApiKeyResponse,
+} from '../../services/apiKeysSchemas.ts'
 import { SettingsKycGate } from './SettingsKycGate.tsx'
 import { settingsFieldLabelClass } from './settingsFieldUtils.ts'
+
+const DEFAULT_SCOPES: ApiKeyScope[] = ['balance:read']
 
 function formatCreatedAt(isoDate: string) {
   const timestamp = new Date(isoDate)
@@ -34,14 +42,10 @@ function formatScopeLabel(scope: string) {
   return scope.replace(':', ' · ')
 }
 
-function parseScopes(scopes: string) {
-  return scopes
-    .split(',')
-    .map((scope) => scope.trim())
-    .filter(Boolean)
-}
-
 export function ApiKeysSettingsContent() {
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [selectedScopes, setSelectedScopes] = useState<ApiKeyScope[]>(DEFAULT_SCOPES)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [createdApiKey, setCreatedApiKey] = useState<CreateApiKeyResponse | null>(null)
   const [copiedField, setCopiedField] = useState<'apiKey' | 'secret' | null>(null)
   const [keyForRevoke, setKeyForRevoke] = useState<ApiKeyItem | null>(null)
@@ -55,6 +59,39 @@ export function ApiKeysSettingsContent() {
   const apiKeysQuery = useApiKeysQuery(isKycVerified)
   const createApiKeyMutation = useCreateApiKeyMutation()
   const revokeApiKeyMutation = useRevokeApiKeyMutation()
+
+  const hasWildcard = selectedScopes.includes('*')
+  const canSubmitCreate = selectedScopes.length > 0
+
+  const selectedScopeSet = useMemo(() => new Set(selectedScopes), [selectedScopes])
+
+  function openCreateDialog() {
+    setSelectedScopes(DEFAULT_SCOPES)
+    setCreateError(null)
+    setIsCreateOpen(true)
+  }
+
+  function closeCreateDialog() {
+    if (createApiKeyMutation.isPending) {
+      return
+    }
+    setIsCreateOpen(false)
+    setCreateError(null)
+  }
+
+  function toggleScope(scope: ApiKeyScope) {
+    setCreateError(null)
+    setSelectedScopes((current) => {
+      if (scope === '*') {
+        return current.includes('*') ? [] : ['*']
+      }
+      const withoutWildcard = current.filter((value) => value !== '*')
+      if (withoutWildcard.includes(scope)) {
+        return withoutWildcard.filter((value) => value !== scope)
+      }
+      return [...withoutWildcard, scope]
+    })
+  }
 
   async function handleConfirmRevoke() {
     if (!keyForRevoke) {
@@ -79,13 +116,25 @@ export function ApiKeysSettingsContent() {
   }
 
   async function handleCreateApiKey() {
+    if (selectedScopes.length === 0) {
+      setCreateError('Select at least one scope.')
+      return
+    }
+
+    setCreateError(null)
     try {
       const response = await createApiKeyMutation.mutateAsync({
         environment: portalEnvironment,
+        scopes: selectedScopes,
       })
+      setIsCreateOpen(false)
       setCreatedApiKey(response)
-    } catch {
-      // Error shown inline
+    } catch (error) {
+      setCreateError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to create API key right now.',
+      )
     }
   }
 
@@ -108,11 +157,10 @@ export function ApiKeysSettingsContent() {
           <button
             type="button"
             className="settings-btn settings-btn--primary"
-            onClick={() => void handleCreateApiKey()}
+            onClick={openCreateDialog}
             disabled={createApiKeyMutation.isPending}
-            aria-busy={createApiKeyMutation.isPending}
           >
-            {createApiKeyMutation.isPending ? 'Creating…' : 'Create API key'}
+            Create API key
           </button>
         </div>
       ) : null}
@@ -163,7 +211,7 @@ export function ApiKeysSettingsContent() {
                   <p className="truncate">{item.keyMasked}</p>
                   <p className="settings-dev-table-muted">{item.environment}</p>
                   <div className="settings-dev-scope-list">
-                    {parseScopes(item.scopes)
+                    {normalizeApiKeyScopes(item.scopes)
                       .slice(0, 3)
                       .map((scope) => (
                         <span key={`${item.id}-${scope}`} className="settings-dev-scope-tag">
@@ -201,6 +249,72 @@ export function ApiKeysSettingsContent() {
           </div>
         </article>
       )}
+
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={closeCreateDialog}
+        title="Create API key"
+        description={`Keys are created in the ${portalEnvironment === 'live' ? 'live' : 'test'} environment. Prefer least privilege — avoid * in production.`}
+        maxWidthClassName="max-w-lg"
+        footer={
+          <div className="settings-dev-actions-row">
+            <button
+              type="button"
+              className="settings-btn settings-btn--ghost"
+              onClick={closeCreateDialog}
+              disabled={createApiKeyMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="settings-btn settings-btn--primary"
+              onClick={() => void handleCreateApiKey()}
+              disabled={!canSubmitCreate || createApiKeyMutation.isPending}
+              aria-busy={createApiKeyMutation.isPending}
+            >
+              {createApiKeyMutation.isPending ? 'Creating…' : 'Create key'}
+            </button>
+          </div>
+        }
+      >
+        <div className="settings-stack">
+          <div>
+            <p className={settingsFieldLabelClass}>Scopes</p>
+            <p className="settings-hint mt-1">
+              Select at least one permission for this key.
+            </p>
+            <div className="settings-scope-toggle-list" role="group" aria-label="API key scopes">
+              {API_KEY_SCOPE_OPTIONS.map((option) => {
+                const checked = selectedScopeSet.has(option.value)
+                const disabled = hasWildcard && option.value !== '*'
+                return (
+                  <label
+                    key={option.value}
+                    className={`settings-scope-toggle ${checked ? 'settings-scope-toggle--on' : ''} ${disabled ? 'settings-scope-toggle--disabled' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={disabled}
+                      onChange={() => toggleScope(option.value)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {portalEnvironment === 'live' && hasWildcard ? (
+              <p className="settings-hint settings-hint--warn mt-2">
+                Wildcard (*) grants full access. Prefer specific scopes in live.
+              </p>
+            ) : null}
+          </div>
+          {createError ? (
+            <p className="settings-error settings-error--inline">{createError}</p>
+          ) : null}
+        </div>
+      </Dialog>
 
       <Dialog
         isOpen={Boolean(createdApiKey)}
@@ -253,6 +367,13 @@ export function ApiKeysSettingsContent() {
             <p className="settings-hint">
               Environment: {createdApiKey.environment === 'live' ? 'Live' : 'Test'}
             </p>
+            <div className="settings-dev-scope-list">
+              {normalizeApiKeyScopes(createdApiKey.scopes).map((scope) => (
+                <span key={scope} className="settings-dev-scope-tag">
+                  {formatScopeLabel(scope)}
+                </span>
+              ))}
+            </div>
           </div>
         ) : null}
       </Dialog>

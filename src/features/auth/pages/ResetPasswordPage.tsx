@@ -125,7 +125,8 @@ export function ResetPasswordPage() {
             id="reset-password-requirements"
             className="[font-family:var(--font-body)] text-xs leading-5 text-[#566167]"
           >
-            Use 8+ characters with uppercase, lowercase, number, and special character.
+            At least 10 characters, including a letter and a number. Avoid common
+            passwords.
           </p>
         </div>
 

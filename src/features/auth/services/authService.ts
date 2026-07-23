@@ -8,6 +8,7 @@ import {
   forgotPasswordResponseSchema,
   getForgotPasswordFormErrorMessage,
   getLoginFormErrorMessage,
+  getSignupFormErrorMessage,
   loginRequestSchema,
   loginResponseSchema,
   logoutResponseSchema,
@@ -64,14 +65,14 @@ export async function verifyMfaLogin(payload: MfaVerifyRequest) {
 }
 
 export async function signup(payload: SignupRequest) {
+  const parsed = signupRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(getSignupFormErrorMessage(payload, parsed.error))
+  }
   try {
-    const validatedPayload = signupRequestSchema.parse(payload)
-    const response = await axiosInstance.post('auth/signup', validatedPayload)
+    const response = await axiosInstance.post('auth/signup', parsed.data)
     return authSessionResponseSchema.parse(response.data)
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error('Please check your input fields and try again.')
-    }
     throw new Error(getApiErrorMessage(error))
   }
 }
@@ -94,17 +95,20 @@ export async function forgotPassword(payload: ForgotPasswordRequest) {
 }
 
 export async function resetPassword(payload: ResetPasswordRequest) {
+  const parsed = resetPasswordRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues.find((issue) => issue.path[0] === 'password')
+        ?.message ?? 'Please enter a stronger password.',
+    )
+  }
   try {
-    const validatedPayload = resetPasswordRequestSchema.parse(payload)
     const response = await axiosInstance.post(
       'auth/reset-password',
-      validatedPayload,
+      parsed.data,
     )
     return resetPasswordResponseSchema.parse(response.data)
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new Error('Please check your password and try again.')
-    }
     throw new Error(getApiErrorMessage(error))
   }
 }

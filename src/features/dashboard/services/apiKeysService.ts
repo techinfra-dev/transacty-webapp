@@ -57,13 +57,16 @@ export async function getApiKeys(): Promise<ApiKeysResponse> {
 }
 
 export async function createApiKey(
-  payload: CreateApiKeyPayload = {},
+  payload: CreateApiKeyPayload,
 ): Promise<CreateApiKeyResponse> {
   try {
     const validatedPayload = createApiKeyPayloadSchema.parse(payload)
     const response = await axiosInstance.post(
       'me/api-keys',
-      { environment: validatedPayload.environment ?? 'test' },
+      {
+        environment: validatedPayload.environment,
+        scopes: validatedPayload.scopes,
+      },
       {
         headers: getAuthHeader(),
       },

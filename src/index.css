@@ -4789,6 +4789,57 @@ body {
   gap: 6px;
 }
 
+.settings-scope-toggle-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@media (max-width: 560px) {
+  .settings-scope-toggle-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-scope-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  background: var(--dash-surface-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--dash-fg);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+.settings-scope-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-primary);
+}
+
+.settings-scope-toggle--on {
+  border-color: var(--dash-border-strong);
+  background: var(--dash-surface);
+}
+
+.settings-scope-toggle--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-hint--warn {
+  color: var(--dash-warning);
+}
+
 .settings-dev-scope-tag {
   display: inline-flex;
   border-radius: 999px;

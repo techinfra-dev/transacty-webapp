@@ -1,13 +1,31 @@
 import { z } from 'zod'
 
+const COMMON_PASSWORDS = new Set([
+  'password123',
+  'password1234',
+  'password12345',
+  '1234567890',
+  '0123456789',
+  'qwerty1234',
+  'qwerty12345',
+  'abcdefg123',
+  'letmein123',
+  'welcome123',
+  'admin12345',
+  'changeme12',
+  'iloveyou12',
+])
+
 export const creationPasswordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters.')
+  .min(10, 'Password must be at least 10 characters.')
   .max(128, 'Password must be no more than 128 characters.')
-  .regex(/[a-z]/, 'Password must include a lowercase letter.')
-  .regex(/[A-Z]/, 'Password must include an uppercase letter.')
+  .regex(/[A-Za-z]/, 'Password must include a letter.')
   .regex(/\d/, 'Password must include a number.')
-  .regex(/[^A-Za-z0-9]/, 'Password must include a special character.')
+  .refine(
+    (value) => !COMMON_PASSWORDS.has(value.toLowerCase()),
+    'Avoid common passwords.',
+  )
 
 export const signupRequestSchema = z.object({
   businessName: z.string().min(1).max(200),
