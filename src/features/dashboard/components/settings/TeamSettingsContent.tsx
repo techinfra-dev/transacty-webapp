@@ -6,6 +6,11 @@ import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useAddKycPersonMutation } from '../../../kyc/hooks/useKycMutations.ts'
 import { useKycPersonsQuery } from '../../../kyc/hooks/useKycQueries.ts'
+import {
+  getPersonFormErrorMessage,
+  getPersonFormFieldErrors,
+  isDuplicatePerson,
+} from '../../../kyc/services/kycPersonValidation.ts'
 
 const roleOptions = [
   { label: 'Director', value: 'director' },
@@ -49,6 +54,7 @@ export function TeamSettingsContent() {
   const [fieldErrors, setFieldErrors] = useState<{
     fullName?: boolean
     nationality?: boolean
+    dateOfBirth?: boolean
     idNumber?: boolean
     address?: boolean
   }>({})
@@ -68,16 +74,35 @@ export function TeamSettingsContent() {
 
   async function handleAddMember() {
     setErrorMessage(null)
-    const nextFieldErrors = {
-      fullName: formState.fullName.trim().length === 0,
-      nationality: formState.nationality.trim().length === 0,
-      idNumber: formState.idNumber.trim().length === 0,
-      address: formState.address.trim().length === 0,
-    }
+    const nextFieldErrors = getPersonFormFieldErrors({
+      fullName: formState.fullName,
+      nationality: formState.nationality,
+      dateOfBirth: formState.dateOfBirth,
+      idNumber: formState.idNumber,
+      address: formState.address,
+    })
     setFieldErrors(nextFieldErrors)
 
-    if (Object.values(nextFieldErrors).some(Boolean)) {
-      setErrorMessage('Please fill all required fields.')
+    const existingPeople = personsQuery.data?.items ?? []
+    const isDuplicate = isDuplicatePerson(existingPeople, {
+      fullName: formState.fullName,
+      role: formState.role,
+      idNumber: formState.idNumber,
+    })
+
+    const validationMessage = getPersonFormErrorMessage(
+      {
+        fullName: formState.fullName,
+        nationality: formState.nationality,
+        dateOfBirth: formState.dateOfBirth,
+        idNumber: formState.idNumber,
+        address: formState.address,
+      },
+      nextFieldErrors,
+      { isDuplicate },
+    )
+    if (validationMessage) {
+      setErrorMessage(validationMessage)
       return
     }
 
@@ -86,7 +111,7 @@ export function TeamSettingsContent() {
         role: formState.role as 'director' | 'ubo' | 'authorized_signatory',
         fullName: formState.fullName.trim(),
         nationality: formState.nationality.trim(),
-        dateOfBirth: toIsoDate(formState.dateOfBirth),
+        dateOfBirth: toIsoDate(formState.dateOfBirth) as string,
         idType: formState.idType as 'nid' | 'passport',
         idNumber: formState.idNumber.trim(),
         address: formState.address.trim(),
@@ -268,16 +293,28 @@ export function TeamSettingsContent() {
 
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
-              Date of birth
+              Date of birth *
             </span>
             <Input
               type="date"
+              max={new Date().toISOString().slice(0, 10)}
               value={formState.dateOfBirth}
-              onChange={(event) =>
+              onChange={(event) => {
                 setFormState((previous) => ({
                   ...previous,
                   dateOfBirth: event.target.value,
                 }))
+                if (fieldErrors.dateOfBirth) {
+                  setFieldErrors((previous) => ({
+                    ...previous,
+                    dateOfBirth: false,
+                  }))
+                }
+              }}
+              className={
+                fieldErrors.dateOfBirth
+                  ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-300/40'
+                  : undefined
               }
             />
           </label>

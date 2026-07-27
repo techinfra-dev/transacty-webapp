@@ -20,6 +20,11 @@ import { useProfileQuery } from '../../dashboard/hooks/useProfileQuery.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import { useKycDocumentsQuery, useKycPersonsQuery } from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
+import {
+  getPersonFormErrorMessage,
+  getPersonFormFieldErrors,
+  isDuplicatePerson,
+} from '../services/kycPersonValidation.ts'
 
 interface KycActivationModalProps {
   isOpen: boolean
@@ -154,6 +159,7 @@ export function KycActivationModal({
   const [personFieldErrors, setPersonFieldErrors] = useState<{
     fullName?: boolean
     nationality?: boolean
+    dateOfBirth?: boolean
     idNumber?: boolean
     address?: boolean
   }>({})
@@ -344,16 +350,35 @@ export function KycActivationModal({
 
   async function handleAddPerson() {
     setPersonError(null)
-    const nextPersonFieldErrors = {
-      fullName: personForm.fullName.trim().length === 0,
-      nationality: personForm.nationality.trim().length === 0,
-      idNumber: personForm.idNumber.trim().length === 0,
-      address: personForm.address.trim().length === 0,
-    }
+    const nextPersonFieldErrors = getPersonFormFieldErrors({
+      fullName: personForm.fullName,
+      nationality: personForm.nationality,
+      dateOfBirth: personForm.dateOfBirth,
+      idNumber: personForm.idNumber,
+      address: personForm.address,
+    })
     setPersonFieldErrors(nextPersonFieldErrors)
 
-    if (Object.values(nextPersonFieldErrors).some(Boolean)) {
-      setPersonError('Please fill all required person fields.')
+    const existingPeople = personsQuery.data?.items ?? []
+    const isDuplicate = isDuplicatePerson(existingPeople, {
+      fullName: personForm.fullName,
+      role: personForm.role,
+      idNumber: personForm.idNumber,
+    })
+
+    const validationMessage = getPersonFormErrorMessage(
+      {
+        fullName: personForm.fullName,
+        nationality: personForm.nationality,
+        dateOfBirth: personForm.dateOfBirth,
+        idNumber: personForm.idNumber,
+        address: personForm.address,
+      },
+      nextPersonFieldErrors,
+      { isDuplicate },
+    )
+    if (validationMessage) {
+      setPersonError(validationMessage)
       return
     }
 
@@ -362,7 +387,7 @@ export function KycActivationModal({
         role: personForm.role as 'director' | 'ubo' | 'authorized_signatory',
         fullName: personForm.fullName.trim(),
         nationality: personForm.nationality.trim(),
-        dateOfBirth: toIsoDate(personForm.dateOfBirth),
+        dateOfBirth: toIsoDate(personForm.dateOfBirth) as string,
         idType: personForm.idType as 'nid' | 'passport',
         idNumber: personForm.idNumber.trim(),
         address: personForm.address.trim(),
@@ -908,16 +933,30 @@ export function KycActivationModal({
                 </label>
                 <label className="space-y-1">
                   <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
-                    Date of birth
+                    Date of birth *
                   </span>
                   <Input
                     type="date"
+                    max={new Date().toISOString().slice(0, 10)}
                     value={personForm.dateOfBirth}
                     onChange={(event) =>
-                      setPersonForm((previous) => ({
-                        ...previous,
-                        dateOfBirth: event.target.value,
-                      }))
+                      {
+                        setPersonForm((previous) => ({
+                          ...previous,
+                          dateOfBirth: event.target.value,
+                        }))
+                        if (personFieldErrors.dateOfBirth) {
+                          setPersonFieldErrors((previous) => ({
+                            ...previous,
+                            dateOfBirth: false,
+                          }))
+                        }
+                      }
+                    }
+                    className={
+                      personFieldErrors.dateOfBirth
+                        ? requiredInputErrorClassName
+                        : undefined
                     }
                   />
                 </label>

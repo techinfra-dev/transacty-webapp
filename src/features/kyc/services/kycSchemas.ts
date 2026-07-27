@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import {
+  isValidDateOfBirth,
+  kycPersonFullNameSchema,
+  kycPersonNationalitySchema,
+} from './kycPersonValidation.ts'
 
 export const kycBusinessPayloadSchema = z.object({
   legalName: z.string().min(1),
@@ -21,9 +26,24 @@ export const kycBusinessResponseSchema = z.object({
 
 export const kycPersonPayloadSchema = z.object({
   role: z.enum(['director', 'ubo', 'authorized_signatory']),
-  fullName: z.string().min(1),
-  nationality: z.string().min(1),
-  dateOfBirth: z.string().optional(),
+  fullName: kycPersonFullNameSchema,
+  nationality: kycPersonNationalitySchema,
+  dateOfBirth: z
+    .string()
+    .min(1, 'Please enter a date of birth.')
+    .refine((value) => {
+      // Accept YYYY-MM-DD form values and ISO payloads from the UI.
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return isValidDateOfBirth(value)
+      }
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) {
+        return false
+      }
+      const today = new Date()
+      today.setHours(23, 59, 59, 999)
+      return date.getTime() <= today.getTime()
+    }, 'Date of birth cannot be in the future.'),
   idType: z.enum(['nid', 'passport']),
   idNumber: z.string().min(1),
   address: z.string().min(1),

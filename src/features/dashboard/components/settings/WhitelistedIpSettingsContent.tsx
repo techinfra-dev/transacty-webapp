@@ -13,7 +13,10 @@ import {
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 import type { ApiIpEnforceMode } from '../../services/apiIpRulesSchemas.ts'
 import {
+  API_IP_NOTES_MAX_LENGTH,
   dedupeCidrs,
+  getCidrKindLabel,
+  isDuplicateCidr,
   isValidIpv4OrCidr,
   normalizeCidrEntry,
 } from '../../utils/apiIpRulesUtils.ts'
@@ -84,28 +87,49 @@ export function WhitelistedIpSettingsContent() {
       return
     }
     if (!isValidIpv4OrCidr(normalized)) {
-      setValidationError('Enter a valid IPv4 address or CIDR (e.g. 203.0.113.10 or 203.0.113.0/24).')
+      setValidationError(
+        'Enter a valid IPv4 address or CIDR (e.g. 203.0.113.10 or 203.0.113.0/24).',
+      )
       return
     }
-    setCidrs((current) => dedupeCidrs([...current, normalized]))
+    if (isDuplicateCidr(cidrs, normalized)) {
+      setValidationError(
+        `This ${getCidrKindLabel(normalized)} is already on the allowlist.`,
+      )
+      return
+    }
+    setCidrs((current) => [...current, normalized])
     setNewCidr('')
   }
 
   function handleRemoveCidr(entry: string) {
+    setValidationError(null)
     setCidrs((current) => current.filter((value) => value !== entry))
   }
 
   function handleAddClientIp() {
+    setValidationError(null)
     const clientIp = rulesQuery.data?.clientIp?.trim()
     if (!clientIp) {
       return
     }
-    setCidrs((current) => dedupeCidrs([...current, clientIp]))
+    if (isDuplicateCidr(cidrs, clientIp)) {
+      setValidationError('This IP address is already on the allowlist.')
+      return
+    }
+    setCidrs((current) => [...current, clientIp])
   }
 
   async function handleSave() {
     setValidationError(null)
     setToast(null)
+
+    if (notes.length > API_IP_NOTES_MAX_LENGTH) {
+      setValidationError(
+        `Notes must be ${API_IP_NOTES_MAX_LENGTH} characters or fewer.`,
+      )
+      return
+    }
 
     const normalizedCidrs = dedupeCidrs(cidrs)
     if (enabled && normalizedCidrs.length === 0) {
@@ -276,7 +300,12 @@ export function WhitelistedIpSettingsContent() {
                   autoComplete="off"
                   placeholder="203.0.113.10 or 203.0.113.0/24"
                   value={newCidr}
-                  onChange={(event) => setNewCidr(event.target.value)}
+                  onChange={(event) => {
+                    setNewCidr(event.target.value)
+                    if (validationError) {
+                      setValidationError(null)
+                    }
+                  }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
                       event.preventDefault()
@@ -303,10 +332,27 @@ export function WhitelistedIpSettingsContent() {
                 type="text"
                 placeholder="Office + VPN"
                 value={notes}
-                onChange={(event) => setNotes(event.target.value)}
+                maxLength={API_IP_NOTES_MAX_LENGTH}
+                onChange={(event) => {
+                  setNotes(event.target.value.slice(0, API_IP_NOTES_MAX_LENGTH))
+                  if (validationError?.includes('Notes')) {
+                    setValidationError(null)
+                  }
+                }}
                 disabled={updateRulesMutation.isPending}
                 className={settingsFieldInputClass}
+                aria-describedby="api-ip-notes-count"
               />
+              <p
+                id="api-ip-notes-count"
+                className={`settings-hint mt-1 ${
+                  notes.length >= API_IP_NOTES_MAX_LENGTH
+                    ? 'settings-hint--warn'
+                    : ''
+                }`}
+              >
+                {notes.length}/{API_IP_NOTES_MAX_LENGTH} characters
+              </p>
             </label>
 
             {validationError ? (
