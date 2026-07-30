@@ -25,6 +25,7 @@ type CustomersHistoryTableProps = {
   onTransactions: (customer: CustomerItem) => void
   onTransfer: (customer: CustomerItem) => void
   onRefund: (customer: CustomerItem) => void
+  canWriteMoney?: boolean
 }
 
 function CopyIcon() {
@@ -58,6 +59,7 @@ export function CustomersHistoryTable({
   onTransactions,
   onTransfer,
   onRefund,
+  canWriteMoney = true,
 }: CustomersHistoryTableProps) {
   if (isPending) {
     return (
@@ -181,16 +183,24 @@ export function CustomersHistoryTable({
                       >
                         Transactions
                       </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => onTransfer(customer)}
-                      >
-                        Create transfer
-                      </button>
-                      <button type="button" role="menuitem" onClick={() => onRefund(customer)}>
-                        Create refund
-                      </button>
+                      {canWriteMoney ? (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => onTransfer(customer)}
+                          >
+                            Create transfer
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => onRefund(customer)}
+                          >
+                            Create refund
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

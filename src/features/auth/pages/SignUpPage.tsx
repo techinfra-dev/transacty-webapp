@@ -9,6 +9,7 @@ import {
   getSignupFormErrorMessage,
   signupRequestSchema,
 } from '../services/authSchemas.ts'
+import { getPostAuthNavigateOptions } from '../utils/postAuthNavigation.ts'
 
 export function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -38,7 +39,7 @@ export function SignUpPage() {
 
     try {
       await signupMutation.mutateAsync(parsed.data)
-      await navigate({ to: '/dashboard' })
+      await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(
         error instanceof Error

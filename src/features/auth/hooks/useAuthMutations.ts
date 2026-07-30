@@ -3,7 +3,9 @@ import {
   forgotPassword,
   login,
   resetPassword,
+  revokeSessions,
   signup,
+  stepUp,
   verifyMfaLogin,
 } from '../services/authService.ts'
 import { storeAuthSession } from '../services/authSession.ts'
@@ -53,5 +55,17 @@ export function useForgotPasswordMutation() {
 export function useResetPasswordMutation() {
   return useMutation({
     mutationFn: resetPassword,
+  })
+}
+
+export function useStepUpMutation() {
+  return useMutation({
+    mutationFn: stepUp,
+  })
+}
+
+export function useRevokeSessionsMutation() {
+  return useMutation({
+    mutationFn: revokeSessions,
   })
 }

@@ -5,10 +5,13 @@ const AUTH_USER_KEY = 'transcaty.auth.user'
 
 export interface AuthSessionUser {
   merchantId: string
+  merchantSlug?: string
   email: string
   role: string
   merchantName: string
   needsActivation: boolean
+  mfaEnabled: boolean
+  mfaSetupRequired: boolean
 }
 
 const AUTH_SESSION_UPDATED_EVENT = 'transcaty:auth-session-updated'
@@ -23,11 +26,14 @@ export function storeAuthSession(payload: AuthSessionResponse) {
     AUTH_USER_KEY,
     JSON.stringify({
       merchantId: payload.merchantId,
+      merchantSlug: payload.merchantSlug ?? payload.merchant.slug,
       email: payload.email,
       role: payload.role,
-      merchantName: payload.merchant.name,
+      merchantName: payload.merchant.businessName ?? payload.merchant.name,
       needsActivation: payload.needsActivation,
-    }),
+      mfaEnabled: payload.mfaEnabled ?? false,
+      mfaSetupRequired: payload.mfaSetupRequired ?? false,
+    } satisfies AuthSessionUser),
   )
   notifyAuthSessionUpdated()
 }
@@ -49,7 +55,7 @@ export function getAuthUser(): AuthSessionUser | null {
   }
 
   try {
-    const parsedUser = JSON.parse(rawUser) as AuthSessionUser
+    const parsedUser = JSON.parse(rawUser) as Partial<AuthSessionUser>
     if (
       typeof parsedUser.merchantId === 'string' &&
       typeof parsedUser.email === 'string' &&
@@ -57,7 +63,19 @@ export function getAuthUser(): AuthSessionUser | null {
       typeof parsedUser.merchantName === 'string' &&
       typeof parsedUser.needsActivation === 'boolean'
     ) {
-      return parsedUser
+      return {
+        merchantId: parsedUser.merchantId,
+        merchantSlug:
+          typeof parsedUser.merchantSlug === 'string'
+            ? parsedUser.merchantSlug
+            : undefined,
+        email: parsedUser.email,
+        role: parsedUser.role,
+        merchantName: parsedUser.merchantName,
+        needsActivation: parsedUser.needsActivation,
+        mfaEnabled: Boolean(parsedUser.mfaEnabled),
+        mfaSetupRequired: Boolean(parsedUser.mfaSetupRequired),
+      }
     }
     return null
   } catch {
@@ -76,7 +94,17 @@ export function subscribeToAuthSessionUpdates(listener: () => void) {
 }
 
 export function updateAuthSessionUser(
-  partialUser: Partial<Pick<AuthSessionUser, 'merchantName' | 'role' | 'email'>>,
+  partialUser: Partial<
+    Pick<
+      AuthSessionUser,
+      | 'merchantName'
+      | 'role'
+      | 'email'
+      | 'mfaEnabled'
+      | 'mfaSetupRequired'
+      | 'merchantSlug'
+    >
+  >,
 ) {
   const currentUser = getAuthUser()
   if (!currentUser) {
@@ -88,4 +116,11 @@ export function updateAuthSessionUser(
   }
   sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser))
   notifyAuthSessionUpdated()
+}
+
+export function markMfaEnrolledInSession() {
+  updateAuthSessionUser({
+    mfaEnabled: true,
+    mfaSetupRequired: false,
+  })
 }

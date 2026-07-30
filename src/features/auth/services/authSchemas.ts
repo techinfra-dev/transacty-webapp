@@ -82,19 +82,49 @@ export function getLoginFormErrorMessage(
   )
 }
 
-export const merchantSchema = z.object({
-  name: z.string().min(1),
-  status: z.string().min(1),
-  kycStatus: z.string().min(1),
-})
+export const merchantSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    slug: z.string().min(1).optional(),
+    businessName: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    status: z.string().min(1),
+    kycStatus: z.string().min(1),
+  })
+  .transform((merchant) => {
+    const displayName = merchant.businessName ?? merchant.name ?? 'Merchant'
+    return {
+      ...merchant,
+      name: displayName,
+      businessName: displayName,
+    }
+  })
+
+export const portalRoleSchema = z.enum(['admin', 'finance', 'viewer'])
+
+export type PortalStepUpAction =
+  | 'money.write'
+  | 'api_keys.write'
+  | 'webhook.write'
+  | 'any'
+
+export const portalStepUpActionSchema = z.enum([
+  'money.write',
+  'api_keys.write',
+  'webhook.write',
+  'any',
+])
 
 /** Session JWT + user payload — returned after login (no MFA) or after MFA verify. */
 export const authSessionResponseSchema = z.object({
   token: z.string().min(1),
   merchantId: z.string().min(1),
+  merchantSlug: z.string().min(1).optional(),
   email: z.email(),
   role: z.string().min(1),
   needsActivation: z.boolean(),
+  mfaEnabled: z.boolean().optional().default(false),
+  mfaSetupRequired: z.boolean().optional().default(false),
   merchant: merchantSchema,
 })
 
@@ -103,6 +133,7 @@ export const loginMfaRequiredResponseSchema = z.object({
   requiresMfa: z.literal(true),
   mfaToken: z.string().min(1),
   merchantId: z.string().min(1),
+  merchantSlug: z.string().min(1).optional(),
   email: z.email(),
 })
 
@@ -117,6 +148,30 @@ export const mfaVerifyRequestSchema = z.object({
     .string()
     .transform((value) => value.replace(/\s/g, ''))
     .pipe(z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit code')),
+})
+
+export const stepUpRequestSchema = z.object({
+  code: z
+    .string()
+    .transform((value) => value.replace(/\s/g, ''))
+    .pipe(z.string().regex(/^\d{6}$/, 'Enter a valid 6-digit code')),
+  action: portalStepUpActionSchema,
+})
+
+export const stepUpResponseSchema = z.object({
+  token: z.string().min(1),
+  tokenType: z.string().min(1).optional(),
+  expiresIn: z.string().min(1).optional(),
+  action: portalStepUpActionSchema.or(z.string().min(1)),
+})
+
+export const revokeSessionsRequestSchema = z.object({
+  password: z.string().min(1, 'Please enter your password.'),
+})
+
+export const revokeSessionsResponseSchema = z.object({
+  ok: z.boolean(),
+  sessionVersion: z.number().optional(),
 })
 
 export const forgotPasswordRequestSchema = z.object({
@@ -150,6 +205,10 @@ export const logoutResponseSchema = z.object({
 export const apiErrorSchema = z.object({
   error: z.string(),
   message: z.string(),
+  stepUpRequired: z.boolean().optional(),
+  mfaSetupRequired: z.boolean().optional(),
+  action: z.string().optional(),
+  reason: z.string().optional(),
 })
 
 export type SignupRequest = z.infer<typeof signupRequestSchema>
@@ -162,5 +221,9 @@ export type LoginMfaRequiredResponse = z.infer<
   typeof loginMfaRequiredResponseSchema
 >
 export type MfaVerifyRequest = z.infer<typeof mfaVerifyRequestSchema>
+export type StepUpRequest = z.infer<typeof stepUpRequestSchema>
+export type StepUpResponse = z.infer<typeof stepUpResponseSchema>
+export type RevokeSessionsRequest = z.infer<typeof revokeSessionsRequestSchema>
+export type RevokeSessionsResponse = z.infer<typeof revokeSessionsResponseSchema>
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>

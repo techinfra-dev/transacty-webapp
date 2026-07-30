@@ -12,6 +12,7 @@ import {
   getLoginFormErrorMessage,
   loginRequestSchema,
 } from '../services/authSchemas.ts'
+import { getPostAuthNavigateOptions } from '../utils/postAuthNavigation.ts'
 
 type LoginStep = 'credentials' | 'mfa'
 
@@ -59,7 +60,7 @@ export function LoginPage() {
         return
       }
 
-      await navigate({ to: '/dashboard' })
+      await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -84,7 +85,7 @@ export function LoginPage() {
         mfaToken,
         code: mfaCode,
       })
-      await navigate({ to: '/dashboard' })
+      await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(
         error instanceof Error

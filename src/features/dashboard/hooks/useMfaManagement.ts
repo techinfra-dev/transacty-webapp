@@ -10,6 +10,10 @@ import type {
   MfaConfirmRequest,
   MfaDisableRequest,
 } from '../services/mfaSchemas.ts'
+import {
+  markMfaEnrolledInSession,
+  updateAuthSessionUser,
+} from '../../auth/services/authSession.ts'
 
 const MFA_STATUS_QUERY_KEY = ['mfa-status']
 
@@ -38,6 +42,7 @@ export function useConfirmMfaSetupMutation() {
   return useMutation({
     mutationFn: (payload: MfaConfirmRequest) => confirmMfaSetup(payload),
     onSuccess: async () => {
+      markMfaEnrolledInSession()
       await queryClient.invalidateQueries({ queryKey: MFA_STATUS_QUERY_KEY })
       await queryClient.invalidateQueries({ queryKey: ['profile-me'] })
     },
@@ -60,6 +65,9 @@ export function useDisableMfaMutation() {
   return useMutation({
     mutationFn: (payload: MfaDisableRequest) => disableMfa(payload),
     onSuccess: async () => {
+      updateAuthSessionUser({
+        mfaEnabled: false,
+      })
       await queryClient.invalidateQueries({ queryKey: MFA_STATUS_QUERY_KEY })
       await queryClient.invalidateQueries({ queryKey: ['profile-me'] })
     },

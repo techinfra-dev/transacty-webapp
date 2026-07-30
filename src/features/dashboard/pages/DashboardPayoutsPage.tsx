@@ -10,9 +10,25 @@ import { PayoutStepper } from '../components/payouts/PayoutStepper.tsx'
 import { PayoutSuccessView } from '../components/payouts/PayoutSuccessView.tsx'
 import { PayoutWalletStep } from '../components/payouts/PayoutWalletStep.tsx'
 import { usePayoutFlow } from '../hooks/usePayoutFlow.ts'
+import { usePortalRole } from '../../../hooks/usePortalRole.ts'
 
 export function DashboardPayoutsPage() {
+  const { canWriteMoney } = usePortalRole()
   const flow = usePayoutFlow()
+
+  if (!canWriteMoney) {
+    return (
+      <section className="payout-page app-page-enter">
+        <header className="payout-page-head">
+          <h1 className="payout-page-title">New payout</h1>
+          <p className="payout-page-subtitle">
+            Finance or admin role is required to create payouts. Contact an
+            administrator if you need write access.
+          </p>
+        </header>
+      </section>
+    )
+  }
 
   return (
     <section className="payout-page app-page-enter">

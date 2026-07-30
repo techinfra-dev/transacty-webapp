@@ -1,9 +1,17 @@
-import { useMemo, useState, type ComponentProps } from 'react'
+import { useEffect, useMemo, useState, type ComponentProps } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../../components/ui/Button.tsx'
+import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { Input } from '../../../../components/ui/Input.tsx'
 import { OtpInput } from '../../../../components/ui/OtpInput.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { ToggleSwitch } from '../../../../components/ui/ToggleSwitch.tsx'
+import { useRevokeSessionsMutation } from '../../../auth/hooks/useAuthMutations.ts'
+import {
+  clearAuthSession,
+  getAuthUser,
+  markMfaEnrolledInSession,
+} from '../../../auth/services/authSession.ts'
 import {
   useCancelMfaSetupMutation,
   useConfirmMfaSetupMutation,
@@ -221,17 +229,32 @@ function SetupCard({
 }
 
 export function SecuritySettingsContent() {
+  const navigate = useNavigate()
   const [setupData, setSetupData] = useState<MfaSetupResponse | null>(null)
   const [setupError, setSetupError] = useState<string | null>(null)
   const [disableError, setDisableError] = useState<string | null>(null)
   const [disablePassword, setDisablePassword] = useState('')
   const [disableCode, setDisableCode] = useState('')
+  const [isRevokeSessionsOpen, setIsRevokeSessionsOpen] = useState(false)
+  const [revokePassword, setRevokePassword] = useState('')
+  const [revokeError, setRevokeError] = useState<string | null>(null)
 
   const statusQuery = useMfaStatusQuery(true)
   const startSetupMutation = useStartMfaSetupMutation()
   const confirmSetupMutation = useConfirmMfaSetupMutation()
   const cancelSetupMutation = useCancelMfaSetupMutation()
   const disableMutation = useDisableMfaMutation()
+  const revokeSessionsMutation = useRevokeSessionsMutation()
+
+  useEffect(() => {
+    if (!statusQuery.data?.enabled) {
+      return
+    }
+    const user = getAuthUser()
+    if (user && (!user.mfaEnabled || user.mfaSetupRequired)) {
+      markMfaEnrolledInSession()
+    }
+  }, [statusQuery.data?.enabled])
 
   if (statusQuery.isPending) {
     return (
@@ -256,6 +279,7 @@ export function SecuritySettingsContent() {
     confirmSetupMutation.isPending ||
     cancelSetupMutation.isPending
   const isDisableBusy = disableMutation.isPending
+  const isRevokeBusy = revokeSessionsMutation.isPending
 
   const handleStartSetup = async () => {
     setSetupError(null)
@@ -308,6 +332,29 @@ export function SecuritySettingsContent() {
     } catch (error) {
       setDisableError(
         error instanceof Error ? error.message : 'Unable to disable MFA right now.',
+      )
+    }
+  }
+
+  const handleRevokeSessions: NonNullable<ComponentProps<'form'>['onSubmit']> = async (
+    event,
+  ) => {
+    event.preventDefault()
+    if (isRevokeBusy) {
+      return
+    }
+    setRevokeError(null)
+    try {
+      await revokeSessionsMutation.mutateAsync({ password: revokePassword })
+      clearAuthSession()
+      setIsRevokeSessionsOpen(false)
+      setRevokePassword('')
+      await navigate({ to: '/login' })
+    } catch (error) {
+      setRevokeError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to revoke sessions right now.',
       )
     }
   }
@@ -442,6 +489,90 @@ export function SecuritySettingsContent() {
           </form>
         </SettingsCard>
       ) : null}
+
+      <SettingsCard
+        title="Revoke all sessions"
+        description="Sign out every device using your account. You will need to log in again on this browser."
+        footer={
+          <button
+            type="button"
+            className="settings-btn settings-btn--primary"
+            onClick={() => {
+              setRevokeError(null)
+              setRevokePassword('')
+              setIsRevokeSessionsOpen(true)
+            }}
+          >
+            Revoke all sessions
+          </button>
+        }
+      >
+        <p className="settings-hint">
+          Use this if you suspect unauthorized access or after sharing a device.
+        </p>
+      </SettingsCard>
+
+      <Dialog
+        isOpen={isRevokeSessionsOpen}
+        onClose={() => {
+          if (!isRevokeBusy) {
+            setIsRevokeSessionsOpen(false)
+            setRevokePassword('')
+            setRevokeError(null)
+          }
+        }}
+        title="Revoke all sessions?"
+        description="Enter your password to invalidate every active session, including this one."
+        maxWidthClassName="max-w-md"
+        closeOnBackdrop={!isRevokeBusy}
+        footer={
+          <div className="settings-dev-actions-row">
+            <button
+              type="button"
+              className="settings-btn settings-btn--ghost"
+              onClick={() => {
+                setIsRevokeSessionsOpen(false)
+                setRevokePassword('')
+                setRevokeError(null)
+              }}
+              disabled={isRevokeBusy}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="settings-revoke-sessions-form"
+              className="settings-btn settings-btn--primary"
+              disabled={isRevokeBusy || revokePassword.trim().length === 0}
+              aria-busy={isRevokeBusy}
+            >
+              {isRevokeBusy ? 'Revoking…' : 'Revoke sessions'}
+            </button>
+          </div>
+        }
+      >
+        <form
+          id="settings-revoke-sessions-form"
+          className="settings-stack"
+          onSubmit={handleRevokeSessions}
+        >
+          <label className="settings-field settings-field--full">
+            <span className={settingsFieldLabelClass}>Password</span>
+            <Input
+              id="revoke-sessions-password"
+              type="password"
+              autoComplete="current-password"
+              value={revokePassword}
+              onChange={(event) => setRevokePassword(event.target.value)}
+              disabled={isRevokeBusy}
+              className={settingsFieldInputClass}
+            />
+          </label>
+          {revokeError ? (
+            <p className="settings-error settings-error--inline">{revokeError}</p>
+          ) : null}
+        </form>
+      </Dialog>
     </div>
   )
 }

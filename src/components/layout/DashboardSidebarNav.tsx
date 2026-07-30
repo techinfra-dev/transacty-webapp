@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Button } from '../ui/Button.tsx'
 import type { PortalEnvironment } from '../../types/portalEnvironment.ts'
 import { useBrandLogoPath } from '../../theme/useBrandLogo.ts'
+import { usePortalRole } from '../../hooks/usePortalRole.ts'
 import { LogoutIcon, SidebarItemIcon } from './SidebarItemIcon.tsx'
 
 export interface DashboardNavItem {
@@ -149,10 +150,20 @@ export function DashboardSidebarNav({
   reserveTestBannerSpace = false,
   collapsed = false,
 }: DashboardSidebarNavProps) {
+  const { canWriteMoney } = usePortalRole()
   const footerPadClass =
     reserveTestBannerSpace && portalEnvironment === 'test'
       ? 'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
       : ''
+
+  const menuSections = dashboardMenuSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => canWriteMoney || item.to !== '/dashboard/payouts',
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
 
   return (
     <div
@@ -161,7 +172,7 @@ export function DashboardSidebarNav({
       }`}
     >
       <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain">
-        {dashboardMenuSections.map((section) => (
+        {menuSections.map((section) => (
           <div key={section.title} className="space-y-1">
             {!collapsed ? (
               <p className="px-2 [font-family:var(--font-body)] text-[10.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">

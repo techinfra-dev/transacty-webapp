@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { usePortalRole } from '../../../../hooks/usePortalRole.ts'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
 import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
 import {
@@ -18,8 +19,6 @@ import {
 } from '../../services/apiKeysSchemas.ts'
 import { SettingsKycGate } from './SettingsKycGate.tsx'
 import { settingsFieldLabelClass } from './settingsFieldUtils.ts'
-
-const DEFAULT_SCOPES: ApiKeyScope[] = ['balance:read']
 
 function formatCreatedAt(isoDate: string) {
   const timestamp = new Date(isoDate)
@@ -44,29 +43,29 @@ function formatScopeLabel(scope: string) {
 
 export function ApiKeysSettingsContent() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [selectedScopes, setSelectedScopes] = useState<ApiKeyScope[]>(DEFAULT_SCOPES)
+  const [isLiveConfirmOpen, setIsLiveConfirmOpen] = useState(false)
+  const [selectedScopes, setSelectedScopes] = useState<ApiKeyScope[]>([])
   const [createError, setCreateError] = useState<string | null>(null)
   const [createdApiKey, setCreatedApiKey] = useState<CreateApiKeyResponse | null>(null)
   const [copiedField, setCopiedField] = useState<'apiKey' | 'secret' | null>(null)
   const [keyForRevoke, setKeyForRevoke] = useState<ApiKeyItem | null>(null)
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
+  const { isAdmin } = usePortalRole()
   const profileQuery = useProfileQuery(true)
   const isKycVerified = profileQuery.data?.kycStatus === 'verified'
   const isKycPendingVerification =
     profileQuery.data?.kycStatus === 'pending' &&
     profileQuery.data?.businessProfile?.status === 'submitted'
-  const apiKeysQuery = useApiKeysQuery(isKycVerified)
+  const apiKeysQuery = useApiKeysQuery(isKycVerified && isAdmin)
   const createApiKeyMutation = useCreateApiKeyMutation()
   const revokeApiKeyMutation = useRevokeApiKeyMutation()
 
   const hasWildcard = selectedScopes.includes('*')
-  const canSubmitCreate = selectedScopes.length > 0
-
   const selectedScopeSet = useMemo(() => new Set(selectedScopes), [selectedScopes])
 
   function openCreateDialog() {
-    setSelectedScopes(DEFAULT_SCOPES)
+    setSelectedScopes([])
     setCreateError(null)
     setIsCreateOpen(true)
   }
@@ -115,27 +114,32 @@ export function ApiKeysSettingsContent() {
     }
   }
 
-  async function handleCreateApiKey() {
-    if (selectedScopes.length === 0) {
-      setCreateError('Select at least one scope.')
-      return
-    }
-
+  async function executeCreateApiKey() {
     setCreateError(null)
     try {
       const response = await createApiKeyMutation.mutateAsync({
         environment: portalEnvironment,
-        scopes: selectedScopes,
+        ...(selectedScopes.length > 0 ? { scopes: selectedScopes } : {}),
       })
+      setIsLiveConfirmOpen(false)
       setIsCreateOpen(false)
       setCreatedApiKey(response)
     } catch (error) {
+      setIsLiveConfirmOpen(false)
       setCreateError(
         error instanceof Error
           ? error.message
           : 'Unable to create API key right now.',
       )
     }
+  }
+
+  async function handleCreateApiKey() {
+    if (portalEnvironment === 'live') {
+      setIsLiveConfirmOpen(true)
+      return
+    }
+    await executeCreateApiKey()
   }
 
   if (profileQuery.isPending) {
@@ -148,6 +152,14 @@ export function ApiKeysSettingsContent() {
 
   if (profileQuery.isError || !profileQuery.data) {
     return <p className="settings-error">Unable to verify KYC status right now.</p>
+  }
+
+  if (!isAdmin) {
+    return (
+      <p className="settings-dev-alert">
+        Admin role required to manage API keys.
+      </p>
+    )
   }
 
   return (
@@ -270,7 +282,7 @@ export function ApiKeysSettingsContent() {
               type="button"
               className="settings-btn settings-btn--primary"
               onClick={() => void handleCreateApiKey()}
-              disabled={!canSubmitCreate || createApiKeyMutation.isPending}
+              disabled={createApiKeyMutation.isPending}
               aria-busy={createApiKeyMutation.isPending}
             >
               {createApiKeyMutation.isPending ? 'Creating…' : 'Create key'}
@@ -282,7 +294,7 @@ export function ApiKeysSettingsContent() {
           <div>
             <p className={settingsFieldLabelClass}>Scopes</p>
             <p className="settings-hint mt-1">
-              Select at least one permission for this key.
+              Optional. Leave all unchecked to use the server default scopes.
             </p>
             <div className="settings-scope-toggle-list" role="group" aria-label="API key scopes">
               {API_KEY_SCOPE_OPTIONS.map((option) => {
@@ -314,6 +326,44 @@ export function ApiKeysSettingsContent() {
             <p className="settings-error settings-error--inline">{createError}</p>
           ) : null}
         </div>
+      </Dialog>
+
+      <Dialog
+        isOpen={isLiveConfirmOpen}
+        onClose={() => {
+          if (!createApiKeyMutation.isPending) {
+            setIsLiveConfirmOpen(false)
+          }
+        }}
+        title="Create live API key?"
+        description="Creating a live key revokes any previous live API key for this merchant. Continue only if you are ready to rotate integrations."
+        maxWidthClassName="max-w-md"
+        closeOnBackdrop={!createApiKeyMutation.isPending}
+        footer={
+          <div className="settings-dev-actions-row">
+            <button
+              type="button"
+              className="settings-btn settings-btn--ghost"
+              onClick={() => setIsLiveConfirmOpen(false)}
+              disabled={createApiKeyMutation.isPending}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="settings-btn settings-btn--primary"
+              onClick={() => void executeCreateApiKey()}
+              disabled={createApiKeyMutation.isPending}
+              aria-busy={createApiKeyMutation.isPending}
+            >
+              {createApiKeyMutation.isPending ? 'Creating…' : 'Create live key'}
+            </button>
+          </div>
+        }
+      >
+        <p className="settings-hint">
+          Store the new secret securely. It will only be shown once.
+        </p>
       </Dialog>
 
       <Dialog

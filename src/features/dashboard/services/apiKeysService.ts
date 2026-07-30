@@ -1,6 +1,9 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
-import { getAuthToken } from '../../auth/services/authSession.ts'
+import {
+  getPortalAuthHeaders,
+  type PortalRequestHeaderOptions,
+} from '../../../api/portalAuthHeaders.ts'
 import {
   createApiKeyPayloadSchema,
   createApiKeyResponseSchema,
@@ -34,20 +37,10 @@ function getApiKeysErrorMessage(error: unknown) {
   return 'Unable to complete API key request right now.'
 }
 
-function getAuthHeader() {
-  const token = getAuthToken()
-  if (!token) {
-    throw new Error('You are not authenticated')
-  }
-  return {
-    Authorization: `Bearer ${token}`,
-  }
-}
-
 export async function getApiKeys(): Promise<ApiKeysResponse> {
   try {
     const response = await axiosInstance.get('me/api-keys', {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders(),
     })
 
     return apiKeysResponseSchema.parse(response.data)
@@ -58,6 +51,7 @@ export async function getApiKeys(): Promise<ApiKeysResponse> {
 
 export async function createApiKey(
   payload: CreateApiKeyPayload,
+  options: PortalRequestHeaderOptions = {},
 ): Promise<CreateApiKeyResponse> {
   try {
     const validatedPayload = createApiKeyPayloadSchema.parse(payload)
@@ -65,10 +59,12 @@ export async function createApiKey(
       'me/api-keys',
       {
         environment: validatedPayload.environment,
-        scopes: validatedPayload.scopes,
+        ...(validatedPayload.scopes && validatedPayload.scopes.length > 0
+          ? { scopes: validatedPayload.scopes }
+          : {}),
       },
       {
-        headers: getAuthHeader(),
+        headers: getPortalAuthHeaders(options),
       },
     )
     return createApiKeyResponseSchema.parse(response.data)
@@ -77,10 +73,13 @@ export async function createApiKey(
   }
 }
 
-export async function revokeApiKey(keyId: string): Promise<RevokeApiKeyResponse> {
+export async function revokeApiKey(
+  keyId: string,
+  options: PortalRequestHeaderOptions = {},
+): Promise<RevokeApiKeyResponse> {
   try {
     const response = await axiosInstance.delete(`me/api-keys/${keyId}`, {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders(options),
     })
     return revokeApiKeyResponseSchema.parse(response.data)
   } catch (error) {

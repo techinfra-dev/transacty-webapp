@@ -32,11 +32,13 @@ import {
 } from '../hooks/useCustomersQueries.ts'
 import { useCustomersPage } from '../hooks/useCustomersPage.ts'
 import { useTransferRefundActions } from '../hooks/useTransferRefundActions.ts'
+import { usePortalRole } from '../../../hooks/usePortalRole.ts'
 import type { CustomerItem, CustomerStatus } from '../services/customersSchemas.ts'
 import type { TransactionItem } from '../services/transactionsSchemas.ts'
 
 export function DashboardCustomersPage() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
+  const { canWriteMoney } = usePortalRole()
   const page = useCustomersPage()
   const moneyActions = useTransferRefundActions()
   const openTransactionDetail = useTransactionDetailModalStore(
@@ -186,6 +188,7 @@ export function DashboardCustomersPage() {
         onTransactions={setCustomerForTransactions}
         onTransfer={(customer) => moneyActions.openTransferForCustomer(customer.id)}
         onRefund={(customer) => moneyActions.openRefundForCustomer(customer.id)}
+        canWriteMoney={canWriteMoney}
       />
 
       <Dialog

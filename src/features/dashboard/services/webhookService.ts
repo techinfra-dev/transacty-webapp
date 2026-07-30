@@ -1,6 +1,9 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
-import { getAuthToken } from '../../auth/services/authSession.ts'
+import {
+  getPortalAuthHeaders,
+  type PortalRequestHeaderOptions,
+} from '../../../api/portalAuthHeaders.ts'
 import {
   webhookGetResponseSchema,
   webhookPatchRequestSchema,
@@ -32,20 +35,10 @@ function getWebhookErrorMessage(error: unknown) {
   return 'Unable to complete webhook request right now.'
 }
 
-function getAuthHeader() {
-  const token = getAuthToken()
-  if (!token) {
-    throw new Error('You are not authenticated')
-  }
-  return {
-    Authorization: `Bearer ${token}`,
-  }
-}
-
 export async function getWebhook(): Promise<WebhookGetResponse> {
   try {
     const response = await axiosInstance.get('me/webhook', {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders(),
     })
     return webhookGetResponseSchema.parse(response.data)
   } catch (error) {
@@ -55,11 +48,25 @@ export async function getWebhook(): Promise<WebhookGetResponse> {
 
 export async function patchWebhook(
   payload: WebhookPatchRequest,
+  options: PortalRequestHeaderOptions = {},
 ): Promise<WebhookPatchResponse> {
   const body = webhookPatchRequestSchema.parse(payload)
+  if (body.webhookUrl) {
+    try {
+      const parsedUrl = new URL(body.webhookUrl)
+      if (parsedUrl.protocol !== 'https:') {
+        throw new Error('Webhook URL must use HTTPS')
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('HTTPS')) {
+        throw error
+      }
+      throw new Error('Enter a valid HTTPS webhook URL.')
+    }
+  }
   try {
     const response = await axiosInstance.patch('me/webhook', body, {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders(options),
     })
     return webhookPatchResponseSchema.parse(response.data)
   } catch (error) {

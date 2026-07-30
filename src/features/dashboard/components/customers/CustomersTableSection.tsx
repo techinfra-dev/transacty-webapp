@@ -28,6 +28,7 @@ type CustomersTableSectionProps = {
   onTransactions: (customer: CustomerItem) => void
   onTransfer: (customer: CustomerItem) => void
   onRefund: (customer: CustomerItem) => void
+  canWriteMoney?: boolean
 }
 
 export function CustomersTableSection({
@@ -54,6 +55,7 @@ export function CustomersTableSection({
   onTransactions,
   onTransfer,
   onRefund,
+  canWriteMoney = true,
 }: CustomersTableSectionProps) {
   return (
     <section className="customers-card">
@@ -73,6 +75,7 @@ export function CustomersTableSection({
           onTransactions={onTransactions}
           onTransfer={onTransfer}
           onRefund={onRefund}
+          canWriteMoney={canWriteMoney}
         />
       </div>
 

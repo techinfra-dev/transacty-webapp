@@ -1,6 +1,10 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
+import {
+  getPortalAuthHeaders,
+  type PortalRequestHeaderOptions,
+} from '../../../api/portalAuthHeaders.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createCpgPayoutPayloadSchema,
@@ -17,10 +21,6 @@ function getAuthHeader() {
   return {
     Authorization: `Bearer ${token}`,
   }
-}
-
-function createIdempotencyKey() {
-  return crypto.randomUUID()
 }
 
 function getCpgPayoutApiErrorMessage(error: unknown) {
@@ -54,14 +54,15 @@ function getCpgPayoutApiErrorMessage(error: unknown) {
 
 export async function createCpgPayout(
   payload: CreateCpgPayoutPayload,
+  options: PortalRequestHeaderOptions = {},
 ): Promise<CpgPayoutInstance> {
   try {
     const body = createCpgPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/cpg/payout-requests', body, {
-      headers: {
-        ...getAuthHeader(),
-        'Idempotency-Key': createIdempotencyKey(),
-      },
+      headers: getPortalAuthHeaders({
+        ...options,
+        idempotency: true,
+      }),
     })
     return cpgPayoutInstanceSchema.parse(response.data)
   } catch (error) {

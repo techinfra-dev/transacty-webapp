@@ -1,6 +1,7 @@
 import { AxiosError } from 'axios'
 import { z } from 'zod'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
+import { getPortalAuthHeaders } from '../../../api/portalAuthHeaders.ts'
 import {
   apiErrorSchema,
   authSessionResponseSchema,
@@ -15,13 +16,19 @@ import {
   mfaVerifyRequestSchema,
   resetPasswordRequestSchema,
   resetPasswordResponseSchema,
+  revokeSessionsRequestSchema,
+  revokeSessionsResponseSchema,
   signupRequestSchema,
+  stepUpRequestSchema,
+  stepUpResponseSchema,
   type ForgotPasswordRequest,
   type LoginRequest,
   type LoginResponse,
   type MfaVerifyRequest,
   type ResetPasswordRequest,
+  type RevokeSessionsRequest,
   type SignupRequest,
+  type StepUpRequest,
 } from './authSchemas.ts'
 import { getAuthToken } from './authSession.ts'
 
@@ -60,6 +67,45 @@ export async function verifyMfaLogin(payload: MfaVerifyRequest) {
     if (error instanceof z.ZodError) {
       throw new Error('Please enter a valid 6-digit code.')
     }
+    throw new Error(getApiErrorMessage(error))
+  }
+}
+
+export async function stepUp(payload: StepUpRequest) {
+  const parsed = stepUpRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error('Enter a valid 6-digit code.')
+  }
+  try {
+    const response = await axiosInstance.post('auth/step-up', parsed.data, {
+      headers: getPortalAuthHeaders(),
+    })
+    return stepUpResponseSchema.parse(response.data)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new Error('Unable to verify step-up response.')
+    }
+    throw new Error(getApiErrorMessage(error))
+  }
+}
+
+export async function revokeSessions(payload: RevokeSessionsRequest) {
+  const parsed = revokeSessionsRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? 'Please enter your password.',
+    )
+  }
+  try {
+    const response = await axiosInstance.post(
+      'auth/revoke-sessions',
+      parsed.data,
+      {
+        headers: getPortalAuthHeaders(),
+      },
+    )
+    return revokeSessionsResponseSchema.parse(response.data)
+  } catch (error) {
     throw new Error(getApiErrorMessage(error))
   }
 }

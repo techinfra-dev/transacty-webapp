@@ -1,6 +1,10 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
+import {
+  getPortalAuthHeaders,
+  type PortalRequestHeaderOptions,
+} from '../../../api/portalAuthHeaders.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createRefundPayloadSchema,
@@ -104,11 +108,17 @@ export async function getTransaction(
   }
 }
 
-export async function createTransfer(payload: CreateTransferPayload) {
+export async function createTransfer(
+  payload: CreateTransferPayload,
+  options: PortalRequestHeaderOptions = {},
+) {
   try {
     const validatedPayload = createTransferPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/transfers', validatedPayload, {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders({
+        ...options,
+        idempotency: true,
+      }),
     })
     return transactionDetailSchema.parse(response.data)
   } catch (error) {
@@ -116,11 +126,17 @@ export async function createTransfer(payload: CreateTransferPayload) {
   }
 }
 
-export async function createRefund(payload: CreateRefundPayload) {
+export async function createRefund(
+  payload: CreateRefundPayload,
+  options: PortalRequestHeaderOptions = {},
+) {
   try {
     const validatedPayload = createRefundPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/refunds', validatedPayload, {
-      headers: getAuthHeader(),
+      headers: getPortalAuthHeaders({
+        ...options,
+        idempotency: true,
+      }),
     })
     return transactionDetailSchema.parse(response.data)
   } catch (error) {

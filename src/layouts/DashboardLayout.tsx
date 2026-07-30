@@ -7,6 +7,7 @@ import { TestModeBanner } from '../components/ui/TestModeBanner.tsx'
 import { TransactionDetailDialog } from '../features/dashboard/components/transactions/TransactionDetailDialog.tsx'
 import { useTransactionDetailQuery } from '../features/dashboard/hooks/useTransactionsQueries.ts'
 import { logout } from '../features/auth/services/authService.ts'
+import { PortalStepUpDialog } from '../features/auth/components/PortalStepUpDialog.tsx'
 import { useProfileQuery } from '../features/dashboard/hooks/useProfileQuery.ts'
 import { KycActivationModal } from '../features/kyc/components/KycActivationModal.tsx'
 import { useKycDialogStore } from '../store/kycDialogStore.ts'
@@ -14,6 +15,7 @@ import { useTransactionDetailModalStore } from '../store/transactionDetailModalS
 import {
   clearAuthSession,
   getAuthUser,
+  markMfaEnrolledInSession,
   subscribeToAuthSessionUpdates,
 } from '../features/auth/services/authSession.ts'
 import {
@@ -114,6 +116,16 @@ export function DashboardLayout() {
     })
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (!profileQuery.data?.mfaEnabled) {
+      return
+    }
+    const user = getAuthUser()
+    if (user && (!user.mfaEnabled || user.mfaSetupRequired)) {
+      markMfaEnrolledInSession()
+    }
+  }, [profileQuery.data?.mfaEnabled])
 
   useEffect(() => {
     closeMobileNav()
@@ -460,6 +472,7 @@ export function DashboardLayout() {
         onClose={closeTransactionDetail}
         detailQuery={transactionDetailQuery}
       />
+      <PortalStepUpDialog />
     </section>
   )
 }

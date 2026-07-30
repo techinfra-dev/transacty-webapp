@@ -1,6 +1,9 @@
 import { z } from 'zod'
 
 export const API_KEY_SCOPE_OPTIONS = [
+  { value: 'payins:write', label: 'Payins · write' },
+  { value: 'payouts:write', label: 'Payouts · write' },
+  { value: 'webhooks:read', label: 'Webhooks · read' },
   { value: 'payin:create', label: 'Payin · create' },
   { value: 'payout:create', label: 'Payout · create' },
   { value: 'balance:read', label: 'Balance · read' },
@@ -12,17 +15,7 @@ export const API_KEY_SCOPE_OPTIONS = [
   { value: '*', label: 'All scopes (*)' },
 ] as const
 
-export const apiKeyScopeSchema = z.enum([
-  '*',
-  'payin:create',
-  'payout:create',
-  'balance:read',
-  'wallets:create',
-  'wallets:read',
-  'transfer:create',
-  'internal_transfer:create',
-  'tylt:internal_transfer',
-])
+export const apiKeyScopeSchema = z.string().min(1)
 
 export const apiKeyItemSchema = z.object({
   id: z.string().min(1),
@@ -41,7 +34,7 @@ export const apiKeyEnvironmentSchema = z.enum(['test', 'live'])
 
 export const createApiKeyPayloadSchema = z.object({
   environment: apiKeyEnvironmentSchema,
-  scopes: z.array(apiKeyScopeSchema).min(1, 'Select at least one scope.'),
+  scopes: z.array(apiKeyScopeSchema).optional(),
 })
 
 export const createApiKeyResponseSchema = z.object({

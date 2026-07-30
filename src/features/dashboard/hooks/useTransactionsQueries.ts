@@ -13,6 +13,7 @@ import type {
   TransactionStatus,
   TransactionType,
 } from '../services/transactionsSchemas.ts'
+import { prepareMoneyWriteHeaders } from '../utils/prepareSensitiveMutation.ts'
 
 export function useTransactionsListQuery(
   params: {
@@ -75,11 +76,16 @@ export function useTransactionDetailQuery(
 export function useCreateTransferMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: Omit<CreateTransferPayload, 'environment'>) =>
-      createTransfer({
-        ...payload,
-        environment: usePortalEnvironmentStore.getState().environment,
-      }),
+    mutationFn: async (payload: Omit<CreateTransferPayload, 'environment'>) => {
+      const { stepUpToken } = await prepareMoneyWriteHeaders()
+      return createTransfer(
+        {
+          ...payload,
+          environment: usePortalEnvironmentStore.getState().environment,
+        },
+        { stepUpToken },
+      )
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
@@ -93,11 +99,16 @@ export function useCreateTransferMutation() {
 export function useCreateRefundMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: Omit<CreateRefundPayload, 'environment'>) =>
-      createRefund({
-        ...payload,
-        environment: usePortalEnvironmentStore.getState().environment,
-      }),
+    mutationFn: async (payload: Omit<CreateRefundPayload, 'environment'>) => {
+      const { stepUpToken } = await prepareMoneyWriteHeaders()
+      return createRefund(
+        {
+          ...payload,
+          environment: usePortalEnvironmentStore.getState().environment,
+        },
+        { stepUpToken },
+      )
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),

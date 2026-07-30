@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { usePortalRole } from '../../../../hooks/usePortalRole.ts'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 import {
@@ -24,12 +25,13 @@ export function WebhooksSettingsContent() {
   const [secretDialogValue, setSecretDialogValue] = useState<string | null>(null)
   const [copiedSecret, setCopiedSecret] = useState(false)
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
+  const { isAdmin } = usePortalRole()
   const profileQuery = useProfileQuery(true)
   const isKycVerified = profileQuery.data?.kycStatus === 'verified'
   const isKycPendingVerification =
     profileQuery.data?.kycStatus === 'pending' &&
     profileQuery.data?.businessProfile?.status === 'submitted'
-  const webhookQuery = useWebhookQuery(isKycVerified)
+  const webhookQuery = useWebhookQuery(isKycVerified && isAdmin)
   const updateWebhookMutation = useUpdateWebhookMutation()
 
   useEffect(() => {
@@ -108,6 +110,14 @@ export function WebhooksSettingsContent() {
 
   if (profileQuery.isError || !profileQuery.data) {
     return <p className="settings-error">Unable to verify KYC status right now.</p>
+  }
+
+  if (!isAdmin) {
+    return (
+      <p className="settings-dev-alert">
+        Admin role required to manage webhook settings.
+      </p>
+    )
   }
 
   return (

@@ -1,6 +1,10 @@
 import { AxiosError } from 'axios'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
+import {
+  getPortalAuthHeaders,
+  type PortalRequestHeaderOptions,
+} from '../../../api/portalAuthHeaders.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createEurPayoutPayloadSchema,
@@ -19,10 +23,6 @@ function getAuthHeader() {
   return {
     Authorization: `Bearer ${token}`,
   }
-}
-
-function createIdempotencyKey() {
-  return crypto.randomUUID()
 }
 
 function getEurPayoutApiErrorMessage(error: unknown) {
@@ -52,14 +52,15 @@ function getEurPayoutApiErrorMessage(error: unknown) {
 
 export async function createEurPayout(
   payload: CreateEurPayoutPayload,
+  options: PortalRequestHeaderOptions = {},
 ): Promise<EurPayoutInstance> {
   try {
     const body = createEurPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/eur/payout-instances', body, {
-      headers: {
-        ...getAuthHeader(),
-        'Idempotency-Key': createIdempotencyKey(),
-      },
+      headers: getPortalAuthHeaders({
+        ...options,
+        idempotency: true,
+      }),
     })
     return eurPayoutInstanceSchema.parse(response.data)
   } catch (error) {
@@ -67,16 +68,19 @@ export async function createEurPayout(
   }
 }
 
-export async function approveEurPayout(params: {
-  transactionId: string
-  environment: PortalEnvironment
-}): Promise<EurPayoutApproveResponse> {
+export async function approveEurPayout(
+  params: {
+    transactionId: string
+    environment: PortalEnvironment
+  },
+  options: PortalRequestHeaderOptions = {},
+): Promise<EurPayoutApproveResponse> {
   try {
     const response = await axiosInstance.post(
       `me/eur/payout-instances/${encodeURIComponent(params.transactionId)}/approve`,
       {},
       {
-        headers: getAuthHeader(),
+        headers: getPortalAuthHeaders(options),
         params: {
           environment: params.environment,
         },

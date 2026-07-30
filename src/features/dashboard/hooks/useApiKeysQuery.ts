@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createApiKey, getApiKeys, revokeApiKey } from '../services/apiKeysService.ts'
 import type { CreateApiKeyPayload } from '../services/apiKeysSchemas.ts'
+import { prepareAdminStepUp } from '../utils/prepareSensitiveMutation.ts'
 
 export function useApiKeysQuery(enabled = true) {
   return useQuery({
@@ -14,7 +15,10 @@ export function useApiKeysQuery(enabled = true) {
 export function useCreateApiKeyMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: CreateApiKeyPayload) => createApiKey(payload),
+    mutationFn: async (payload: CreateApiKeyPayload) => {
+      const { stepUpToken } = await prepareAdminStepUp('api_keys.write')
+      return createApiKey(payload, { stepUpToken })
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['api-keys-list'] })
     },
@@ -24,7 +28,10 @@ export function useCreateApiKeyMutation() {
 export function useRevokeApiKeyMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (keyId: string) => revokeApiKey(keyId),
+    mutationFn: async (keyId: string) => {
+      const { stepUpToken } = await prepareAdminStepUp('api_keys.write')
+      return revokeApiKey(keyId, { stepUpToken })
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['api-keys-list'] })
     },
