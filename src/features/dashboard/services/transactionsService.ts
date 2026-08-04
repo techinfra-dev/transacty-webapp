@@ -5,6 +5,10 @@ import {
   getPortalAuthHeaders,
   type PortalRequestHeaderOptions,
 } from '../../../api/portalAuthHeaders.ts'
+import {
+  getStableIdempotencyKey,
+  releaseIdempotencyKey,
+} from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createRefundPayloadSchema,
@@ -117,10 +121,15 @@ export async function createTransfer(
     const response = await axiosInstance.post('me/transfers', validatedPayload, {
       headers: getPortalAuthHeaders({
         ...options,
-        idempotency: true,
+        idempotencyKey: getStableIdempotencyKey(
+          'me/transfers',
+          validatedPayload,
+        ),
       }),
     })
-    return transactionDetailSchema.parse(response.data)
+    const created = transactionDetailSchema.parse(response.data)
+    releaseIdempotencyKey('me/transfers', validatedPayload)
+    return created
   } catch (error) {
     throw new Error(getTransactionsApiErrorMessage(error))
   }
@@ -135,10 +144,12 @@ export async function createRefund(
     const response = await axiosInstance.post('me/refunds', validatedPayload, {
       headers: getPortalAuthHeaders({
         ...options,
-        idempotency: true,
+        idempotencyKey: getStableIdempotencyKey('me/refunds', validatedPayload),
       }),
     })
-    return transactionDetailSchema.parse(response.data)
+    const created = transactionDetailSchema.parse(response.data)
+    releaseIdempotencyKey('me/refunds', validatedPayload)
+    return created
   } catch (error) {
     throw new Error(getTransactionsApiErrorMessage(error))
   }

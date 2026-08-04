@@ -17,6 +17,7 @@ import {
   getAuthUser,
   markMfaEnrolledInSession,
   subscribeToAuthSessionUpdates,
+  updateAuthSessionUser,
 } from '../features/auth/services/authSession.ts'
 import {
   hydratePortalEnvironmentForUser,
@@ -118,14 +119,30 @@ export function DashboardLayout() {
   }, [])
 
   useEffect(() => {
-    if (!profileQuery.data?.mfaEnabled) {
+    const profile = profileQuery.data
+    if (!profile) {
       return
     }
     const user = getAuthUser()
-    if (user && (!user.mfaEnabled || user.mfaSetupRequired)) {
-      markMfaEnrolledInSession()
+    if (!user) {
+      return
     }
-  }, [profileQuery.data?.mfaEnabled])
+    if (profile.mfaEnabled && (!user.mfaEnabled || user.mfaSetupRequired)) {
+      markMfaEnrolledInSession()
+      return
+    }
+    // Role can change server-side; stale roles would leave money UI visible.
+    if (profile.role !== user.role || profile.merchantSlug !== user.merchantSlug) {
+      updateAuthSessionUser({
+        role: profile.role,
+        merchantSlug: profile.merchantSlug,
+      })
+    }
+  }, [
+    profileQuery.data?.mfaEnabled,
+    profileQuery.data?.role,
+    profileQuery.data?.merchantSlug,
+  ])
 
   useEffect(() => {
     closeMobileNav()

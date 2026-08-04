@@ -5,6 +5,10 @@ import {
   getPortalAuthHeaders,
   type PortalRequestHeaderOptions,
 } from '../../../api/portalAuthHeaders.ts'
+import {
+  getStableIdempotencyKey,
+  releaseIdempotencyKey,
+} from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createCpgPayoutPayloadSchema,
@@ -61,10 +65,12 @@ export async function createCpgPayout(
     const response = await axiosInstance.post('me/cpg/payout-requests', body, {
       headers: getPortalAuthHeaders({
         ...options,
-        idempotency: true,
+        idempotencyKey: getStableIdempotencyKey('me/cpg/payout-requests', body),
       }),
     })
-    return cpgPayoutInstanceSchema.parse(response.data)
+    const created = cpgPayoutInstanceSchema.parse(response.data)
+    releaseIdempotencyKey('me/cpg/payout-requests', body)
+    return created
   } catch (error) {
     throw new Error(getCpgPayoutApiErrorMessage(error))
   }

@@ -417,6 +417,11 @@ export function ApiKeysSettingsContent() {
             <p className="settings-hint">
               Environment: {createdApiKey.environment === 'live' ? 'Live' : 'Test'}
             </p>
+            {createdApiKey.message ? (
+              <p className="settings-hint settings-hint--warn">
+                {createdApiKey.message}
+              </p>
+            ) : null}
             <div className="settings-dev-scope-list">
               {normalizeApiKeyScopes(createdApiKey.scopes).map((scope) => (
                 <span key={scope} className="settings-dev-scope-tag">

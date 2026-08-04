@@ -5,6 +5,10 @@ import {
   getPortalAuthHeaders,
   type PortalRequestHeaderOptions,
 } from '../../../api/portalAuthHeaders.ts'
+import {
+  getStableIdempotencyKey,
+  releaseIdempotencyKey,
+} from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createEurPayoutPayloadSchema,
@@ -59,10 +63,12 @@ export async function createEurPayout(
     const response = await axiosInstance.post('me/eur/payout-instances', body, {
       headers: getPortalAuthHeaders({
         ...options,
-        idempotency: true,
+        idempotencyKey: getStableIdempotencyKey('me/eur/payout-instances', body),
       }),
     })
-    return eurPayoutInstanceSchema.parse(response.data)
+    const created = eurPayoutInstanceSchema.parse(response.data)
+    releaseIdempotencyKey('me/eur/payout-instances', body)
+    return created
   } catch (error) {
     throw new Error(getEurPayoutApiErrorMessage(error))
   }
@@ -80,7 +86,13 @@ export async function approveEurPayout(
       `me/eur/payout-instances/${encodeURIComponent(params.transactionId)}/approve`,
       {},
       {
-        headers: getPortalAuthHeaders(options),
+        headers: getPortalAuthHeaders({
+          ...options,
+          idempotencyKey: getStableIdempotencyKey(
+            'me/eur/payout-instances/approve',
+            params,
+          ),
+        }),
         params: {
           environment: params.environment,
         },

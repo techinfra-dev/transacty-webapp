@@ -5,6 +5,10 @@ import {
   type PortalRequestHeaderOptions,
 } from '../../../api/portalAuthHeaders.ts'
 import {
+  getStableIdempotencyKey,
+  releaseIdempotencyKey,
+} from '../../../utils/idempotency.ts'
+import {
   createBrPayoutPayloadSchema,
   createBrPayoutResponseSchema,
   type CreateBrPayoutPayload,
@@ -51,10 +55,15 @@ export async function createBrPayout(
     const response = await axiosInstance.post('me/br/payouts', validatedPayload, {
       headers: getPortalAuthHeaders({
         ...options,
-        idempotency: true,
+        idempotencyKey: getStableIdempotencyKey(
+          'me/br/payouts',
+          validatedPayload,
+        ),
       }),
     })
-    return createBrPayoutResponseSchema.parse(response.data)
+    const created = createBrPayoutResponseSchema.parse(response.data)
+    releaseIdempotencyKey('me/br/payouts', validatedPayload)
+    return created
   } catch (error) {
     throw new Error(getBrPayoutApiErrorMessage(error))
   }

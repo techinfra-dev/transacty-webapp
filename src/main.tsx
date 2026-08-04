@@ -4,9 +4,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { applyColorScheme, readStoredColorScheme } from './theme/applyTheme.ts'
 import './index.css'
+import { registerPortalSecurityInterceptor } from './api/portalSecurityInterceptor.ts'
 import { router } from './router.ts'
 
 applyColorScheme(readStoredColorScheme())
+
+registerPortalSecurityInterceptor({
+  onMfaSetupRequired: () => {
+    void router.navigate({
+      to: '/dashboard/settings',
+      search: { tab: 'security' },
+    })
+  },
+  onSessionExpired: () => {
+    void router.navigate({ to: '/login' })
+  },
+})
 
 const queryClient = new QueryClient()
 
