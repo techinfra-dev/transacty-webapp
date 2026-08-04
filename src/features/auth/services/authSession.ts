@@ -48,12 +48,7 @@ export function getAuthToken() {
   return sessionStorage.getItem(AUTH_TOKEN_KEY)
 }
 
-export function getAuthUser(): AuthSessionUser | null {
-  const rawUser = sessionStorage.getItem(AUTH_USER_KEY)
-  if (!rawUser) {
-    return null
-  }
-
+function parseAuthUser(rawUser: string): AuthSessionUser | null {
   try {
     const parsedUser = JSON.parse(rawUser) as Partial<AuthSessionUser>
     if (
@@ -81,6 +76,23 @@ export function getAuthUser(): AuthSessionUser | null {
   } catch {
     return null
   }
+}
+
+let cachedRawUser: string | null = null
+let cachedAuthUser: AuthSessionUser | null = null
+
+/**
+ * Returns a stable reference for unchanged sessions — `useSyncExternalStore`
+ * compares snapshots by identity and would re-render forever otherwise.
+ */
+export function getAuthUser(): AuthSessionUser | null {
+  const rawUser = sessionStorage.getItem(AUTH_USER_KEY)
+  if (rawUser === cachedRawUser) {
+    return cachedAuthUser
+  }
+  cachedRawUser = rawUser
+  cachedAuthUser = rawUser ? parseAuthUser(rawUser) : null
+  return cachedAuthUser
 }
 
 export function isAuthenticated() {
