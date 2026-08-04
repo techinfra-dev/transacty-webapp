@@ -16,6 +16,7 @@ import { getCurrencySymbol } from '../../../utils/currencyNames.ts'
 import {
   formatEntitlementStatusLabel,
   getMarketDisplayName,
+  getMarketSettlementHint,
 } from '../utils/marketDisplayUtils.ts'
 
 interface AddWalletDialogProps {
@@ -37,23 +38,36 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
 
   const currencies = formatWalletCurrencies(wallets)
   const marketName = market ? getMarketDisplayName(market) : ''
+  const settlementHint = market ? getMarketSettlementHint(market) : null
   const title = market
     ? marketName
     : wallets.length === 1
       ? getWalletDisplayLabel(wallets[0]!)
       : currencies
   const visibleWallets = wallets.filter(isVisibleWallet)
-  const iconGlyphs = visibleWallets.map(
-    (wallet) =>
-      getCurrencySymbol(wallet.currency.trim().toUpperCase()) ??
-      wallet.currency.trim().toUpperCase().slice(0, 1),
-  )
+  const iconGlyphs =
+    visibleWallets.length > 0
+      ? visibleWallets.map(
+          (wallet) =>
+            getCurrencySymbol(wallet.currency.trim().toUpperCase()) ??
+            wallet.currency.trim().toUpperCase().slice(0, 1),
+        )
+      : market === 'pyusd'
+        ? [getCurrencySymbol('USDC') ?? '$']
+        : ['+']
   const entitlement =
     marketRow?.entitlementStatus ?? wallets[0]?.entitlementStatus ?? 'disabled'
   const statusLabel = formatEntitlementStatusLabel(
     entitlement as PortalMarketRow['entitlementStatus'],
   )
   const kybStatus = marketRow?.kybStatus ?? wallets[0]?.kybStatus
+  const subtitleCurrencies =
+    currencies ||
+    (market === 'pyusd'
+      ? 'USDC'
+      : marketRow
+        ? marketRow.settlementCurrencies.map((c) => c.toUpperCase()).join(', ')
+        : '')
 
   function handleRequestAccess() {
     if (!market || requestMutation.isPending) {
@@ -77,9 +91,12 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
       <div className="add-wallet-row-info">
         <p className="add-wallet-row-title">{title}</p>
         <p className="add-wallet-row-sub">
-          {currencies}
+          {subtitleCurrencies}
           {marketName ? ` · ${marketName}` : ''}
         </p>
+        {settlementHint ? (
+          <p className="add-wallet-row-note">{settlementHint}</p>
+        ) : null}
         <p className="add-wallet-row-note">
           {statusLabel}
           {kybStatus && kybStatus !== 'verified'
@@ -199,7 +216,7 @@ export function AddWalletDialog({
       isOpen={isOpen}
       onClose={onClose}
       title="Add a wallet"
-      description="Activate additional settlement pockets for your payment markets."
+      description="Activate payment markets. PYUSD settles into your existing USDC pocket and does not add a new balance card."
       maxWidthClassName="max-w-xl"
     >
       {walletGroups.length === 0 ? (

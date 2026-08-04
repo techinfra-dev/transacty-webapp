@@ -5,6 +5,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   USD: '$',
   USDT: '₮',
   USDC: '$',
+  PYUSD: '$',
   EUR: '€',
   GBP: '£',
 }
@@ -14,6 +15,9 @@ const CURRENCY_FULL_NAMES: Record<string, string> = {
   BRL: 'Brazilian Real',
   INR: 'Indian Rupee',
   USD: 'US Dollar',
+  USDT: 'Tether',
+  USDC: 'USD Coin',
+  PYUSD: 'PayPal USD',
   EUR: 'Euro',
   GBP: 'British Pound',
   AUD: 'Australian Dollar',

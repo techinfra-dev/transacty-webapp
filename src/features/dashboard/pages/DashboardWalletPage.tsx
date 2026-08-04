@@ -30,12 +30,17 @@ export function DashboardWalletPage() {
   const activeWallet =
     wallets?.find((wallet) => wallet.id === walletId) ?? null
   const walletRail = resolveWalletTransactionRail(activeWallet)
+  const isUsdcWallet =
+    activeWallet?.currency.trim().toUpperCase() === 'USDC'
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
       return 'Manage balances, quick actions, and activity for each merchant pocket.'
     }
     const code = activeWallet.currency.trim().toUpperCase()
+    if (code === 'USDC') {
+      return `${getWalletDisplayLabel(activeWallet)} · USDC pocket (Europe + PYUSD settle here)`
+    }
     return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
   }, [activeWallet])
 
@@ -110,6 +115,13 @@ export function DashboardWalletPage() {
           ) : null}
         </div>
       </header>
+
+      {isUsdcWallet ? (
+        <p className="[font-family:var(--font-body)] text-sm text-(--color-secondary)">
+          PYUSD collects → USDC settles into this pocket. There is no separate
+          PYUSD balance card — activate Europe / USDC to receive both.
+        </p>
+      ) : null}
 
       <WalletOverviewCard
         wallets={wallets}

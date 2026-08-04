@@ -43,7 +43,9 @@ export function WalletActivityTable({
 }: WalletActivityTableProps) {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const walletCurrency = currency.trim().toUpperCase()
-  const canQuery = Boolean(walletRail && walletCurrency)
+  const canQuery =
+    Boolean(walletCurrency) &&
+    (Boolean(walletRail) || walletCurrency === 'USDC')
   const [statusFilter, setStatusFilter] = useState<TransactionStatusTabId>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)

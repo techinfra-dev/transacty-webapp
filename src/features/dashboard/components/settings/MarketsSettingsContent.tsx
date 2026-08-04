@@ -5,11 +5,12 @@ import { useMarketsQuery } from '../../hooks/useMarketsQuery.ts'
 import { useRequestMarketMutation } from '../../hooks/useRequestMarketMutation.ts'
 import { getMarketWalletAction, getCatalogWallets, getVisibleSettlementCurrencies } from '../../utils/balanceWalletUtils.ts'
 import {
-  canRequestMarketAccess,
   formatEntitlementStatusLabel,
   formatKybStatusLabel,
   getMarketDisplayName,
+  getMarketSettlementHint,
   isMarketRequestPending,
+  canRequestMarketAccess,
 } from '../../utils/marketDisplayUtils.ts'
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
@@ -32,6 +33,7 @@ function MarketSettingsRow({
     market.market,
     market.settlementCurrencies,
   ).join(', ')
+  const settlementHint = getMarketSettlementHint(market.market)
 
   return (
     <article className="settings-card">
@@ -39,7 +41,8 @@ function MarketSettingsRow({
         <div className="min-w-0">
           <h3 className="settings-card-title">{displayName}</h3>
           <p className="settings-card-desc mt-1">
-            Settlement: {currencies}
+            Settlement: {currencies || '—'}
+            {settlementHint ? ` · ${settlementHint}` : ''}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="dashboard-pill dashboard-pill-neutral">
@@ -131,11 +134,15 @@ export function MarketsSettingsContent() {
   return (
     <div className="space-y-3">
       <p className="settings-card-desc mb-2">
-        Each market has separate KYB. API access for a region is enabled after
-        approval.
+        Each market has separate KYB. PYUSD access settles into your existing
+        USDC pocket — it does not add another balance card.
       </p>
       {marketsQuery.data.map((market) => (
-        <MarketSettingsRow key={market.market} market={market} catalog={catalog} />
+        <MarketSettingsRow
+          key={market.market}
+          market={market}
+          catalog={catalog}
+        />
       ))}
     </div>
   )

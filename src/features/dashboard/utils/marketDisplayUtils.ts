@@ -10,6 +10,7 @@ export const MARKET_ORDER: MerchantMarket[] = [
   'india',
   'europe',
   'brazil',
+  'pyusd',
 ]
 
 export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
@@ -17,6 +18,18 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   india: 'India',
   europe: 'Europe',
   brazil: 'Brazil',
+  pyusd: 'PYUSD',
+}
+
+/** Short settlement hint under market / wallet cards. */
+export function getMarketSettlementHint(market: MerchantMarket | string) {
+  if (market === 'pyusd') {
+    return 'PYUSD collects → USDC settles (no new wallet)'
+  }
+  if (market === 'europe') {
+    return 'USDC pocket also receives PYUSD settlements'
+  }
+  return null
 }
 
 export function getMarketDisplayName(market: string) {

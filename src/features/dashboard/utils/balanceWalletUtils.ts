@@ -3,8 +3,8 @@ import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { MARKET_ORDER } from './marketDisplayUtils.ts'
 
-/** INR settlement pockets are hidden from all merchant portal wallet UI. */
-export const HIDDEN_WALLET_CURRENCIES = new Set(['INR'])
+/** INR and PYUSD pockets are never shown as standalone merchant balance cards. */
+export const HIDDEN_WALLET_CURRENCIES = new Set(['INR', 'PYUSD'])
 
 export const INDIA_PORTAL_SETTLEMENT_CURRENCY = 'USDT'
 
@@ -29,6 +29,11 @@ export function getVisibleSettlementCurrencies(
 
   if (market === 'india') {
     return visible.filter((currency) => currency === INDIA_PORTAL_SETTLEMENT_CURRENCY)
+  }
+
+  if (market === 'pyusd') {
+    // Settles into the existing USDC pocket — never a PYUSD balance card.
+    return ['USDC']
   }
 
   return visible
@@ -125,7 +130,8 @@ export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | nul
     raw === 'bangladesh' ||
     raw === 'india' ||
     raw === 'europe' ||
-    raw === 'brazil'
+    raw === 'brazil' ||
+    raw === 'pyusd'
   ) {
     return raw
   }
@@ -216,6 +222,10 @@ export function getAddWalletCatalogGroups(
 
   for (const wallet of inactive) {
     const marketKey = getWalletMarket(wallet)
+    // Never surface a PYUSD currency pocket — settle into USDC instead.
+    if (marketKey === 'pyusd') {
+      continue
+    }
     if (!marketKey) {
       withoutMarket.push(wallet)
       continue
@@ -228,11 +238,26 @@ export function getAddWalletCatalogGroups(
   const groups: AddWalletCatalogGroup[] = []
 
   for (const marketKey of MARKET_ORDER) {
-    const wallets = byMarket.get(marketKey)
-    if (!wallets || wallets.length === 0) {
+    const wallets = byMarket.get(marketKey) ?? []
+    const marketRow = marketById.get(marketKey)
+
+    if (wallets.length === 0) {
+      if (!marketRow) {
+        continue
+      }
+      const action = getEntitlementOnlyAction(marketRow)
+      if (action === 'none') {
+        continue
+      }
+      groups.push({
+        market: marketKey,
+        marketRow,
+        wallets: [],
+        action,
+      })
       continue
     }
-    const marketRow = marketById.get(marketKey)
+
     const action = marketRow
       ? getMarketWalletAction(marketRow, catalog)
       : wallets
@@ -282,12 +307,20 @@ export function getMarketWalletAction(
   market: PortalMarketRow,
   catalogItems: BalanceWalletItem[],
 ): CatalogWalletAction {
+  // PYUSD is requestable, but never provisions a new currency pocket.
+  if (market.market === 'pyusd') {
+    return getEntitlementOnlyAction(market)
+  }
+
   const inactiveInMarket = catalogItems.filter(
     (item) =>
       getWalletMarket(item) === market.market && !isWalletActivated(item),
   )
+
+  // Markets with no inactive catalog pocket still appear when entitlement
+  // needs action (e.g. Europe requested before USDC is provisioned).
   if (inactiveInMarket.length === 0) {
-    return 'none'
+    return getEntitlementOnlyAction(market)
   }
 
   const actions = inactiveInMarket.map((wallet) =>
@@ -297,6 +330,28 @@ export function getMarketWalletAction(
     return 'none'
   }
   return actions.find((action) => action !== 'none') ?? 'none'
+}
+
+/** Market access without an inactive catalog pocket yet. */
+export function getEntitlementOnlyAction(
+  market: PortalMarketRow,
+): CatalogWalletAction {
+  if (market.entitlementStatus === 'suspended') {
+    return 'suspended'
+  }
+  if (market.entitlementStatus === 'disabled') {
+    return 'request_access'
+  }
+  if (
+    market.entitlementStatus === 'requested' ||
+    market.entitlementStatus === 'kyb_in_review'
+  ) {
+    return 'pending_review'
+  }
+  if (market.entitlementStatus === 'approved' && market.kybStatus !== 'verified') {
+    return 'complete_kyc'
+  }
+  return 'none'
 }
 
 export function getMarketsWithWalletActions(

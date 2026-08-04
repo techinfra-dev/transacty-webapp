@@ -30,6 +30,7 @@ export const transactionRailApiSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'pyusd',
 ])
 
 export const transactionRailFilterSchema = z.enum([
@@ -38,6 +39,7 @@ export const transactionRailFilterSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'pyusd',
 ])
 
 export const customerWalletIdFilterSchema = z.uuid()

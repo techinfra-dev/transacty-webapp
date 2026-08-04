@@ -5,6 +5,7 @@ export const merchantMarketSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'pyusd',
 ])
 
 export const marketEntitlementStatusSchema = z.enum([

@@ -5,6 +5,7 @@ const RAIL_LOCAL_CURRENCY: Record<string, string> = {
   india: 'INR',
   bangladesh: 'BDT',
   europe: 'EUR',
+  pyusd: 'PYUSD',
 }
 
 const STABLECOIN_SETTLEMENT = new Set(['USDT', 'USDC'])
@@ -148,6 +149,12 @@ function inferLocalCurrency(
     settlementCurrency === 'USDC'
   ) {
     return 'EUR'
+  }
+  if (
+    normalizedRail === 'pyusd' &&
+    settlementCurrency === 'USDC'
+  ) {
+    return 'PYUSD'
   }
   return RAIL_LOCAL_CURRENCY[normalizedRail] ?? null
 }

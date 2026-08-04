@@ -13,6 +13,7 @@ export const transactionRailFilterOptions: {
   { value: 'india', label: 'India' },
   { value: 'europe', label: 'Europe' },
   { value: 'brazil', label: 'Brazil' },
+  { value: 'pyusd', label: 'PYUSD' },
 ]
 
 export function transactionRailFilterToApiParam(
@@ -36,7 +37,8 @@ export function resolveWalletTransactionRail(
     region === 'bangladesh' ||
     region === 'india' ||
     region === 'europe' ||
-    region === 'brazil'
+    region === 'brazil' ||
+    region === 'pyusd'
   ) {
     return region
   }
@@ -53,6 +55,9 @@ export function resolveWalletTransactionRail(
   }
   if (currency === 'EUR') {
     return 'europe'
+  }
+  if (currency === 'PYUSD') {
+    return 'pyusd'
   }
 
   return undefined
