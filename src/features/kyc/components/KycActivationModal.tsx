@@ -80,6 +80,11 @@ const phoneCodeDropdownOptions = phoneCodeOptions.map((option) => ({
   value: option.value,
 }))
 
+const nationalityOptions = phoneCodeOptions.map((option) => ({
+  label: option.label.replace(/\s\(\+\d+\)$/, ''),
+  value: option.countryCode,
+}))
+
 function getDialCodeForCountry(countryCode: string) {
   return phoneCodeOptions.find((option) => option.countryCode === countryCode)?.value
 }
@@ -908,27 +913,23 @@ export function KycActivationModal({
                   <span className="text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
                     Nationality *
                   </span>
-                  <Input
+                  <DropdownSelect
+                    options={nationalityOptions}
                     value={personForm.nationality}
-                    onChange={(event) =>
-                      {
-                        setPersonForm((previous) => ({
+                    onChange={(nextValue) => {
+                      setPersonForm((previous) => ({
+                        ...previous,
+                        nationality: nextValue,
+                      }))
+                      if (personFieldErrors.nationality) {
+                        setPersonFieldErrors((previous) => ({
                           ...previous,
-                          nationality: event.target.value,
+                          nationality: false,
                         }))
-                        if (personFieldErrors.nationality) {
-                          setPersonFieldErrors((previous) => ({
-                            ...previous,
-                            nationality: false,
-                          }))
-                        }
                       }
-                    }
-                    className={
-                      personFieldErrors.nationality
-                        ? requiredInputErrorClassName
-                        : undefined
-                    }
+                    }}
+                    ariaLabel="Nationality"
+                    className="w-full"
                   />
                 </label>
                 <label className="space-y-1">
