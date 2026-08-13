@@ -3,10 +3,15 @@ import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
 import { useMarketsQuery } from '../../hooks/useMarketsQuery.ts'
 import { useRequestMarketMutation } from '../../hooks/useRequestMarketMutation.ts'
-import { getMarketWalletAction, getCatalogWallets, getVisibleSettlementCurrencies } from '../../utils/balanceWalletUtils.ts'
+import {
+  getMarketWalletAction,
+  getCatalogWallets,
+  getVisibleSettlementCurrencies,
+} from '../../utils/balanceWalletUtils.ts'
 import {
   formatEntitlementStatusLabel,
   formatKybStatusLabel,
+  formatMarketUnlockCopy,
   getMarketDisplayName,
   getMarketSettlementHint,
   isMarketRequestPending,
@@ -15,6 +20,7 @@ import {
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../../services/marketSchemas.ts'
+import { ServicesBoardCard } from './ServicesBoardCard.tsx'
 
 function MarketSettingsRow({
   market,
@@ -28,12 +34,13 @@ function MarketSettingsRow({
   const [requested, setRequested] = useState(false)
   const action = getMarketWalletAction(market, catalog)
 
-  const displayName = getMarketDisplayName(market.market)
+  const displayName = getMarketDisplayName(market.market, market.displayName)
   const currencies = getVisibleSettlementCurrencies(
     market.market,
     market.settlementCurrencies,
   ).join(', ')
   const settlementHint = getMarketSettlementHint(market.market)
+  const unlockCopy = formatMarketUnlockCopy(market)
 
   return (
     <article className="settings-card">
@@ -51,7 +58,18 @@ function MarketSettingsRow({
             <span className="dashboard-pill dashboard-pill-neutral">
               {formatKybStatusLabel(market.kybStatus)}
             </span>
+            {market.ready ? (
+              <span className="dashboard-pill dashboard-pill-neutral">Ready</span>
+            ) : null}
+            {market.walletsProvisioned ? (
+              <span className="dashboard-pill dashboard-pill-neutral">
+                Wallets provisioned
+              </span>
+            ) : null}
           </div>
+          {unlockCopy ? (
+            <p className="settings-card-desc mt-2 text-amber-800">{unlockCopy}</p>
+          ) : null}
           {market.requestedAt ? (
             <p className="settings-card-desc mt-2">
               Requested{' '}
@@ -88,7 +106,7 @@ function MarketSettingsRow({
             >
               Complete verification
             </button>
-          ) : market.entitlementStatus === 'approved' ? (
+          ) : market.entitlementStatus === 'approved' || market.ready ? (
             <span className="add-wallet-row-done">Active</span>
           ) : market.entitlementStatus === 'suspended' ? (
             <span className="add-wallet-row-pill">Contact support</span>
@@ -144,6 +162,7 @@ export function MarketsSettingsContent() {
           catalog={catalog}
         />
       ))}
+      <ServicesBoardCard />
     </div>
   )
 }

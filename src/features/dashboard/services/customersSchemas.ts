@@ -64,6 +64,24 @@ export const customerTransactionsListResponseSchema = z.object({
   offset: z.number().optional(),
 })
 
+export const customerTxSummarySchema = z
+  .object({
+    totalCount: z.number().optional(),
+    successCount: z.number().optional(),
+    failedCount: z.number().optional(),
+    pendingCount: z.number().optional(),
+    totalVolume: z.string().optional(),
+    currency: z.string().optional(),
+  })
+  .passthrough()
+
+export const customerDetailSchema = customerItemSchema
+  .extend({
+    txSummary: customerTxSummarySchema.optional(),
+    recentTransactions: z.array(customerTransactionItemSchema).optional(),
+  })
+  .passthrough()
+
 export type CustomerStatus = z.infer<typeof customerStatusSchema>
 export type CustomerItem = z.infer<typeof customerItemSchema>
 export type CustomersListResponse = z.infer<typeof customersListResponseSchema>
@@ -74,3 +92,5 @@ export type UpdateCustomerStatusPayload = z.infer<
 export type CustomerTransactionsListResponse = z.infer<
   typeof customerTransactionsListResponseSchema
 >
+export type CustomerDetail = z.infer<typeof customerDetailSchema>
+export type CustomerTxSummary = z.infer<typeof customerTxSummarySchema>

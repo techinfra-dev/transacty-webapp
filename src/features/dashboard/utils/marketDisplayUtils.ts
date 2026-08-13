@@ -32,7 +32,13 @@ export function getMarketSettlementHint(market: MerchantMarket | string) {
   return null
 }
 
-export function getMarketDisplayName(market: string) {
+export function getMarketDisplayName(
+  market: string,
+  displayName?: string | null,
+) {
+  if (displayName && displayName.trim().length > 0) {
+    return displayName.trim()
+  }
   const key = market.trim().toLowerCase() as MerchantMarket
   return MARKET_DISPLAY_NAMES[key] ?? market
 }
@@ -59,7 +65,21 @@ export function formatKybStatusLabel(status: MarketKybStatus) {
 }
 
 export function canRequestMarketAccess(market: PortalMarketRow) {
+  if (typeof market.canRequest === 'boolean') {
+    return market.canRequest
+  }
   return market.entitlementStatus === 'disabled'
+}
+
+export function formatMarketUnlockCopy(market: PortalMarketRow) {
+  const blockers = market.blockers ?? []
+  if (blockers.length > 0) {
+    return blockers.map((blocker) => blocker.message).join(' · ')
+  }
+  if (market.unlockReason && market.unlockReason.trim().length > 0) {
+    return market.unlockReason.trim()
+  }
+  return null
 }
 
 export function isMarketRequestPending(market: PortalMarketRow) {

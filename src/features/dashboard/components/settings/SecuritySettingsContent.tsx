@@ -12,6 +12,12 @@ import {
   getAuthUser,
   markMfaEnrolledInSession,
 } from '../../../auth/services/authSession.ts'
+import { usePortalRole } from '../../../../hooks/usePortalRole.ts'
+import {
+  useExportAuditLogCsvMutation,
+  useSecurityAuditLogQuery,
+} from '../../hooks/useAuditLogQueries.ts'
+import { useSecurityOverviewQuery } from '../../hooks/usePortalDepthQueries.ts'
 import {
   useCancelMfaSetupMutation,
   useConfirmMfaSetupMutation,
@@ -230,6 +236,7 @@ function SetupCard({
 
 export function SecuritySettingsContent() {
   const navigate = useNavigate()
+  const { isAdmin } = usePortalRole()
   const [setupData, setSetupData] = useState<MfaSetupResponse | null>(null)
   const [setupError, setSetupError] = useState<string | null>(null)
   const [disableError, setDisableError] = useState<string | null>(null)
@@ -238,8 +245,12 @@ export function SecuritySettingsContent() {
   const [isRevokeSessionsOpen, setIsRevokeSessionsOpen] = useState(false)
   const [revokePassword, setRevokePassword] = useState('')
   const [revokeError, setRevokeError] = useState<string | null>(null)
+  const [auditExportError, setAuditExportError] = useState<string | null>(null)
 
   const statusQuery = useMfaStatusQuery(true)
+  const overviewQuery = useSecurityOverviewQuery(true)
+  const securityAuditQuery = useSecurityAuditLogQuery(isAdmin)
+  const exportAuditMutation = useExportAuditLogCsvMutation()
   const startSetupMutation = useStartMfaSetupMutation()
   const confirmSetupMutation = useConfirmMfaSetupMutation()
   const cancelSetupMutation = useCancelMfaSetupMutation()
@@ -361,6 +372,153 @@ export function SecuritySettingsContent() {
 
   return (
     <div className="settings-stack">
+      <SettingsCard
+        title="Security overview"
+        description="MFA, API keys, webhook, IP allowlist, and session version for this merchant."
+      >
+        {overviewQuery.isPending ? (
+          <div className="settings-loading">
+            <LoadingSpinner label="Loading overview…" />
+          </div>
+        ) : overviewQuery.isError ? (
+          <p className="settings-error settings-error--inline">
+            {overviewQuery.error instanceof Error
+              ? overviewQuery.error.message
+              : 'Unable to load security overview.'}
+          </p>
+        ) : (
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <dt className="settings-hint">MFA</dt>
+              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
+                {overviewQuery.data?.mfaEnabled
+                  ? 'Enabled'
+                  : overviewQuery.data?.mfaSetupRequired
+                    ? 'Setup required'
+                    : 'Disabled'}
+              </dd>
+            </div>
+            <div>
+              <dt className="settings-hint">API keys</dt>
+              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
+                {typeof overviewQuery.data?.apiKeyCount === 'number'
+                  ? overviewQuery.data.apiKeyCount
+                  : [
+                      overviewQuery.data?.apiKeyLiveCount != null
+                        ? `${overviewQuery.data.apiKeyLiveCount} live`
+                        : null,
+                      overviewQuery.data?.apiKeyTestCount != null
+                        ? `${overviewQuery.data.apiKeyTestCount} test`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="settings-hint">Webhook</dt>
+              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
+                {overviewQuery.data?.webhookConfigured
+                  ? overviewQuery.data.webhookUrl || 'Configured'
+                  : 'Not configured'}
+              </dd>
+            </div>
+            <div>
+              <dt className="settings-hint">IP allowlist</dt>
+              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
+                {typeof overviewQuery.data?.ipAllowlistCount === 'number'
+                  ? `${overviewQuery.data.ipAllowlistCount} rule(s)`
+                  : overviewQuery.data?.ipAllowlistEnabled
+                    ? 'Enabled'
+                    : '—'}
+              </dd>
+            </div>
+            {overviewQuery.data?.sessionVersionNote ? (
+              <div className="sm:col-span-2">
+                <dt className="settings-hint">Sessions</dt>
+                <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
+                  {overviewQuery.data.sessionVersionNote}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        )}
+        {(overviewQuery.data?.recentSecurityAudit?.length ?? 0) > 0 ? (
+          <ul className="mt-3 space-y-1.5 border-t border-(--color-accent)/25 pt-3">
+            {overviewQuery.data?.recentSecurityAudit?.slice(0, 5).map((row, i) => (
+              <li
+                key={`${row.action}-${row.createdAt}-${i}`}
+                className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
+              >
+                {row.action}
+                {row.actorEmail ? ` · ${row.actorEmail}` : ''} ·{' '}
+                {new Date(row.createdAt).toLocaleString()}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </SettingsCard>
+
+      {isAdmin ? (
+        <SettingsCard
+          title="Audit log"
+          description="Export CSV (step-up audit.export) or browse recent API key actions."
+          footer={
+            <button
+              type="button"
+              className="settings-btn settings-btn--primary"
+              disabled={exportAuditMutation.isPending}
+              onClick={() => {
+                setAuditExportError(null)
+                void exportAuditMutation.mutateAsync({}).catch((error) => {
+                  setAuditExportError(
+                    error instanceof Error
+                      ? error.message
+                      : 'Unable to export audit log.',
+                  )
+                })
+              }}
+            >
+              {exportAuditMutation.isPending ? 'Exporting…' : 'Export CSV'}
+            </button>
+          }
+        >
+          {auditExportError ? (
+            <p className="settings-error settings-error--inline mb-2">
+              {auditExportError}
+            </p>
+          ) : null}
+          {securityAuditQuery.isPending ? (
+            <LoadingSpinner label="Loading audit…" />
+          ) : securityAuditQuery.isError ? (
+            <p className="settings-hint">
+              Recent API key audit unavailable (
+              {securityAuditQuery.error instanceof Error
+                ? securityAuditQuery.error.message
+                : 'error'}
+              ).
+            </p>
+          ) : (securityAuditQuery.data?.items.length ?? 0) === 0 ? (
+            <p className="settings-hint">
+              No recent portal.api_key.* audit events.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {securityAuditQuery.data?.items.map((item, index) => (
+                <li
+                  key={item.id ?? `${item.action}-${item.createdAt}-${index}`}
+                  className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
+                >
+                  {item.action}
+                  {item.actorEmail ? ` · ${item.actorEmail}` : ''} ·{' '}
+                  {new Date(item.createdAt).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SettingsCard>
+      ) : null}
+
       <SettingsCard
         title="Two-factor authentication"
         description="Protect your account with an authenticator app (TOTP)."

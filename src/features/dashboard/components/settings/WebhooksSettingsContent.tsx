@@ -7,6 +7,11 @@ import { usePortalRole } from '../../../../hooks/usePortalRole.ts'
 import { useKycDialogStore } from '../../../../store/kycDialogStore.ts'
 import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 import {
+  useReplayWebhookDeliveryMutation,
+  useTestWebhookMutation,
+  useWebhookDeliveriesQuery,
+} from '../../hooks/useWebhookDeliveries.ts'
+import {
   useUpdateWebhookMutation,
   useWebhookQuery,
 } from '../../hooks/useWebhookSettings.ts'
@@ -33,6 +38,13 @@ export function WebhooksSettingsContent() {
     profileQuery.data?.businessProfile?.status === 'submitted'
   const webhookQuery = useWebhookQuery(isKycVerified && isAdmin)
   const updateWebhookMutation = useUpdateWebhookMutation()
+  const deliveriesQuery = useWebhookDeliveriesQuery(isKycVerified && isAdmin)
+  const replayDeliveryMutation = useReplayWebhookDeliveryMutation()
+  const testWebhookMutation = useTestWebhookMutation()
+  const [deliveryActionError, setDeliveryActionError] = useState<string | null>(
+    null,
+  )
+  const [testMessage, setTestMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (webhookQuery.data) {
@@ -96,6 +108,35 @@ export function WebhooksSettingsContent() {
     } catch (error) {
       setMutationError(
         error instanceof Error ? error.message : 'Unable to remove webhook.',
+      )
+    }
+  }
+
+  async function handleTestWebhook() {
+    setDeliveryActionError(null)
+    setTestMessage(null)
+    try {
+      const result = await testWebhookMutation.mutateAsync()
+      setTestMessage(
+        result.message ||
+          (result.ok === false ? 'Test webhook failed.' : 'Test webhook sent.'),
+      )
+    } catch (error) {
+      setDeliveryActionError(
+        error instanceof Error ? error.message : 'Unable to send test webhook.',
+      )
+    }
+  }
+
+  async function handleReplay(deliveryId: string) {
+    setDeliveryActionError(null)
+    try {
+      await replayDeliveryMutation.mutateAsync(deliveryId)
+    } catch (error) {
+      setDeliveryActionError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to replay this delivery.',
       )
     }
   }
@@ -171,6 +212,16 @@ export function WebhooksSettingsContent() {
               >
                 Remove webhook
               </button>
+              <button
+                type="button"
+                className="settings-btn settings-btn--ghost"
+                onClick={() => void handleTestWebhook()}
+                disabled={
+                  testWebhookMutation.isPending || !webhookQuery.data.webhookUrl
+                }
+              >
+                {testWebhookMutation.isPending ? 'Sending…' : 'Send test'}
+              </button>
             </div>
           }
         >
@@ -215,6 +266,72 @@ export function WebhooksSettingsContent() {
           </p>
         </SettingsCard>
       )}
+
+      {isKycVerified && isAdmin ? (
+        <SettingsCard
+          title="Delivery log"
+          description="Recent outbound webhook attempts, including lastError for failed sends."
+        >
+          {testMessage ? (
+            <p className="settings-hint mb-2">{testMessage}</p>
+          ) : null}
+          {deliveryActionError ? (
+            <p className="settings-error settings-error--inline mb-2">
+              {deliveryActionError}
+            </p>
+          ) : null}
+          {deliveriesQuery.isPending ? (
+            <div className="settings-loading">
+              <LoadingSpinner label="Loading deliveries…" />
+            </div>
+          ) : deliveriesQuery.isError ? (
+            <p className="settings-error settings-error--inline">
+              {deliveriesQuery.error instanceof Error
+                ? deliveriesQuery.error.message
+                : 'Unable to load deliveries.'}
+            </p>
+          ) : (deliveriesQuery.data?.items.length ?? 0) === 0 ? (
+            <p className="settings-hint">No deliveries recorded yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {deliveriesQuery.data?.items.map((delivery) => (
+                <li
+                  key={delivery.id}
+                  className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-(--color-accent)/30 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="[font-family:var(--font-body)] text-sm font-medium text-(--color-primary)">
+                      {delivery.eventType || delivery.event || 'event'} ·{' '}
+                      {delivery.status}
+                    </p>
+                    <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                      {delivery.createdAt
+                        ? new Date(delivery.createdAt).toLocaleString()
+                        : '—'}
+                      {typeof delivery.attemptCount === 'number'
+                        ? ` · attempts ${delivery.attemptCount}`
+                        : ''}
+                    </p>
+                    {delivery.lastError ? (
+                      <p className="mt-1 [font-family:var(--font-body)] text-xs text-rose-700">
+                        {delivery.lastError}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-btn settings-btn--ghost"
+                    disabled={replayDeliveryMutation.isPending}
+                    onClick={() => void handleReplay(delivery.id)}
+                  >
+                    Replay
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SettingsCard>
+      ) : null}
 
       <Dialog
         isOpen={Boolean(secretDialogValue)}

@@ -73,6 +73,25 @@ export const transactionsListResponseSchema = z.object({
 export const transactionDetailSchema = transactionItemSchema
   .extend({
     metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+    provider: z.string().nullable().optional(),
+    providerRefs: z
+      .record(z.string(), z.unknown())
+      .or(z.array(z.unknown()))
+      .nullable()
+      .optional(),
+    settlementCurrency: z.string().nullable().optional(),
+    statusTimeline: z
+      .array(
+        z
+          .object({
+            status: z.string().min(1),
+            at: z.string().min(1).optional(),
+            createdAt: z.string().min(1).optional(),
+            note: z.string().nullable().optional(),
+          })
+          .passthrough(),
+      )
+      .optional(),
   })
   .passthrough()
 

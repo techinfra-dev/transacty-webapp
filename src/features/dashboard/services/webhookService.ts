@@ -5,9 +5,13 @@ import {
   type PortalRequestHeaderOptions,
 } from '../../../api/portalAuthHeaders.ts'
 import {
+  webhookDeliveriesListResponseSchema,
+  webhookDeliveryReplayResponseSchema,
   webhookGetResponseSchema,
   webhookPatchRequestSchema,
   webhookPatchResponseSchema,
+  webhookTestResponseSchema,
+  type WebhookDeliveriesListResponse,
   type WebhookGetResponse,
   type WebhookPatchRequest,
   type WebhookPatchResponse,
@@ -69,6 +73,50 @@ export async function patchWebhook(
       headers: getPortalAuthHeaders(options),
     })
     return webhookPatchResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getWebhookErrorMessage(error))
+  }
+}
+
+export async function listWebhookDeliveries(params: {
+  limit?: number
+  offset?: number
+} = {}): Promise<WebhookDeliveriesListResponse> {
+  try {
+    const response = await axiosInstance.get('me/webhook/deliveries', {
+      headers: getPortalAuthHeaders(),
+      params,
+    })
+    return webhookDeliveriesListResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getWebhookErrorMessage(error))
+  }
+}
+
+export async function replayWebhookDelivery(
+  deliveryId: string,
+  options: PortalRequestHeaderOptions = {},
+) {
+  try {
+    const response = await axiosInstance.post(
+      `me/webhook/deliveries/${deliveryId}/replay`,
+      {},
+      { headers: getPortalAuthHeaders(options) },
+    )
+    return webhookDeliveryReplayResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getWebhookErrorMessage(error))
+  }
+}
+
+export async function testWebhook(options: PortalRequestHeaderOptions = {}) {
+  try {
+    const response = await axiosInstance.post(
+      'me/webhook/test',
+      {},
+      { headers: getPortalAuthHeaders(options) },
+    )
+    return webhookTestResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getWebhookErrorMessage(error))
   }

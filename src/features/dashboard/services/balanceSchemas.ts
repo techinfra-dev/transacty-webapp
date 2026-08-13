@@ -5,6 +5,10 @@ import {
   merchantMarketSchema,
   walletActivationStatusSchema,
 } from './marketSchemas.ts'
+import {
+  portalUnlockBlockerSchema,
+  portalUnlockReasonSchema,
+} from './portalDepthSchemas.ts'
 import { portalEnvironmentResponseSchema } from './walletsSchemas.ts'
 
 export const balanceLimitsSchema = z.object({
@@ -38,6 +42,8 @@ export const balanceWalletItemSchema = z.object({
   kybStatus: marketKybStatusSchema.nullish(),
   activationStatus: walletActivationStatusSchema.nullish(),
   walletActivated: z.boolean().nullish(),
+  unlockReason: portalUnlockReasonSchema.nullable().optional(),
+  blockers: z.array(portalUnlockBlockerSchema).optional(),
 })
 
 export const balanceResponseSchema = z.object({

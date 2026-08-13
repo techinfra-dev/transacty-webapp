@@ -158,6 +158,42 @@ function getBalanceImpactDisplay(detail: TransactionDetail) {
 }
 
 function TransactionTimeline({ detail }: { detail: TransactionDetail }) {
+  const apiTimeline = detail.statusTimeline
+  if (apiTimeline && apiTimeline.length > 0) {
+    return (
+      <ol className="tx-detail-timeline">
+        {apiTimeline.map((step, index) => {
+          const at = step.at || step.createdAt
+          const parts = at
+            ? formatTransactionDateParts(at, { includeSeconds: true })
+            : null
+          const isLast = index === apiTimeline.length - 1
+          const statusLower = step.status.toLowerCase()
+          const stepClass =
+            statusLower.includes('fail')
+              ? 'tx-detail-tl-fail'
+              : statusLower.includes('pend')
+                ? 'tx-detail-tl-pend'
+                : 'tx-detail-tl-done'
+          return (
+            <li
+              key={`${step.status}-${at ?? index}`}
+              className={`tx-detail-tl-step ${stepClass}${isLast ? ' tx-detail-tl-final' : ''}`}
+            >
+              <i aria-hidden />
+              <div>
+                <div className="tx-detail-tl-label">{toTitleCase(step.status)}</div>
+                <div className="tx-detail-tl-time">
+                  {parts ? `${parts.date} · ${parts.time}` : step.note || '—'}
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+    )
+  }
+
   const created = formatTransactionDateParts(detail.createdAt, {
     includeSeconds: true,
   })
@@ -334,6 +370,16 @@ function TransactionDetailBody({
           <TxDetailRow label="Status">
             <StatusPill status={detail.status} />
           </TxDetailRow>
+          {detail.settlementCurrency ? (
+            <TxDetailRow label="Settlement currency" dim>
+              {detail.settlementCurrency}
+            </TxDetailRow>
+          ) : null}
+          {detail.provider ? (
+            <TxDetailRow label="Provider" dim>
+              {detail.provider}
+            </TxDetailRow>
+          ) : null}
         </div>
 
         <div className="tx-detail-sect">Customer</div>
@@ -378,6 +424,13 @@ function TransactionDetailBody({
           <TxDetailRow label="Refund of" dim mono>
             {detail.refundOfTransactionId || '—'}
           </TxDetailRow>
+          {detail.providerRefs ? (
+            <TxDetailRow label="Provider refs" mono dim>
+              {typeof detail.providerRefs === 'string'
+                ? detail.providerRefs
+                : JSON.stringify(detail.providerRefs)}
+            </TxDetailRow>
+          ) : null}
         </div>
 
         <div className="tx-detail-sect">Timeline</div>

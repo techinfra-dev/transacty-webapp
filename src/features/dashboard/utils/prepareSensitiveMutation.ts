@@ -19,10 +19,12 @@ export async function prepareMoneyWriteHeaders() {
   return { stepUpToken }
 }
 
-export async function prepareAdminStepUp(action: Extract<
-  PortalStepUpAction,
-  'api_keys.write' | 'webhook.write'
->) {
+export async function prepareAdminStepUp(
+  action: Extract<
+    PortalStepUpAction,
+    'api_keys.write' | 'webhook.write' | 'audit.export'
+  >,
+) {
   assertIsAdmin()
   const user = getAuthUser()
   const stepUpToken = await ensurePortalStepUp({
@@ -31,7 +33,9 @@ export async function prepareAdminStepUp(action: Extract<
     description:
       action === 'api_keys.write'
         ? 'Enter your authenticator code to manage API keys.'
-        : 'Enter your authenticator code to update webhook settings.',
+        : action === 'audit.export'
+          ? 'Enter your authenticator code to export the audit log.'
+          : 'Enter your authenticator code to update webhook settings.',
   })
   return { stepUpToken }
 }

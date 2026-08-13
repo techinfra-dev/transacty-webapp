@@ -275,42 +275,107 @@ export function DashboardCustomersPage() {
             Unable to load customer details right now.
           </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                Label
-              </p>
-              <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {detailQuery.data.label || 'Unnamed customer'}
-              </p>
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                  Label
+                </p>
+                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                  {detailQuery.data.label || 'Unnamed customer'}
+                </p>
+              </div>
+              <div>
+                <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                  Status
+                </p>
+                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                  {toTitleCaseFromSnake(detailQuery.data.status)}
+                </p>
+              </div>
+              <div>
+                <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                  Balance
+                </p>
+                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                  <FormattedMoney
+                    currency={detailQuery.data.currency}
+                    value={Number(detailQuery.data.balance) || 0}
+                  />
+                </p>
+              </div>
+              <div>
+                <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                  Created
+                </p>
+                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                  {formatDateTime(detailQuery.data.createdAt).primary}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                Status
-              </p>
-              <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {toTitleCaseFromSnake(detailQuery.data.status)}
-              </p>
-            </div>
-            <div>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                Balance
-              </p>
-              <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                <FormattedMoney
-                  currency={detailQuery.data.currency}
-                  value={Number(detailQuery.data.balance) || 0}
-                />
-              </p>
-            </div>
-            <div>
-              <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                Created
-              </p>
-              <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
-                {formatDateTime(detailQuery.data.createdAt).primary}
-              </p>
-            </div>
+            {detailQuery.data.txSummary ? (
+              <div className="rounded-lg border border-(--color-accent)/30 p-3">
+                <p className="[font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
+                  Transaction summary
+                </p>
+                <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                  {[
+                    typeof detailQuery.data.txSummary.totalCount === 'number'
+                      ? `${detailQuery.data.txSummary.totalCount} total`
+                      : null,
+                    typeof detailQuery.data.txSummary.successCount === 'number'
+                      ? `${detailQuery.data.txSummary.successCount} success`
+                      : null,
+                    typeof detailQuery.data.txSummary.failedCount === 'number'
+                      ? `${detailQuery.data.txSummary.failedCount} failed`
+                      : null,
+                    typeof detailQuery.data.txSummary.pendingCount === 'number'
+                      ? `${detailQuery.data.txSummary.pendingCount} pending`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || '—'}
+                </p>
+                {detailQuery.data.txSummary.totalVolume ? (
+                  <p className="mt-1 [font-family:var(--font-body)] text-xs text-(--color-secondary)">
+                    Volume {detailQuery.data.txSummary.totalVolume}
+                    {detailQuery.data.txSummary.currency
+                      ? ` ${detailQuery.data.txSummary.currency}`
+                      : ''}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {(detailQuery.data.recentTransactions?.length ?? 0) > 0 ? (
+              <div>
+                <p className="mb-2 [font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
+                  Recent transactions
+                </p>
+                <ul className="max-h-40 space-y-1.5 overflow-y-auto">
+                  {detailQuery.data.recentTransactions
+                    ?.slice(0, 5)
+                    .map((tx, i) => (
+                      <li
+                        key={tx.id ?? `recent-${i}`}
+                        className="flex flex-wrap items-center justify-between gap-2 [font-family:var(--font-body)] text-xs text-(--color-foreground)"
+                      >
+                        <span className="truncate">
+                          {[tx.type, tx.rail, tx.status]
+                            .filter(Boolean)
+                            .join(' · ') ||
+                            tx.id ||
+                            'Transaction'}
+                        </span>
+                        <span className="font-mono text-(--color-secondary)">
+                          {tx.amount
+                            ? `${tx.amount}${tx.currency ? ` ${tx.currency}` : ''}`
+                            : '—'}
+                        </span>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         )}
       </Dialog>

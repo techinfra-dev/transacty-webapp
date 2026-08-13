@@ -4,6 +4,7 @@ import { getAuthToken } from '../../auth/services/authSession.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import {
   createCustomerPayloadSchema,
+  customerDetailSchema,
   customerItemSchema,
   customerTransactionsListResponseSchema,
   customersListResponseSchema,
@@ -85,7 +86,7 @@ export async function getCustomer(
       headers: getAuthHeader(),
       params: { environment },
     })
-    return customerItemSchema.parse(response.data)
+    return customerDetailSchema.parse(response.data)
   } catch (error) {
     throw new Error(getCustomersApiErrorMessage(error))
   }

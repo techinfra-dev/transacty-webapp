@@ -106,12 +106,14 @@ export type PortalStepUpAction =
   | 'money.write'
   | 'api_keys.write'
   | 'webhook.write'
+  | 'audit.export'
   | 'any'
 
 export const portalStepUpActionSchema = z.enum([
   'money.write',
   'api_keys.write',
   'webhook.write',
+  'audit.export',
   'any',
 ])
 

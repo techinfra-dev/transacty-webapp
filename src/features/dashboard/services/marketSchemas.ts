@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import {
+  portalUnlockBlockerSchema,
+  portalUnlockReasonSchema,
+} from './portalDepthSchemas.ts'
 
 export const merchantMarketSchema = z.enum([
   'bangladesh',
@@ -30,14 +34,42 @@ export const walletActivationStatusSchema = z.enum([
   'suspended',
 ])
 
-export const portalMarketRowSchema = z.object({
-  market: merchantMarketSchema,
-  entitlementStatus: marketEntitlementStatusSchema,
-  kybStatus: marketKybStatusSchema,
-  requestedAt: z.string().nullable(),
-  approvedAt: z.string().nullable(),
-  settlementCurrencies: z.array(z.string().min(1)),
-})
+export const marketActivationStatusSchema = z.enum([
+  'active',
+  'not_enabled',
+  'pending_kyb',
+  'requested',
+  'kyb_in_review',
+  'approved',
+  'suspended',
+  'disabled',
+])
+
+export const portalMarketWalletSchema = z.object({
+  currency: z.string().min(1).optional(),
+  activationStatus: walletActivationStatusSchema.optional(),
+  unlockReason: portalUnlockReasonSchema.nullable().optional(),
+  blockers: z.array(portalUnlockBlockerSchema).optional(),
+}).passthrough()
+
+export const portalMarketRowSchema = z
+  .object({
+    market: merchantMarketSchema,
+    displayName: z.string().min(1).optional(),
+    entitlementStatus: marketEntitlementStatusSchema,
+    kybStatus: marketKybStatusSchema,
+    activationStatus: marketActivationStatusSchema.optional(),
+    canRequest: z.boolean().optional(),
+    ready: z.boolean().optional(),
+    unlockReason: portalUnlockReasonSchema.nullable().optional(),
+    blockers: z.array(portalUnlockBlockerSchema).optional(),
+    walletsProvisioned: z.boolean().optional(),
+    wallets: z.array(portalMarketWalletSchema).optional(),
+    requestedAt: z.string().nullable(),
+    approvedAt: z.string().nullable(),
+    settlementCurrencies: z.array(z.string().min(1)),
+  })
+  .passthrough()
 
 export const portalMarketsResponseSchema = z.object({
   items: z.array(portalMarketRowSchema),

@@ -2,6 +2,7 @@ export type SettingsTabId =
   | 'profile'
   | 'security'
   | 'markets'
+  | 'fees'
   | 'business-preference'
   | 'settlement-accounts'
   | 'team'
@@ -20,6 +21,7 @@ export const accountTabs: SettingsTab[] = [
   { id: 'profile', label: 'Profile' },
   { id: 'security', label: 'Security' },
   { id: 'markets', label: 'Markets' },
+  { id: 'fees', label: 'Fees' },
   { id: 'team', label: 'Directors' },
   { id: 'whitelisted-ip-addresses', label: 'Whitelisted IP addresses' },
   { id: 'reconciliation-report', label: 'Reconciliation report' },
@@ -48,6 +50,11 @@ export const tabContent: Record<
     title: 'Markets',
     description:
       'Request and manage payment market entitlements for Bangladesh, India, Europe, Brazil, and PYUSD. PYUSD settles to your USDC pocket.',
+  },
+  fees: {
+    title: 'Fees',
+    description:
+      'View active fee schedules and legacy BD fallback rates for the current environment.',
   },
   'business-preference': {
     title: 'Business preference',

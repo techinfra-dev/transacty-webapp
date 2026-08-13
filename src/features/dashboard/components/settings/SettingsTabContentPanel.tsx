@@ -1,5 +1,6 @@
 import { tabContent, type SettingsTabId } from './settingsTabs.ts'
 import { ApiKeysSettingsContent } from './ApiKeysSettingsContent.tsx'
+import { FeesSettingsContent } from './FeesSettingsContent.tsx'
 import { ProfileSettingsContent } from './ProfileSettingsContent.tsx'
 import { SecuritySettingsContent } from './SecuritySettingsContent.tsx'
 import { TeamSettingsContent } from './TeamSettingsContent.tsx'
@@ -12,7 +13,13 @@ interface SettingsTabContentPanelProps {
   activeTab: SettingsTabId
 }
 
-function SettingsSectionHead({ title, description }: { title: string; description: string }) {
+function SettingsSectionHead({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
   return (
     <header className="settings-section-head">
       <h2 className="settings-section-title">{title}</h2>
@@ -21,7 +28,9 @@ function SettingsSectionHead({ title, description }: { title: string; descriptio
   )
 }
 
-export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelProps) {
+export function SettingsTabContentPanel({
+  activeTab,
+}: SettingsTabContentPanelProps) {
   const currentTabContent = tabContent[activeTab]
 
   return (
@@ -37,6 +46,7 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       {activeTab === 'api-keys' ? <ApiKeysSettingsContent /> : null}
       {activeTab === 'webhooks' ? <WebhooksSettingsContent /> : null}
       {activeTab === 'markets' ? <MarketsSettingsContent /> : null}
+      {activeTab === 'fees' ? <FeesSettingsContent /> : null}
       {activeTab === 'reconciliation-report' ? (
         <ReconciliationSettingsContent />
       ) : null}
@@ -47,6 +57,7 @@ export function SettingsTabContentPanel({ activeTab }: SettingsTabContentPanelPr
       {activeTab !== 'profile' &&
       activeTab !== 'security' &&
       activeTab !== 'markets' &&
+      activeTab !== 'fees' &&
       activeTab !== 'team' &&
       activeTab !== 'api-keys' &&
       activeTab !== 'webhooks' &&

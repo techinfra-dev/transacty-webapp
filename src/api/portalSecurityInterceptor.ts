@@ -18,6 +18,7 @@ const STEP_UP_ACTIONS: PortalStepUpAction[] = [
   'money.write',
   'api_keys.write',
   'webhook.write',
+  'audit.export',
   'any',
 ]
 

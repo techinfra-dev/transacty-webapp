@@ -1,8 +1,9 @@
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
+import { IndiaH2hPayinDialog } from '../components/IndiaH2hPayinDialog.tsx'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
@@ -32,6 +33,10 @@ export function DashboardWalletPage() {
   const walletRail = resolveWalletTransactionRail(activeWallet)
   const isUsdcWallet =
     activeWallet?.currency.trim().toUpperCase() === 'USDC'
+  const isInrWallet =
+    activeWallet?.currency.trim().toUpperCase() === 'INR' ||
+    walletRail === 'india'
+  const [isH2hOpen, setIsH2hOpen] = useState(false)
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
@@ -113,6 +118,15 @@ export function DashboardWalletPage() {
               Request payout
             </Button>
           ) : null}
+          {isInrWallet ? (
+            <Button
+              variant="ghost"
+              className={outlineBtn}
+              onClick={() => setIsH2hOpen(true)}
+            >
+              India H2H pay-in
+            </Button>
+          ) : null}
         </div>
       </header>
 
@@ -134,6 +148,11 @@ export function DashboardWalletPage() {
         currency={activeWallet.currency}
         walletLabel={getWalletDisplayLabel(activeWallet)}
         walletRail={walletRail}
+      />
+
+      <IndiaH2hPayinDialog
+        isOpen={isH2hOpen}
+        onClose={() => setIsH2hOpen(false)}
       />
     </section>
   )
