@@ -8,7 +8,6 @@ import { DashboardAddWalletCard } from '../components/DashboardAddWalletCard.tsx
 import { AddWalletDialog } from '../components/AddWalletDialog.tsx'
 import { DashboardWalletCard } from '../components/DashboardWalletCard.tsx'
 import { DashboardWalletsSkeleton } from '../components/DashboardWalletsSkeleton.tsx'
-import { MoneyOverviewBoard } from '../components/MoneyOverviewBoard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
 import { useMarketsQuery } from '../hooks/useMarketsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
@@ -164,10 +163,6 @@ export function DashboardPage() {
           ) : null}
         </section>
       )}
-
-      <section className="mt-4">
-        <MoneyOverviewBoard />
-      </section>
 
       <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">
         <DashboardActivityPanel />

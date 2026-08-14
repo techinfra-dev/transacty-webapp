@@ -1943,6 +1943,7 @@ body {
   gap: 8px;
   width: fit-content;
   max-width: 100%;
+  flex-shrink: 0;
 }
 
 .wallet-metrics-grid .wallet-metric-tile {
@@ -1951,15 +1952,33 @@ body {
   max-width: 100%;
 }
 
-.wallet-metrics-grid .wallet-metric-tile:last-child {
-  width: 12.5rem;
+.wallet-overview-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.wallet-rail-slot {
+  flex: 1 1 16rem;
+  min-width: 0;
+  max-width: 22rem;
+}
+
+.wallet-rail-slot > article {
+  height: 100%;
 }
 
 @media (max-width: 767px) {
-  .wallet-metrics-grid .wallet-metric-tile,
-  .wallet-metrics-grid .wallet-metric-tile:last-child {
+  .wallet-metrics-grid .wallet-metric-tile {
     width: calc(50% - 4px);
     min-width: 9.5rem;
+  }
+
+  .wallet-rail-slot {
+    flex-basis: 100%;
+    max-width: none;
   }
 }
 

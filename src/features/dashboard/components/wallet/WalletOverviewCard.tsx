@@ -1,10 +1,13 @@
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { useMoneyOverviewQuery } from '../../hooks/usePortalDepthQueries.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import {
   getWalletDisplayLabel,
   getWalletUpdatedAt,
 } from '../../utils/balanceWalletUtils.ts'
+import { findRailForWallet } from '../../utils/moneyRailWalletUtils.ts'
+import { RailCard } from '../RailCard.tsx'
 import { WalletCurrencyTabs } from './WalletCurrencyTabs.tsx'
 
 type WalletOverviewCardProps = {
@@ -12,10 +15,6 @@ type WalletOverviewCardProps = {
   activeWalletId: string
   areBalancesHidden: boolean
   walletsLoading?: boolean
-}
-
-function formatLimitRange(min: number, max: number) {
-  return `${min.toLocaleString('en-US')} – ${max.toLocaleString('en-US')}`
 }
 
 function formatWalletUpdated(iso: string) {
@@ -64,6 +63,11 @@ export function WalletOverviewCard({
   walletsLoading = false,
 }: WalletOverviewCardProps) {
   const active = wallets.find((w) => w.id === activeWalletId)
+  const moneyOverviewQuery = useMoneyOverviewQuery(Boolean(active))
+  const railForWallet =
+    active && moneyOverviewQuery.data
+      ? findRailForWallet(moneyOverviewQuery.data.rails, active)
+      : undefined
 
   if (!active) {
     return null
@@ -98,50 +102,37 @@ export function WalletOverviewCard({
             <LoadingSpinner label="Loading wallet balances…" />
           </div>
         ) : (
-          <div className="wallet-metrics-grid">
-            <WalletMetricTile
-              label="Balance"
-              currency={active.currency}
-              amountStr={active.balance}
-              areBalancesHidden={areBalancesHidden}
-            />
-            <WalletMetricTile
-              label="Available balance"
-              currency={active.currency}
-              amountStr={active.availableBalance}
-              areBalancesHidden={areBalancesHidden}
-            />
-            <WalletMetricTile
-              label="Pending balance"
-              currency={active.currency}
-              amountStr={active.pendingBalance}
-              areBalancesHidden={areBalancesHidden}
-            />
-            <div className="wallet-metric-tile">
-              <p className="wallet-metric-tile-label">Payin & payout limits</p>
-              <dl className="wallet-metric-tile-body space-y-1.5">
-                <div>
-                  <dt>Payin</dt>
-                  <dd className="tabular-nums">
-                    {formatLimitRange(
-                      active.limits.payin.min,
-                      active.limits.payin.max,
-                    )}{' '}
-                    {active.currency}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Payout</dt>
-                  <dd className="tabular-nums">
-                    {formatLimitRange(
-                      active.limits.payout.min,
-                      active.limits.payout.max,
-                    )}{' '}
-                    {active.currency}
-                  </dd>
-                </div>
-              </dl>
+          <div className="wallet-overview-row">
+            <div className="wallet-metrics-grid">
+              <WalletMetricTile
+                label="Balance"
+                currency={active.currency}
+                amountStr={active.balance}
+                areBalancesHidden={areBalancesHidden}
+              />
+              <WalletMetricTile
+                label="Available balance"
+                currency={active.currency}
+                amountStr={active.availableBalance}
+                areBalancesHidden={areBalancesHidden}
+              />
+              <WalletMetricTile
+                label="Pending balance"
+                currency={active.currency}
+                amountStr={active.pendingBalance}
+                areBalancesHidden={areBalancesHidden}
+              />
             </div>
+
+            {moneyOverviewQuery.isPending ? (
+              <div className="wallet-rail-slot flex min-h-[72px] items-center">
+                <LoadingSpinner label="Loading rail…" />
+              </div>
+            ) : railForWallet ? (
+              <div className="wallet-rail-slot">
+                <RailCard rail={railForWallet} />
+              </div>
+            ) : null}
           </div>
         )}
       </div>
