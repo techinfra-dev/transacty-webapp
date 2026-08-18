@@ -35,6 +35,42 @@ export function SettingsIconSecurity() {
   )
 }
 
+export function SettingsIconMarkets() {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5 shrink-0"
+      aria-hidden
+    >
+      <path d="M0 0h32v32H0z" fill="none" />
+      <path
+        fill="currentColor"
+        d="M21.527 0v32l8.181-6.516V4.448zm-3.803 25.011l-6.584 2.875V2.782l6.584 1.948zm-15.427-.74l5.036-1.328V6.918L2.317 6.11z"
+      />
+    </svg>
+  )
+}
+
+export function SettingsIconFees() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5 shrink-0"
+      aria-hidden
+    >
+      <path d="M0 0h24v24H0z" fill="none" />
+      <path
+        fill="currentColor"
+        d="M16 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8zM8 7h3c.55 0 1 .45 1 1s-.45 1-1 1H8c-.55 0-1-.45-1-1s.45-1 1-1m8 10H8c-.55 0-1-.45-1-1s.45-1 1-1h8c.55 0 1 .45 1 1s-.45 1-1 1m0-4H8c-.55 0-1-.45-1-1s.45-1 1-1h8c.55 0 1 .45 1 1s-.45 1-1 1m-1-5V5l4 4h-3c-.55 0-1-.45-1-1"
+      />
+    </svg>
+  )
+}
+
 export function SettingsIconDirectors() {
   return (
     <svg {...svgProps}>

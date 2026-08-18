@@ -11,6 +11,10 @@ import { PayoutSuccessView } from '../components/payouts/PayoutSuccessView.tsx'
 import { PayoutWalletStep } from '../components/payouts/PayoutWalletStep.tsx'
 import { usePayoutFlow } from '../hooks/usePayoutFlow.ts'
 import { usePortalRole } from '../../../hooks/usePortalRole.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  isBangladeshRailPausedForWallet,
+} from '../utils/bangladeshRailPause.ts'
 
 export function DashboardPayoutsPage() {
   const { canWriteMoney } = usePortalRole()
@@ -76,9 +80,9 @@ export function DashboardPayoutsPage() {
           <header className="payout-page-head">
             <h1 className="payout-page-title">New payout</h1>
             <p className="payout-page-subtitle">
-              Send Bangladesh BDT payouts, Brazil PIX payouts, India USDT on-chain
-              payouts, or Europe USDC → EUR bank transfers from your activated
-              merchant wallets.
+              Send Brazil PIX payouts, India USDT on-chain payouts, or Europe
+              USDC → EUR bank transfers from your activated merchant wallets.
+              Bangladesh BDT payouts are temporarily unavailable.
             </p>
           </header>
 
@@ -102,13 +106,15 @@ export function DashboardPayoutsPage() {
                   flow.selectedWallet &&
                   !flow.isSelectedWalletPayoutSupported ? (
                     <p className="payout-alert payout-alert--panel">
-                      {flow.payoutRail === 'eur' && !flow.marketsQuery.isPending
+                      {isBangladeshRailPausedForWallet(flow.selectedWallet)
+                        ? BANGLADESH_RAIL_PAUSE_COPY
+                        : flow.payoutRail === 'eur' && !flow.marketsQuery.isPending
                         ? 'Europe market access must be approved before EUR payouts are available.'
                         : flow.payoutRail === 'cpg' && !flow.marketsQuery.isPending
                           ? 'India market access must be approved before USDT payouts are available.'
                           : flow.payoutRail === 'pix' && !flow.marketsQuery.isPending
                             ? 'Brazil market access must be approved before PIX payouts are available.'
-                            : 'Payouts are available for BDT (Bangladesh), BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'}
+                            : 'Payouts are available for BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'}
                     </p>
                   ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>

@@ -4,6 +4,7 @@ import type {
   MerchantMarket,
   PortalMarketRow,
 } from '../services/marketSchemas.ts'
+import { isBangladeshRailPausedForMarket } from './bangladeshRailPause.ts'
 
 export const MARKET_ORDER: MerchantMarket[] = [
   'bangladesh',
@@ -19,17 +20,6 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   europe: 'Europe',
   brazil: 'Brazil',
   pyusd: 'PYUSD',
-}
-
-/** Short settlement hint under market / wallet cards. */
-export function getMarketSettlementHint(market: MerchantMarket | string) {
-  if (market === 'pyusd') {
-    return 'PYUSD collects → USDC settles (no new wallet)'
-  }
-  if (market === 'europe') {
-    return 'USDC pocket also receives PYUSD settlements'
-  }
-  return null
 }
 
 export function getMarketDisplayName(
@@ -65,6 +55,9 @@ export function formatKybStatusLabel(status: MarketKybStatus) {
 }
 
 export function canRequestMarketAccess(market: PortalMarketRow) {
+  if (isBangladeshRailPausedForMarket(market.market)) {
+    return false
+  }
   if (typeof market.canRequest === 'boolean') {
     return market.canRequest
   }
@@ -72,14 +65,26 @@ export function canRequestMarketAccess(market: PortalMarketRow) {
 }
 
 export function formatMarketUnlockCopy(market: PortalMarketRow) {
-  const blockers = market.blockers ?? []
-  if (blockers.length > 0) {
-    return blockers.map((blocker) => blocker.message).join(' · ')
+  const messages = [
+    ...(market.blockers ?? []).map((blocker) => blocker.message.trim()),
+    market.unlockReason?.trim() ?? '',
+  ].filter((message) => message.length > 0)
+
+  return [...new Set(messages)].join(' · ') || null
+}
+
+export function isMarketUnavailable(market: PortalMarketRow) {
+  if (market.ready === false) {
+    return true
   }
-  if (market.unlockReason && market.unlockReason.trim().length > 0) {
-    return market.unlockReason.trim()
+  if (
+    (market.blockers ?? []).some(
+      (blocker) => blocker.code === 'provider_unavailable',
+    )
+  ) {
+    return true
   }
-  return null
+  return isBangladeshRailPausedForMarket(market.market)
 }
 
 export function isMarketRequestPending(market: PortalMarketRow) {

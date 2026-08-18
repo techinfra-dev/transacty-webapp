@@ -5,6 +5,7 @@ import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
+import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
 
 export const payoutStepItems = [
   { id: 1, label: 'Wallet' },
@@ -66,6 +67,9 @@ export function getPayoutRailForWallet(
 export function isPayoutSupportedWallet(
   wallet: Pick<BalanceWalletItem, 'currency' | 'market' | 'region'>,
 ) {
+  if (isBangladeshRailPausedForWallet(wallet)) {
+    return false
+  }
   return getPayoutRailForWallet(wallet) !== null
 }
 

@@ -12,6 +12,10 @@ import type {
   CustomerStatus,
   UpdateCustomerStatusPayload,
 } from '../services/customersSchemas.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  BANGLADESH_RAIL_PAUSED,
+} from '../utils/bangladeshRailPause.ts'
 
 export function useCustomersListQuery(params: {
   limit: number
@@ -30,11 +34,15 @@ export function useCustomersListQuery(params: {
 export function useCreateCustomerMutation() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: Omit<CreateCustomerPayload, 'environment'>) =>
-      createCustomer({
+    mutationFn: (payload: Omit<CreateCustomerPayload, 'environment'>) => {
+      if (BANGLADESH_RAIL_PAUSED) {
+        throw new Error(BANGLADESH_RAIL_PAUSE_COPY)
+      }
+      return createCustomer({
         ...payload,
         environment: usePortalEnvironmentStore.getState().environment,
-      }),
+      })
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['customers-list'] }),

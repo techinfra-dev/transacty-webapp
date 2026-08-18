@@ -8,6 +8,8 @@ import {
   SettingsIconApiKeys,
   SettingsIconDeveloperDocs,
   SettingsIconDirectors,
+  SettingsIconFees,
+  SettingsIconMarkets,
   SettingsIconProfile,
   SettingsIconSecurity,
   SettingsIconWebhooks,
@@ -28,6 +30,10 @@ function tabIcon(tabId: SettingsTabId) {
       return <SettingsIconProfile />
     case 'security':
       return <SettingsIconSecurity />
+    case 'markets':
+      return <SettingsIconMarkets />
+    case 'fees':
+      return <SettingsIconFees />
     case 'team':
       return <SettingsIconDirectors />
     case 'whitelisted-ip-addresses':

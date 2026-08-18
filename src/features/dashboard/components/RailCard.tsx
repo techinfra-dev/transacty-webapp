@@ -24,11 +24,20 @@ function CountLine({
   )
 }
 
-export function RailCard({ rail }: { rail: MoneyRailOverviewItem }) {
+export function RailCard({
+  rail,
+  paused = false,
+}: {
+  rail: MoneyRailOverviewItem
+  paused?: boolean
+}) {
   const settlement = rail.settlementCurrencies.join(', ') || '—'
+  const ready = rail.ready && !paused
 
   return (
-    <article className="rounded-xl border border-(--color-accent)/30 bg-(--color-card) p-3.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
+    <article
+      className={`rounded-xl border border-(--color-accent)/30 bg-(--color-card) p-3.5 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 ${paused ? 'rail-card--paused' : ''}`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="[font-family:var(--font-display)] text-sm font-semibold text-(--color-primary)">
@@ -38,10 +47,15 @@ export function RailCard({ rail }: { rail: MoneyRailOverviewItem }) {
             Settles {settlement}
           </p>
         </div>
-        {rail.ready ? (
+        {ready ? (
           <span className="dashboard-pill dashboard-pill-succ">
             <i aria-hidden />
             Ready
+          </span>
+        ) : paused ? (
+          <span className="dashboard-pill dashboard-pill-neutral">
+            <i aria-hidden />
+            Unavailable
           </span>
         ) : (
           <span className="dashboard-pill dashboard-pill-pend">
@@ -57,21 +71,31 @@ export function RailCard({ rail }: { rail: MoneyRailOverviewItem }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {rail.capabilities.canCreatePayin ? (
-          <span className="dashboard-pill dashboard-pill-neutral">Pay-in</span>
-        ) : null}
-        {rail.capabilities.canCreatePayout ? (
-          <span className="dashboard-pill dashboard-pill-neutral">Pay-out</span>
-        ) : null}
-        {!rail.capabilities.canCreatePayin &&
-        !rail.capabilities.canCreatePayout ? (
-          <span className="dashboard-pill dashboard-pill-neutral">
-            View only
-          </span>
-        ) : null}
+        {paused ? (
+          <span className="dashboard-pill dashboard-pill-neutral">Paused</span>
+        ) : (
+          <>
+            {rail.capabilities.canCreatePayin ? (
+              <span className="dashboard-pill dashboard-pill-neutral">Pay-in</span>
+            ) : null}
+            {rail.capabilities.canCreatePayout ? (
+              <span className="dashboard-pill dashboard-pill-neutral">Pay-out</span>
+            ) : null}
+            {!rail.capabilities.canCreatePayin &&
+            !rail.capabilities.canCreatePayout ? (
+              <span className="dashboard-pill dashboard-pill-neutral">
+                View only
+              </span>
+            ) : null}
+          </>
+        )}
       </div>
 
-      {rail.unlockReason ? (
+      {paused ? (
+        <p className="mt-2 [font-family:var(--font-body)] text-[11px] leading-snug text-(--color-secondary)">
+          Temporarily down
+        </p>
+      ) : rail.unlockReason ? (
         <p className="mt-2 [font-family:var(--font-body)] text-[11px] leading-snug text-amber-800">
           {rail.unlockReason}
         </p>

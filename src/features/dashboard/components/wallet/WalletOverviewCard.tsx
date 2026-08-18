@@ -7,6 +7,7 @@ import {
   getWalletUpdatedAt,
 } from '../../utils/balanceWalletUtils.ts'
 import { findRailForWallet } from '../../utils/moneyRailWalletUtils.ts'
+import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
 import { RailCard } from '../RailCard.tsx'
 import { WalletCurrencyTabs } from './WalletCurrencyTabs.tsx'
 
@@ -102,7 +103,9 @@ export function WalletOverviewCard({
             <LoadingSpinner label="Loading wallet balances…" />
           </div>
         ) : (
-          <div className="wallet-overview-row">
+          <div
+            className={`wallet-overview-row ${isBangladeshRailPausedForWallet(active) ? 'wallet-overview-row--paused' : ''}`}
+          >
             <div className="wallet-metrics-grid">
               <WalletMetricTile
                 label="Balance"
@@ -130,7 +133,10 @@ export function WalletOverviewCard({
               </div>
             ) : railForWallet ? (
               <div className="wallet-rail-slot">
-                <RailCard rail={railForWallet} />
+                <RailCard
+                  rail={railForWallet}
+                  paused={isBangladeshRailPausedForWallet(active)}
+                />
               </div>
             ) : null}
           </div>

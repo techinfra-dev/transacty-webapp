@@ -6,6 +6,12 @@ import { SettingsCard } from './SettingsCard.tsx'
 export function ServicesBoardCard() {
   const servicesQuery = useServicesQuery(true)
   const items = servicesQuery.data?.items ?? []
+  const markets = servicesQuery.data?.markets ?? []
+  const isMarketSnapshot = markets.length > 0 && items.length === 0
+
+  if (servicesQuery.isPending || isMarketSnapshot) {
+    return null
+  }
 
   return (
     <SettingsCard
@@ -48,14 +54,20 @@ export function ServicesBoardCard() {
                       {title}
                     </p>
                     <p className="mt-0.5 [font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                      {[marketLabel, service.rail, service.status || service.activationStatus]
+                      {[
+                        marketLabel,
+                        service.rail,
+                        service.status || service.activationStatus,
+                      ]
                         .filter(Boolean)
                         .join(' · ')}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {service.ready ? (
-                      <span className="dashboard-pill dashboard-pill-neutral">Ready</span>
+                      <span className="dashboard-pill dashboard-pill-neutral">
+                        Ready
+                      </span>
                     ) : null}
                     {service.canRequest ? (
                       <span className="dashboard-pill dashboard-pill-neutral">

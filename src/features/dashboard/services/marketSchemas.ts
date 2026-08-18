@@ -71,9 +71,12 @@ export const portalMarketRowSchema = z
   })
   .passthrough()
 
-export const portalMarketsResponseSchema = z.object({
-  items: z.array(portalMarketRowSchema),
-})
+export const portalMarketsResponseSchema = z
+  .object({
+    globalKycStatus: z.string().min(1).optional(),
+    items: z.array(portalMarketRowSchema),
+  })
+  .passthrough()
 
 export type MerchantMarket = z.infer<typeof merchantMarketSchema>
 export type MarketEntitlementStatus = z.infer<typeof marketEntitlementStatusSchema>

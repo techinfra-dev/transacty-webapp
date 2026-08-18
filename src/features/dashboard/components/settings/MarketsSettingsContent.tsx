@@ -13,14 +13,22 @@ import {
   formatKybStatusLabel,
   formatMarketUnlockCopy,
   getMarketDisplayName,
-  getMarketSettlementHint,
   isMarketRequestPending,
+  isMarketUnavailable,
   canRequestMarketAccess,
 } from '../../utils/marketDisplayUtils.ts'
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../../services/marketSchemas.ts'
 import { ServicesBoardCard } from './ServicesBoardCard.tsx'
+
+function formatMarketDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
 
 function MarketSettingsRow({
   market,
@@ -39,18 +47,20 @@ function MarketSettingsRow({
     market.market,
     market.settlementCurrencies,
   ).join(', ')
-  const settlementHint = getMarketSettlementHint(market.market)
   const unlockCopy = formatMarketUnlockCopy(market)
+  const isUnavailable = isMarketUnavailable(market)
+  const isPendingRequest = isMarketRequestPending(market) || requested
 
   return (
-    <article className="settings-card">
+    <article className={`settings-card ${isUnavailable ? 'opacity-55 grayscale' : ''}`}>
       <div className="settings-card-body flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="settings-card-title">{displayName}</h3>
-          <p className="settings-card-desc mt-1">
-            Settlement: {currencies || '—'}
-            {settlementHint ? ` · ${settlementHint}` : ''}
-          </p>
+          {market.market !== 'pyusd' ? (
+            <p className="settings-card-desc mt-1">
+              Settlement: {currencies || '—'}
+            </p>
+          ) : null}
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="dashboard-pill dashboard-pill-neutral">
               {formatEntitlementStatusLabel(market.entitlementStatus)}
@@ -70,20 +80,17 @@ function MarketSettingsRow({
           {unlockCopy ? (
             <p className="settings-card-desc mt-2 text-amber-800">{unlockCopy}</p>
           ) : null}
-          {market.requestedAt ? (
+          {isPendingRequest && market.requestedAt ? (
             <p className="settings-card-desc mt-2">
-              Requested{' '}
-              {new Date(market.requestedAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              Requested {formatMarketDate(market.requestedAt)}
             </p>
           ) : null}
         </div>
 
         <div className="shrink-0">
-          {canRequestMarketAccess(market) && !requested ? (
+          {isUnavailable ? (
+            <span className="add-wallet-row-pill">Temporarily down</span>
+          ) : canRequestMarketAccess(market) && !requested ? (
             <button
               type="button"
               className="dash-btn-primary"
@@ -96,7 +103,7 @@ function MarketSettingsRow({
             >
               {requestMutation.isPending ? 'Requesting…' : 'Request access'}
             </button>
-          ) : isMarketRequestPending(market) || requested ? (
+          ) : isPendingRequest ? (
             <span className="add-wallet-row-pill">Waiting on review</span>
           ) : action === 'complete_kyc' ? (
             <button
@@ -151,10 +158,6 @@ export function MarketsSettingsContent() {
 
   return (
     <div className="space-y-3">
-      <p className="settings-card-desc mb-2">
-        Each market has separate KYB. PYUSD access settles into your existing
-        USDC pocket — it does not add another balance card.
-      </p>
       {marketsQuery.data.map((market) => (
         <MarketSettingsRow
           key={market.market}

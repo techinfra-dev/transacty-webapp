@@ -1,10 +1,7 @@
 import { z } from 'zod'
 import { portalEnvironmentSchema } from './customersSchemas.ts'
-import {
-  portalUnlockBlockerSchema,
-  portalUnlockReasonSchema,
-} from './portalDepthSchemas.ts'
-import { merchantMarketSchema } from './marketSchemas.ts'
+import { portalMarketRowSchema } from './marketSchemas.ts'
+import { portalUnlockBlockerSchema, portalUnlockReasonSchema } from './portalDepthSchemas.ts'
 
 export const portalServiceItemSchema = z
   .object({
@@ -12,7 +9,7 @@ export const portalServiceItemSchema = z
     code: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     displayName: z.string().min(1).optional(),
-    market: merchantMarketSchema.or(z.string()).optional(),
+    market: z.string().optional(),
     rail: z.string().min(1).optional(),
     environment: portalEnvironmentSchema.optional(),
     status: z.string().min(1).optional(),
@@ -25,10 +22,15 @@ export const portalServiceItemSchema = z
   })
   .passthrough()
 
-export const portalServicesResponseSchema = z.object({
-  items: z.array(portalServiceItemSchema),
-  environment: portalEnvironmentSchema.optional(),
-})
+export const portalServicesResponseSchema = z
+  .object({
+    environment: portalEnvironmentSchema.optional(),
+    globalKycStatus: z.string().min(1).optional(),
+    markets: z.array(portalMarketRowSchema).optional(),
+    wallets: z.array(z.record(z.string(), z.unknown())).optional(),
+    items: z.array(portalServiceItemSchema).optional(),
+  })
+  .passthrough()
 
 export type PortalServiceItem = z.infer<typeof portalServiceItemSchema>
 export type PortalServicesResponse = z.infer<typeof portalServicesResponseSchema>

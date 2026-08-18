@@ -1,5 +1,3 @@
-import { useId } from 'react'
-
 type SidebarItemIconProps = {
   to:
     | '/dashboard'
@@ -36,10 +34,10 @@ const sidebarIcons: Record<SidebarItemIconProps['to'], IconPaths> = {
   },
   '/dashboard/wallets': {
     outline:
-      'M3 6.5V17c0 1.886 0 2.828.586 3.414S5.114 21 7 21h12c.943 0 1.414 0 1.707-.293S21 19.943 21 19v-2M3 6.5A2.5 2.5 0 0 0 5.5 9H19c.943 0 1.414 0 1.707.293S21 10.057 21 11v2M3 6.5A2.5 2.5 0 0 1 5.5 4h13.786c.2 0 .299 0 .38.028a.5.5 0 0 1 .306.307c.028.08.028.18.028.38c0 1.196 0 1.795-.168 2.276a3 3 0 0 1-1.841 1.84C17.51 9 16.91 9 15.714 9H15m6 8h-4c-.943 0-1.414 0-1.707-.293S15 15.943 15 15s0-1.414.293-1.707S16.057 13 17 13h4m0 4v-4',
-    outlineStrokeWidth: 2,
+      'M16 11a1 1 0 1 0 0 2zm.002 2a1 1 0 0 0 0-2zM5 5v1h14V4H5zm14 14v-1H5v2h14zM4 18h1V6H3v12zM20 6h-1v3h2V6zm0 9h-1v3h2v-3zm-5-6v1h5V8h-5zm6 1h-1v4h2v-4zm-1 5v-1h-5v2h5zm-4-3v1h.002v-2H16zm-1 3v-1a2 2 0 0 1-2-2h-2a4 4 0 0 0 4 4zm6-1h-1v2a2 2 0 0 0 2-2zm-1-5v1h2a2 2 0 0 0-2-2zM5 19v-1H3a2 2 0 0 0 2 2zm14 0v1a2 2 0 0 0 2-2h-2zM15 9V8a4 4 0 0 0-4 4h2a2 2 0 0 1 2-2zm4-4v1h2a2 2 0 0 0-2-2zM5 5V4a2 2 0 0 0-2 2h2z',
+    outlineUsesFill: true,
     solid:
-      'M2.273 5.625A4.875 4.875 0 0 1 7.125 2.25h9.75c1.935 0 3.648.902 4.852 2.302l-1.18 1.324a2.875 2.875 0 0 0-2.672 1.524l-.623 1.242a1.125 1.125 0 0 1-1.006.691H15a3 3 0 1 1-6 0H8.649a1.125 1.125 0 0 1-1.006-.691l-.623-1.242A2.875 2.875 0 0 0 4.523 5.302L2.273 5.625ZM2.273 12h19.454c.966 0 1.454.78 1.174 1.67l-1.18 3.924a2.25 2.25 0 0 1-2.154 1.606H4.444a2.25 2.25 0 0 1-2.154-1.606l-1.18-3.924C.819 12.78 1.307 12 2.273 12Z',
+      'M19 4a2 2 0 0 1 2 2v1h-6a5 5 0 0 0 0 10h6v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-5a3 3 0 1 1 0-6zm-5 2a1 1 0 1 0 0 2a1 1 0 0 0 0-2',
   },
   '/dashboard/transactions': {
     outline: 'M2 7h18m-4-5l5 5l-5 5m6 5H4m4-5l-5 5l5 5',
@@ -79,39 +77,13 @@ function normalizePaths(paths: string | string[]) {
 }
 
 function WalletFilledIcon() {
-  const maskId = useId()
-
   return (
     <svg viewBox="0 0 24 24" className={iconClass} aria-hidden="true">
-      <mask
-        id={maskId}
-        width="20"
-        height="14"
-        x="2"
-        y="8"
-        fill="#000"
-        maskUnits="userSpaceOnUse"
-      >
-        <path fill="#fff" d="M2 8h20v14H2z" />
-        <path d="M19 21H5c-.943 0-1.414 0-1.707-.293S3 19.943 3 19V9h16c.943 0 1.414 0 1.707.293S21 10.057 21 11v1h-3a3 3 0 1 0 0 6h3v1c0 .943 0 1.414-.293 1.707S19.943 21 19 21" />
-      </mask>
-      <g fill="none">
-        <path
-          fill="currentColor"
-          d="M20 5a1 1 0 1 0 0-2zM5.5 5H20V3H5.5zm0 5h8V8h-8zM4 6.5A1.5 1.5 0 0 1 5.5 5V3A3.5 3.5 0 0 0 2 6.5zm-2 0A3.5 3.5 0 0 0 5.5 10V8A1.5 1.5 0 0 1 4 6.5z"
-        />
-        <path stroke="currentColor" strokeWidth={2} d="M3 12V6.5" />
-        <path
-          fill="currentColor"
-          d="M19 21H5c-.943 0-1.414 0-1.707-.293S3 19.943 3 19V9h16c.943 0 1.414 0 1.707.293S21 10.057 21 11v1h-3a3 3 0 1 0 0 6h3v1c0 .943 0 1.414-.293 1.707S19.943 21 19 21"
-        />
-        <path
-          stroke="currentColor"
-          strokeWidth={2}
-          d="M19 21H5c-.943 0-1.414 0-1.707-.293S3 19.943 3 19V9h16c.943 0 1.414 0 1.707.293S21 10.057 21 11v1h-3a3 3 0 1 0 0 6h3v1c0 .943 0 1.414-.293 1.707S19.943 21 19 21Z"
-          mask={`url(#${maskId})`}
-        />
-      </g>
+      <path d="M0 0h24v24H0z" fill="none" />
+      <path
+        fill="currentColor"
+        d="M19 4a2 2 0 0 1 2 2v1h-6a5 5 0 0 0 0 10h6v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm1 5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-5a3 3 0 1 1 0-6zm-5 2a1 1 0 1 0 0 2a1 1 0 0 0 0-2"
+      />
     </svg>
   )
 }

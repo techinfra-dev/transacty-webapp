@@ -11,6 +11,10 @@ import {
   getPayoutRailForWallet,
   isPayoutSupportedWallet,
 } from './payoutConstants.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  isBangladeshRailPausedForWallet,
+} from '../../utils/bangladeshRailPause.ts'
 
 type PayoutWalletStepProps = {
   wallets: BalanceWalletItem[] | undefined
@@ -68,6 +72,7 @@ export function PayoutWalletStep({
         const isSelected = wallet.id === selectedWalletId
         const code = wallet.currency.trim().toUpperCase()
         const payoutRail = getPayoutRailForWallet(wallet)
+        const isPaused = isBangladeshRailPausedForWallet(wallet)
         const isSupported = isPayoutSupportedWallet(wallet)
         const balance = Number(wallet.availableBalance ?? wallet.balance)
         const safeBalance = Number.isFinite(balance) ? balance : 0
@@ -78,8 +83,15 @@ export function PayoutWalletStep({
             type="button"
             role="radio"
             aria-checked={isSelected}
-            className={`payout-wallet-row ${isSelected ? 'payout-wallet-row--selected' : ''} ${!isSupported ? 'payout-wallet-row--unsupported' : ''}`}
-            onClick={() => onSelectWallet(wallet.id)}
+            aria-disabled={isPaused || !isSupported}
+            disabled={isPaused}
+            className={`payout-wallet-row ${isSelected ? 'payout-wallet-row--selected' : ''} ${!isSupported || isPaused ? 'payout-wallet-row--unsupported' : ''} ${isPaused ? 'payout-wallet-row--paused' : ''}`}
+            onClick={() => {
+              if (isPaused) {
+                return
+              }
+              onSelectWallet(wallet.id)
+            }}
           >
             <span className="payout-wallet-radio" aria-hidden>
               <span className="payout-wallet-radio-dot" />
@@ -88,7 +100,9 @@ export function PayoutWalletStep({
             <span className="payout-wallet-copy">
               <span className="payout-wallet-name">{getCurrencyFullName(code)}</span>
               <span className="payout-wallet-meta">
-                {isSupported
+                {isPaused
+                  ? BANGLADESH_RAIL_PAUSE_COPY
+                  : isSupported
                   ? payoutRail === 'eur'
                     ? `${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet · ${EUR_PAYOUT_FIAT_CURRENCY} payout`
                     : payoutRail === 'cpg'

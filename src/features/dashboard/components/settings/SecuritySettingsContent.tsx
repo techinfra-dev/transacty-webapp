@@ -31,6 +31,8 @@ import {
   parseOtpauthTotpUrl,
 } from '../../../../utils/otpauth.ts'
 import { SettingsCard } from './SettingsCard.tsx'
+import { SecurityAuditLogTable } from './SecurityAuditLogTable.tsx'
+import { SecurityRecentActivityTable } from './SecurityRecentActivityTable.tsx'
 import {
   settingsFieldInputClass,
   settingsFieldLabelClass,
@@ -374,7 +376,7 @@ export function SecuritySettingsContent() {
     <div className="settings-stack">
       <SettingsCard
         title="Security overview"
-        description="MFA, API keys, webhook, IP allowlist, and session version for this merchant."
+        description="MFA, API keys, webhook, and IP allowlist for this merchant."
       >
         {overviewQuery.isPending ? (
           <div className="settings-loading">
@@ -402,85 +404,71 @@ export function SecuritySettingsContent() {
               <dt className="settings-hint">API keys</dt>
               <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
                 {typeof overviewQuery.data?.apiKeyCount === 'number'
-                  ? overviewQuery.data.apiKeyCount
-                  : [
-                      overviewQuery.data?.apiKeyLiveCount != null
-                        ? `${overviewQuery.data.apiKeyLiveCount} live`
-                        : null,
-                      overviewQuery.data?.apiKeyTestCount != null
-                        ? `${overviewQuery.data.apiKeyTestCount} test`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || '—'}
+                  ? `${overviewQuery.data.apiKeyCount} active`
+                  : '—'}
               </dd>
             </div>
             <div>
               <dt className="settings-hint">Webhook</dt>
               <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
                 {overviewQuery.data?.webhookConfigured
-                  ? overviewQuery.data.webhookUrl || 'Configured'
+                  ? 'Configured'
                   : 'Not configured'}
               </dd>
             </div>
             <div>
               <dt className="settings-hint">IP allowlist</dt>
               <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
-                {typeof overviewQuery.data?.ipAllowlistCount === 'number'
-                  ? `${overviewQuery.data.ipAllowlistCount} rule(s)`
-                  : overviewQuery.data?.ipAllowlistEnabled
-                    ? 'Enabled'
-                    : '—'}
+                {overviewQuery.data?.ipAllowlistEnabled
+                  ? [
+                      typeof overviewQuery.data.ipAllowlistTestCount === 'number'
+                        ? `Test ${overviewQuery.data.ipAllowlistTestCount}`
+                        : null,
+                      typeof overviewQuery.data.ipAllowlistLiveCount === 'number'
+                        ? `Live ${overviewQuery.data.ipAllowlistLiveCount}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Enabled'
+                  : 'Disabled'}
               </dd>
             </div>
-            {overviewQuery.data?.sessionVersionNote ? (
-              <div className="sm:col-span-2">
-                <dt className="settings-hint">Sessions</dt>
-                <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
-                  {overviewQuery.data.sessionVersionNote}
-                </dd>
-              </div>
-            ) : null}
           </dl>
         )}
-        {(overviewQuery.data?.recentSecurityAudit?.length ?? 0) > 0 ? (
-          <ul className="mt-3 space-y-1.5 border-t border-(--color-accent)/25 pt-3">
-            {overviewQuery.data?.recentSecurityAudit?.slice(0, 5).map((row, i) => (
-              <li
-                key={`${row.action}-${row.createdAt}-${i}`}
-                className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
-              >
-                {row.action}
-                {row.actorEmail ? ` · ${row.actorEmail}` : ''} ·{' '}
-                {new Date(row.createdAt).toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <SecurityRecentActivityTable
+          items={overviewQuery.data?.recentSecurityAudit ?? []}
+        />
       </SettingsCard>
 
       {isAdmin ? (
         <SettingsCard
           title="Audit log"
-          description="Export CSV (step-up audit.export) or browse recent API key actions."
+          description="Recent API key activity. Export the full log as CSV."
           footer={
-            <button
-              type="button"
-              className="settings-btn settings-btn--primary"
-              disabled={exportAuditMutation.isPending}
-              onClick={() => {
-                setAuditExportError(null)
-                void exportAuditMutation.mutateAsync({}).catch((error) => {
-                  setAuditExportError(
-                    error instanceof Error
-                      ? error.message
-                      : 'Unable to export audit log.',
-                  )
-                })
-              }}
-            >
-              {exportAuditMutation.isPending ? 'Exporting…' : 'Export CSV'}
-            </button>
+            <div className="flex w-full items-center justify-between gap-3">
+              <p className="settings-audit-count settings-audit-count--footer">
+                {securityAuditQuery.data
+                  ? `Showing ${securityAuditQuery.data.items.length} of ${(securityAuditQuery.data.total ?? securityAuditQuery.data.items.length).toLocaleString('en-US')} events`
+                  : null}
+              </p>
+              <button
+                type="button"
+                className="settings-btn settings-btn--primary"
+                disabled={exportAuditMutation.isPending}
+                onClick={() => {
+                  setAuditExportError(null)
+                  void exportAuditMutation.mutateAsync({}).catch((error) => {
+                    setAuditExportError(
+                      error instanceof Error
+                        ? error.message
+                        : 'Unable to export audit log.',
+                    )
+                  })
+                }}
+              >
+                {exportAuditMutation.isPending ? 'Exporting…' : 'Export CSV'}
+              </button>
+            </div>
           }
         >
           {auditExportError ? (
@@ -488,34 +476,16 @@ export function SecuritySettingsContent() {
               {auditExportError}
             </p>
           ) : null}
-          {securityAuditQuery.isPending ? (
-            <LoadingSpinner label="Loading audit…" />
-          ) : securityAuditQuery.isError ? (
-            <p className="settings-hint">
-              Recent API key audit unavailable (
-              {securityAuditQuery.error instanceof Error
+          <SecurityAuditLogTable
+            items={securityAuditQuery.data?.items ?? []}
+            isPending={securityAuditQuery.isPending}
+            isError={securityAuditQuery.isError}
+            errorMessage={
+              securityAuditQuery.error instanceof Error
                 ? securityAuditQuery.error.message
-                : 'error'}
-              ).
-            </p>
-          ) : (securityAuditQuery.data?.items.length ?? 0) === 0 ? (
-            <p className="settings-hint">
-              No recent portal.api_key.* audit events.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {securityAuditQuery.data?.items.map((item, index) => (
-                <li
-                  key={item.id ?? `${item.action}-${item.createdAt}-${index}`}
-                  className="[font-family:var(--font-body)] text-xs text-(--color-secondary)"
-                >
-                  {item.action}
-                  {item.actorEmail ? ` · ${item.actorEmail}` : ''} ·{' '}
-                  {new Date(item.createdAt).toLocaleString()}
-                </li>
-              ))}
-            </ul>
-          )}
+                : undefined
+            }
+          />
         </SettingsCard>
       ) : null}
 

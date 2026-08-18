@@ -8,6 +8,10 @@ import {
   formatWalletStatusLabel,
   walletStatusPillClass,
 } from '../utils/dashboardLedgerStyles.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  isBangladeshRailPausedForWallet,
+} from '../utils/bangladeshRailPause.ts'
 
 interface DashboardWalletCardProps {
   walletId: string
@@ -17,6 +21,8 @@ interface DashboardWalletCardProps {
   statusLabel: string
   displayLabel?: string | null
   isSelected?: boolean
+  market?: string | null
+  region?: string | null
 }
 
 function formatAmountOnly(value: number) {
@@ -35,13 +41,18 @@ export function DashboardWalletCard({
   statusLabel,
   displayLabel,
   isSelected = false,
+  market,
+  region,
 }: DashboardWalletCardProps) {
   const code = currency.trim().toUpperCase()
   const symbol = getCurrencySymbol(code)
   const currencyName = getCurrencyFullName(code)
   const walletTitle = displayLabel?.trim() || currencyName
   const badgeLabel = code
-  const statusDisplay = formatWalletStatusLabel(statusLabel)
+  const isPaused = isBangladeshRailPausedForWallet({ currency, market, region })
+  const statusDisplay = isPaused
+    ? 'Unavailable'
+    : formatWalletStatusLabel(statusLabel)
   const amountDisplay = areBalancesHidden
     ? '******'
     : formatAmountOnly(amount)
@@ -53,9 +64,9 @@ export function DashboardWalletCard({
     <Link
       to="/dashboard/wallets/$walletId"
       params={{ walletId }}
-      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected' : ''}`}
+      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected' : ''} ${isPaused ? 'dashboard-wallet--paused' : ''}`}
       aria-current={isSelected ? 'page' : undefined}
-      aria-label={`${walletTitle}, ${ariaLabel}`}
+      aria-label={`${walletTitle}, ${ariaLabel}${isPaused ? `. ${BANGLADESH_RAIL_PAUSE_COPY}` : ''}`}
     >
       <div className="flex min-w-0 items-center gap-2">
         <span className="dashboard-wallet-code shrink-0">
@@ -78,11 +89,19 @@ export function DashboardWalletCard({
       </div>
 
       <div className="dashboard-wallet-footer">
-        <span className={walletStatusPillClass(statusLabel)}>
+        <span
+          className={
+            isPaused
+              ? 'dashboard-pill dashboard-pill-neutral'
+              : walletStatusPillClass(statusLabel)
+          }
+        >
           <i aria-hidden />
           <span className="capitalize">{statusDisplay}</span>
         </span>
-        <span className="dashboard-wallet-footer-note">Merchant pocket</span>
+        <span className="dashboard-wallet-footer-note">
+          {isPaused ? 'Temporarily down' : 'Merchant pocket'}
+        </span>
       </div>
     </Link>
   )

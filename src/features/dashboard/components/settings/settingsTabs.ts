@@ -49,7 +49,7 @@ export const tabContent: Record<
   markets: {
     title: 'Markets',
     description:
-      'Request and manage payment market entitlements for Bangladesh, India, Europe, Brazil, and PYUSD. PYUSD settles to your USDC pocket.',
+      'Request and manage payment market entitlements for Bangladesh, India, Europe, Brazil, and PYUSD.',
   },
   fees: {
     title: 'Fees',

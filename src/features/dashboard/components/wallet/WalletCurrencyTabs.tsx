@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
+import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
 
 type WalletCurrencyTabsProps = {
   wallets: BalanceWalletItem[]
@@ -28,6 +29,8 @@ export function WalletCurrencyTabs({
           const amount = Number(wallet.availableBalance ?? wallet.balance)
           const safeAmount = Number.isFinite(amount) ? amount : 0
 
+          const isPaused = isBangladeshRailPausedForWallet(wallet)
+
           return (
             <Link
               key={wallet.id}
@@ -35,7 +38,7 @@ export function WalletCurrencyTabs({
               aria-selected={isActive}
               to="/dashboard/wallets/$walletId"
               params={{ walletId: wallet.id }}
-              className={`dashboard-wallet-tab ${isActive ? 'dashboard-wallet-tab--active' : ''}`}
+              className={`dashboard-wallet-tab ${isActive ? 'dashboard-wallet-tab--active' : ''} ${isPaused ? 'dashboard-wallet-tab--paused' : ''}`}
             >
               <div className="dashboard-wallet-tab-shell">
                 <span className="dashboard-wallet-tab-code">{code}</span>

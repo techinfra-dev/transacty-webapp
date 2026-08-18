@@ -16,8 +16,11 @@ import { getCurrencySymbol } from '../../../utils/currencyNames.ts'
 import {
   formatEntitlementStatusLabel,
   getMarketDisplayName,
-  getMarketSettlementHint,
 } from '../utils/marketDisplayUtils.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  isBangladeshRailPausedForMarket,
+} from '../utils/bangladeshRailPause.ts'
 
 interface AddWalletDialogProps {
   isOpen: boolean
@@ -38,7 +41,6 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
 
   const currencies = formatWalletCurrencies(wallets)
   const marketName = market ? getMarketDisplayName(market) : ''
-  const settlementHint = market ? getMarketSettlementHint(market) : null
   const title = market
     ? marketName
     : wallets.length === 1
@@ -94,9 +96,6 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
           {subtitleCurrencies}
           {marketName ? ` · ${marketName}` : ''}
         </p>
-        {settlementHint ? (
-          <p className="add-wallet-row-note">{settlementHint}</p>
-        ) : null}
         <p className="add-wallet-row-note">
           {statusLabel}
           {kybStatus && kybStatus !== 'verified'
@@ -109,19 +108,25 @@ function CatalogMarketActionRow({ group }: { group: AddWalletCatalogGroup }) {
               ? requestMutation.error.message
               : 'Unable to request market access.'}
           </p>
+        ) : isBangladeshRailPausedForMarket(market) ? (
+          <p className="add-wallet-row-note">{BANGLADESH_RAIL_PAUSE_COPY}</p>
         ) : null}
       </div>
 
       <div className="add-wallet-row-action">
-        {renderMarketAction({
-          action,
-          market,
-          justRequested,
-          entitlement,
-          requestMutation,
-          openKycDialog,
-          onRequestAccess: handleRequestAccess,
-        })}
+        {isBangladeshRailPausedForMarket(market) ? (
+          <span className="add-wallet-row-pill">Temporarily down</span>
+        ) : (
+          renderMarketAction({
+            action,
+            market,
+            justRequested,
+            entitlement,
+            requestMutation,
+            openKycDialog,
+            onRequestAccess: handleRequestAccess,
+          })
+        )}
       </div>
     </li>
   )
@@ -216,7 +221,7 @@ export function AddWalletDialog({
       isOpen={isOpen}
       onClose={onClose}
       title="Add a wallet"
-      description="Activate payment markets. PYUSD settles into your existing USDC pocket and does not add a new balance card."
+      description="Activate payment markets."
       maxWidthClassName="max-w-xl"
     >
       {walletGroups.length === 0 ? (

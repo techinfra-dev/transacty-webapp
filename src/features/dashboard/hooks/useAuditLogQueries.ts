@@ -45,5 +45,5 @@ export function useExportAuditLogCsvMutation() {
 }
 
 export function useSecurityAuditLogQuery(enabled = true) {
-  return useAuditLogQuery({ actionPrefix: 'portal.api_key.', limit: 10 }, enabled)
+  return useAuditLogQuery({ actionPrefix: 'portal.api_key.', limit: 50 }, enabled)
 }

@@ -57,6 +57,10 @@ import {
   type PayoutRail,
 } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
+import {
+  BANGLADESH_RAIL_PAUSE_COPY,
+  isBangladeshRailPausedForWallet,
+} from '../utils/bangladeshRailPause.ts'
 
 export function usePayoutFlow() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
@@ -307,8 +311,11 @@ export function usePayoutFlow() {
     if (!selectedWallet) {
       return 'Select a merchant wallet to continue.'
     }
+    if (isBangladeshRailPausedForWallet(selectedWallet)) {
+      return BANGLADESH_RAIL_PAUSE_COPY
+    }
     if (!isPayoutSupportedWallet(selectedWallet)) {
-      return 'Payouts are available for BDT (Bangladesh), BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'
+      return 'Payouts are available for BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'
     }
     if (selectedWallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
