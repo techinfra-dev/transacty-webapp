@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { useUsdFxRatesQuery } from '../hooks/useUsdFxRatesQuery.ts'
 import { getActivatedWallets } from '../utils/balanceWalletUtils.ts'
 import { formatWalletMoney } from '../utils/walletFormatters.ts'
 import {
@@ -22,15 +23,17 @@ export function DashboardWalletDistributionChart() {
     (state) => state.areBalancesHidden,
   )
   const walletsQuery = useBalanceQuery(true)
+  const fxRatesQuery = useUsdFxRatesQuery(true)
   const wallets = getActivatedWallets(walletsQuery.data)
 
   const slices = useMemo(
-    () => buildWalletDistributionSlices(wallets),
-    [wallets],
+    () => buildWalletDistributionSlices(wallets, fxRatesQuery.data?.rates),
+    [wallets, fxRatesQuery.data?.rates],
   )
 
-  const walletCount = wallets.length
-  const hasPositiveBalance = slices.length > 0
+  const pocketCount = slices.length
+  const hasPositiveBalance = pocketCount > 0
+  const isLoading = walletsQuery.isPending || fxRatesQuery.isPending
 
   const arcs = useMemo(
     () => buildDonutArcSegments(slices, CX, CY, OUTER_R, INNER_R),
@@ -46,13 +49,13 @@ export function DashboardWalletDistributionChart() {
         <div>
           <h2 className="dashboard-section-title">Wallet distribution</h2>
           <p className="dashboard-caption">
-            Balance share across pockets
+            Share by USD-equivalent available balance
           </p>
         </div>
       </div>
 
       <div className="flex flex-1 flex-col px-3 py-3">
-        {walletsQuery.isPending ? (
+        {isLoading ? (
           <div className="flex min-h-[140px] flex-1 items-center justify-center">
             <LoadingSpinner label="Loading distribution..." />
           </div>
@@ -60,7 +63,7 @@ export function DashboardWalletDistributionChart() {
           <p className="py-8 text-center [font-family:var(--font-body)] text-sm text-[#b91c1c]">
             Unable to load wallet balances.
           </p>
-        ) : walletCount === 0 ? (
+        ) : wallets.length === 0 ? (
           <p className="dashboard-caption py-8 text-center">
             No wallets to display.
           </p>
@@ -105,7 +108,7 @@ export function DashboardWalletDistributionChart() {
                   textAnchor="middle"
                   className="dashboard-donut-center-label [font-family:var(--font-body)] text-[11px]"
                 >
-                  {walletCount === 1 ? 'Wallet' : 'Wallets'}
+                  {pocketCount === 1 ? 'Wallet' : 'Wallets'}
                 </text>
                 <text
                   x={CX}
@@ -113,7 +116,7 @@ export function DashboardWalletDistributionChart() {
                   textAnchor="middle"
                   className="dashboard-donut-center-value [font-family:var(--font-display)] text-base font-semibold"
                 >
-                  {walletCount}
+                  {pocketCount}
                 </text>
               </svg>
             </div>

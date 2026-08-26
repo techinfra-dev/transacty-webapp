@@ -1,5 +1,6 @@
 import { Button } from '../../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { useTransactionDetailModalStore } from '../../../../store/transactionDetailModalStore.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { EurPayoutInstance } from '../../services/eurPayoutSchemas.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
@@ -51,6 +52,13 @@ export function EurPayoutSuccessView({
   const beneficiaryName =
     `${eurPayload.userDetails.firstName} ${eurPayload.userDetails.lastName}`.trim() ||
     '—'
+  const settlementCurrency =
+    payout.settlementCurrency?.trim().toUpperCase() || EUR_PAYOUT_SETTLEMENT_CURRENCY
+  const debitAmount =
+    payout.totalWalletDebit ?? payout.debitAmount ?? payout.cryptoAmount
+  const openTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.openTransactionDetail,
+  )
 
   return (
     <section className="payout-success">
@@ -63,6 +71,14 @@ export function EurPayoutSuccessView({
             ? 'Continue to Open Banking checkout so the beneficiary can authorize the EUR transfer.'
             : 'Your payout request was created. Track status below while checkout becomes available.'}
       </p>
+
+      {debitAmount ? (
+        <p className="payout-success-quote">
+          {formatPayoutMoney(EUR_PAYOUT_FIAT_CURRENCY, eurPayload.amount)} payout
+          debits ~{formatOptionalMoney(settlementCurrency, debitAmount)}
+          {payout.rate != null ? ` (rate ${String(payout.rate)} at quote time)` : ''}.
+        </p>
+      ) : null}
 
       <div className="payout-success-details">
         <div>
@@ -78,11 +94,7 @@ export function EurPayoutSuccessView({
         <div>
           <p className="payout-summary-label">Wallet debit</p>
           <p className="payout-summary-value">
-            {formatOptionalMoney(
-              payout.settlementCurrency?.trim().toUpperCase() ||
-                EUR_PAYOUT_SETTLEMENT_CURRENCY,
-              payout.totalWalletDebit ?? payout.debitAmount ?? payout.cryptoAmount,
-            )}
+            {formatOptionalMoney(settlementCurrency, debitAmount)}
           </p>
         </div>
         <div>
@@ -158,6 +170,14 @@ export function EurPayoutSuccessView({
 
         <Button type="button" variant="ghost" className="payout-btn-ghost" onClick={onCreateAnother}>
           Create another payout
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="payout-btn-ghost"
+          onClick={() => openTransactionDetail(payout.transactionId)}
+        >
+          View transaction
         </Button>
       </div>
     </section>

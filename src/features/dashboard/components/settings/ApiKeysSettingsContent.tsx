@@ -19,6 +19,7 @@ import {
 } from '../../services/apiKeysSchemas.ts'
 import { SettingsKycGate } from './SettingsKycGate.tsx'
 import { settingsFieldLabelClass } from './settingsFieldUtils.ts'
+import { DEVELOPER_DOCS_URL } from './settingsTabs.ts'
 
 function formatCreatedAt(isoDate: string) {
   const timestamp = new Date(isoDate)
@@ -164,6 +165,40 @@ export function ApiKeysSettingsContent() {
 
   return (
     <div className="settings-stack">
+      <article className="settings-card">
+        <div className="settings-card-body">
+          <h3 className="settings-card-title">Integrate customer pay-ins</h3>
+          <p className="settings-card-desc mt-1">
+            Build India UPI, India CPG, and Europe bank pay-ins on your backend with
+            the Transacty API (<code>/v1/*</code>). Never expose your API secret in
+            this dashboard or in a mobile/web client.
+          </p>
+          <ul className="settings-card-desc mt-2 list-disc space-y-1 pl-5">
+            <li>
+              India UPI: <code>POST /v1/h2h/payin-instances</code>
+            </li>
+            <li>
+              India CPG crypto: <code>POST /v1/cpg/payin-requests</code>
+            </li>
+            <li>
+              Europe bank pay-in: <code>POST /v1/eur/payin-instances</code>
+            </li>
+            <li>
+              Brazil PIX: <code>POST /v1/br/payins</code> /{' '}
+              <code>POST /v1/br/payouts</code>
+            </li>
+          </ul>
+          <a
+            href={DEVELOPER_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="dashboard-caption-link mt-3 inline-flex"
+          >
+            Open API docs
+          </a>
+        </div>
+      </article>
+
       {isKycVerified ? (
         <div className="settings-toolbar">
           <button

@@ -37,7 +37,7 @@ export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
   india: 'UPI · Bank transfer',
   europe: 'SEPA · Instant',
   brazil: 'Pix',
-  pyusd: 'Stablecoin settlement',
+  pyusd: 'Stablecoin settlement · PYUSD → PYUSD USDC',
 }
 
 export type MarketBrowserFilter = 'all' | 'enabled' | 'available' | 'unavailable'
@@ -82,9 +82,11 @@ export function getMarketDisplayName(
 export function formatEntitlementStatusLabel(status: MarketEntitlementStatus) {
   const labels: Record<MarketEntitlementStatus, string> = {
     disabled: 'Not enabled',
+    not_requested: 'Not requested',
     requested: 'Requested',
     kyb_in_review: 'Under review',
     approved: 'Active',
+    rejected: 'Rejected',
     suspended: 'Suspended',
   }
   return labels[status]
@@ -104,8 +106,12 @@ export function canRequestMarketAccess(market: PortalMarketRow) {
   if (isMarketTemporarilyDown(market) || market.entitlementStatus === 'suspended') {
     return false
   }
-  // Not-enabled markets stay requestable after global KYB is complete.
-  if (market.entitlementStatus === 'disabled') {
+  // Spec: request when not yet requested, disabled, or previously rejected.
+  if (
+    market.entitlementStatus === 'disabled' ||
+    market.entitlementStatus === 'not_requested' ||
+    market.entitlementStatus === 'rejected'
+  ) {
     return true
   }
   if (typeof market.canRequest === 'boolean') {

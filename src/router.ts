@@ -13,6 +13,7 @@ import { Route as dashboardTransactionsRoute } from './routes/dashboard.transact
 import { Route as dashboardCustomersRoute } from './routes/dashboard.customers.tsx'
 import { Route as dashboardCustomersCustomerIdRoute } from './routes/dashboard.customers.$customerId.tsx'
 import { Route as dashboardPayoutsRoute } from './routes/dashboard.payouts.tsx'
+import { Route as dashboardPyusdRoute } from './routes/dashboard.pyusd.tsx'
 import { Route as dashboardSettingsRoute } from './routes/dashboard.settings.tsx'
 import { Route as dashboardWalletsIndexRoute } from './routes/dashboard.wallets.index.tsx'
 import { Route as dashboardWalletsWalletIdRoute } from './routes/dashboard.wallets.$walletId.tsx'
@@ -25,6 +26,7 @@ const dashboardRouteTree = dashboardRoute.addChildren([
   dashboardCustomersRoute,
   dashboardCustomersCustomerIdRoute,
   dashboardPayoutsRoute,
+  dashboardPyusdRoute,
   dashboardSettingsRoute,
 ])
 

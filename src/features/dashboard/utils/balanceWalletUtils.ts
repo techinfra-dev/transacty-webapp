@@ -3,8 +3,8 @@ import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { MARKET_ORDER } from './marketDisplayUtils.ts'
 
-/** INR and PYUSD pockets are never shown as standalone merchant balance cards. */
-export const HIDDEN_WALLET_CURRENCIES = new Set(['INR', 'PYUSD'])
+/** INR pockets are never shown as standalone merchant balance cards. */
+export const HIDDEN_WALLET_CURRENCIES = new Set(['INR'])
 
 export const INDIA_PORTAL_SETTLEMENT_CURRENCY = 'USDT'
 
@@ -32,8 +32,13 @@ export function getVisibleSettlementCurrencies(
   }
 
   if (market === 'pyusd') {
-    // Settles into the existing USDC pocket — never a PYUSD balance card.
-    return ['USDC']
+    const pyusdCodes = visible.filter(
+      (currency) =>
+        currency === 'PYUSD' ||
+        currency === 'PYUSD-USDC' ||
+        currency.startsWith('PYUSD'),
+    )
+    return pyusdCodes.length > 0 ? pyusdCodes : ['PYUSD-USDC']
   }
 
   return visible
@@ -75,7 +80,7 @@ export function findBalanceWalletItemByCurrency(
 export function getWalletDisplayLabel(
   wallet: Pick<
     BalanceWalletItem,
-    'currency' | 'displayLabel' | 'regionLabel' | 'label'
+    'currency' | 'displayLabel' | 'regionLabel' | 'label' | 'market' | 'region'
   >,
 ) {
   if (wallet.displayLabel?.trim()) {
@@ -86,6 +91,11 @@ export function getWalletDisplayLabel(
   }
   if (wallet.label?.trim()) {
     return wallet.label.trim()
+  }
+  const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
+  if (market === 'brazil' || code === 'BRL') {
+    return 'Brazil (PIX)'
   }
   return getCurrencyFullName(wallet.currency)
 }
@@ -222,10 +232,6 @@ export function getAddWalletCatalogGroups(
 
   for (const wallet of inactive) {
     const marketKey = getWalletMarket(wallet)
-    // Never surface a PYUSD currency pocket — settle into USDC instead.
-    if (marketKey === 'pyusd') {
-      continue
-    }
     if (!marketKey) {
       withoutMarket.push(wallet)
       continue
@@ -307,11 +313,6 @@ export function getMarketWalletAction(
   market: PortalMarketRow,
   catalogItems: BalanceWalletItem[],
 ): CatalogWalletAction {
-  // PYUSD is requestable, but never provisions a new currency pocket.
-  if (market.market === 'pyusd') {
-    return getEntitlementOnlyAction(market)
-  }
-
   const inactiveInMarket = catalogItems.filter(
     (item) =>
       getWalletMarket(item) === market.market && !isWalletActivated(item),
@@ -339,7 +340,11 @@ export function getEntitlementOnlyAction(
   if (market.entitlementStatus === 'suspended') {
     return 'suspended'
   }
-  if (market.entitlementStatus === 'disabled') {
+  if (
+    market.entitlementStatus === 'disabled' ||
+    market.entitlementStatus === 'not_requested' ||
+    market.entitlementStatus === 'rejected'
+  ) {
     return 'request_access'
   }
   if (

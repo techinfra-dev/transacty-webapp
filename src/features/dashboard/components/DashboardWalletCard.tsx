@@ -13,6 +13,7 @@ import {
   BANGLADESH_RAIL_PAUSE_COPY,
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
+import type { WalletActivationStatus } from '../services/marketSchemas.ts'
 
 interface DashboardWalletCardProps {
   walletId: string
@@ -24,6 +25,7 @@ interface DashboardWalletCardProps {
   isSelected?: boolean
   market?: string | null
   region?: string | null
+  activationStatus?: WalletActivationStatus | null
 }
 
 function formatAmountOnly(value: number) {
@@ -32,6 +34,44 @@ function formatAmountOnly(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+function activationFooterNote(
+  activationStatus: WalletActivationStatus | null | undefined,
+  market: string | null | undefined,
+  currency: string,
+) {
+  const code = currency.trim().toUpperCase()
+  const marketKey = (market ?? '').trim().toLowerCase()
+  const isIndia = marketKey === 'india' || code === 'USDT'
+
+  if (activationStatus === 'not_enabled') {
+    return 'Market not enabled'
+  }
+  if (activationStatus === 'pending_kyb') {
+    return 'Verification in progress'
+  }
+  if (activationStatus === 'suspended') {
+    return 'Contact support'
+  }
+  if (isIndia) {
+    return 'USDT settlement · pay-ins via API'
+  }
+  if (
+    marketKey === 'pyusd' ||
+    code === 'PYUSD' ||
+    code === 'PYUSD-USDC' ||
+    code.startsWith('PYUSD')
+  ) {
+    return 'PYUSD → PYUSD USDC'
+  }
+  if (code === 'USDC') {
+    return 'Europe USDC · EUR payouts'
+  }
+  if (code === 'BRL' || marketKey === 'brazil') {
+    return 'Brazil (PIX)'
+  }
+  return 'Merchant pocket'
 }
 
 export function DashboardWalletCard({
@@ -44,6 +84,7 @@ export function DashboardWalletCard({
   isSelected = false,
   market,
   region,
+  activationStatus,
 }: DashboardWalletCardProps) {
   const code = currency.trim().toUpperCase()
   const symbol = getCurrencySymbol(code)
@@ -51,21 +92,30 @@ export function DashboardWalletCard({
   const walletTitle = displayLabel?.trim() || currencyName
   const badgeLabel = code
   const isPaused = isBangladeshRailPausedForWallet({ currency, market, region })
+  const isMuted =
+    activationStatus === 'not_enabled' ||
+    activationStatus === 'pending_kyb' ||
+    activationStatus === 'suspended'
   const statusDisplay = isPaused
     ? 'Unavailable'
-    : formatWalletStatusLabel(statusLabel)
+    : activationStatus && activationStatus !== 'active'
+      ? formatWalletStatusLabel(activationStatus)
+      : formatWalletStatusLabel(statusLabel)
   const amountDisplay = areBalancesHidden
     ? '******'
     : formatAmountOnly(amount)
   const ariaLabel = areBalancesHidden
     ? maskWalletMoney(code)
     : formatWalletMoney(code, amount)
+  const footerNote = isPaused
+    ? 'Temporarily down'
+    : activationFooterNote(activationStatus, market, code)
 
   return (
     <Link
       to="/dashboard/wallets/$walletId"
       params={{ walletId }}
-      className={`dashboard-wallet ${isSelected ? 'dashboard-wallet--selected' : ''} ${isPaused ? 'dashboard-wallet--paused' : ''}`}
+      className={`dashboard-wallet${isSelected ? ' dashboard-wallet--selected' : ''}${isPaused || isMuted ? ' dashboard-wallet--paused' : ''}`}
       aria-current={isSelected ? 'page' : undefined}
       aria-label={`${walletTitle}, ${ariaLabel}${isPaused ? `. ${BANGLADESH_RAIL_PAUSE_COPY}` : ''}`}
     >
@@ -100,7 +150,7 @@ export function DashboardWalletCard({
       <div className="dashboard-wallet-footer">
         <span
           className={
-            isPaused
+            isPaused || isMuted
               ? 'dashboard-pill dashboard-pill-neutral'
               : walletStatusPillClass(statusLabel)
           }
@@ -108,9 +158,7 @@ export function DashboardWalletCard({
           <i aria-hidden />
           <span className="capitalize">{statusDisplay}</span>
         </span>
-        <span className="dashboard-wallet-footer-note">
-          {isPaused ? 'Temporarily down' : 'Merchant pocket'}
-        </span>
+        <span className="dashboard-wallet-footer-note">{footerNote}</span>
       </div>
     </Link>
   )

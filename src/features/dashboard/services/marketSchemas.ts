@@ -14,9 +14,11 @@ export const merchantMarketSchema = z.enum([
 
 export const marketEntitlementStatusSchema = z.enum([
   'disabled',
+  'not_requested',
   'requested',
   'kyb_in_review',
   'approved',
+  'rejected',
   'suspended',
 ])
 

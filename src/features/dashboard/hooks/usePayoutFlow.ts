@@ -54,6 +54,7 @@ import {
   minimumEurPayoutAmount,
   minimumPayoutAmount,
   minimumPixPayoutAmount,
+  maximumPixPayoutAmount,
   type PayoutRail,
 } from '../components/payouts/payoutConstants.ts'
 import { formatPayoutMoney } from '../components/payouts/payoutFormatters.ts'
@@ -163,6 +164,9 @@ export function usePayoutFlow() {
     const limits: number[] = []
     if (payoutLimits?.max) {
       limits.push(payoutLimits.max)
+    }
+    if (payoutRail === 'pix') {
+      limits.push(maximumPixPayoutAmount)
     }
     if (walletBalance !== null) {
       limits.push(walletBalance)

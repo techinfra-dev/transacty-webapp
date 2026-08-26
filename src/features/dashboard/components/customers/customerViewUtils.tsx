@@ -148,7 +148,7 @@ export function getMarketNameForCurrency(currency: string) {
   if (code === 'INR') return 'India'
   if (code === 'EUR') return 'Europe'
   if (code === 'BRL') return 'Brazil'
-  if (code === 'PYUSD') return 'PYUSD'
+  if (code === 'PYUSD' || code === 'PYUSD-USDC' || code.startsWith('PYUSD')) return 'PYUSD'
   if (code === 'USDT' || code === 'USDC' || code === 'USD') return 'Stablecoin'
   return code
 }

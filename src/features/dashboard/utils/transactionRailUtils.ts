@@ -56,7 +56,7 @@ export function resolveWalletTransactionRail(
   if (currency === 'EUR') {
     return 'europe'
   }
-  if (currency === 'PYUSD') {
+  if (currency === 'PYUSD' || currency === 'PYUSD-USDC' || currency.startsWith('PYUSD')) {
     return 'pyusd'
   }
 

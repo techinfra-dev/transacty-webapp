@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useQueries, type UseQueryResult } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { TRANSACTIONS_LIST_MAX_LIMIT } from '../components/transactions/transactionConstants.ts'
 import { transactionMatchesCurrency } from '../components/transactions/transactionAmountUtils.ts'
@@ -8,7 +8,6 @@ import type {
   TransactionItem,
   TransactionRailApi,
   TransactionStatus,
-  TransactionsListResponse,
 } from '../services/transactionsSchemas.ts'
 import { useTransactionsListQuery } from './useTransactionsQueries.ts'
 import type { TransactionStatusTabId } from '../components/transactions/TransactionStatusTabs.tsx'
@@ -58,8 +57,6 @@ export function useWalletActivityQueries({
 }: UseWalletActivityQueriesParams) {
   const listStatus = statusFilter === 'all' ? undefined : statusFilter
   const dualPocket = isDualPocketRail(walletRail)
-  const includePyusdCompanion =
-    walletCurrency.trim().toUpperCase() === 'USDC'
   const offset = (currentPage - 1) * pageSize
 
   const bulkListQuery = useTransactionsListQuery(
@@ -72,16 +69,6 @@ export function useWalletActivityQueries({
     { enabled: enabled && dualPocket },
   )
 
-  const pyusdCompanionQuery = useTransactionsListQuery(
-    {
-      rail: 'pyusd',
-      status: listStatus,
-      limit: TRANSACTIONS_LIST_MAX_LIMIT,
-      offset: 0,
-    },
-    { enabled: enabled && includePyusdCompanion },
-  )
-
   const pagedListQuery = useTransactionsListQuery(
     {
       rail: walletRail,
@@ -90,42 +77,20 @@ export function useWalletActivityQueries({
       limit: pageSize,
       offset,
     },
-    { enabled: enabled && !dualPocket && !includePyusdCompanion },
+    { enabled: enabled && !dualPocket },
   )
 
   const filteredBulkItems = useMemo(() => {
-    const primary = dualPocket
-      ? filterWalletTransactions(
-          bulkListQuery.data?.items ?? [],
-          walletCurrency,
-        )
-      : []
-    const companion = includePyusdCompanion
-      ? filterWalletTransactions(
-          pyusdCompanionQuery.data?.items ?? [],
-          walletCurrency,
-        )
-      : []
-
-    if (!dualPocket && !includePyusdCompanion) {
+    if (!dualPocket) {
       return []
     }
-
-    const byId = new Map<string, TransactionItem>()
-    for (const item of [...primary, ...companion]) {
-      byId.set(item.id, item)
-    }
-    return sortByCreatedAtDesc([...byId.values()])
-  }, [
-    bulkListQuery.data?.items,
-    dualPocket,
-    includePyusdCompanion,
-    pyusdCompanionQuery.data?.items,
-    walletCurrency,
-  ])
+    return sortByCreatedAtDesc(
+      filterWalletTransactions(bulkListQuery.data?.items ?? [], walletCurrency),
+    )
+  }, [bulkListQuery.data?.items, dualPocket, walletCurrency])
 
   const rows = useMemo(() => {
-    if (dualPocket || includePyusdCompanion) {
+    if (dualPocket) {
       const start = offset
       return filteredBulkItems.slice(start, start + pageSize)
     }
@@ -136,42 +101,23 @@ export function useWalletActivityQueries({
   }, [
     dualPocket,
     filteredBulkItems,
-    includePyusdCompanion,
     offset,
     pageSize,
     pagedListQuery.data?.items,
     walletCurrency,
   ])
 
-  const transactionsQuery = (() => {
-    if (dualPocket && includePyusdCompanion) {
-      return {
-        ...bulkListQuery,
-        isPending: bulkListQuery.isPending || pyusdCompanionQuery.isPending,
-        isFetching: bulkListQuery.isFetching || pyusdCompanionQuery.isFetching,
-        isError: bulkListQuery.isError || pyusdCompanionQuery.isError,
-        error: bulkListQuery.error ?? pyusdCompanionQuery.error,
-      } as UseQueryResult<TransactionsListResponse, Error>
-    }
-    if (dualPocket) {
-      return bulkListQuery
-    }
-    if (includePyusdCompanion) {
-      return pyusdCompanionQuery
-    }
-    return pagedListQuery
-  })()
+  const transactionsQuery = dualPocket ? bulkListQuery : pagedListQuery
 
-  const totalItems =
-    dualPocket || includePyusdCompanion
-      ? filteredBulkItems.length
-      : pagedListQuery.data?.total ?? rows.length
+  const totalItems = dualPocket
+    ? filteredBulkItems.length
+    : (pagedListQuery.data?.total ?? rows.length)
 
   return {
     rows,
     totalItems,
     transactionsQuery,
-    isDualPocket: dualPocket || includePyusdCompanion,
+    isDualPocket: dualPocket,
   }
 }
 
@@ -186,9 +132,6 @@ export function useWalletActivityStatusCounts({
 }) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
   const dualPocket = isDualPocketRail(walletRail)
-  const includePyusdCompanion =
-    walletCurrency.trim().toUpperCase() === 'USDC'
-  const mergeMode = dualPocket || includePyusdCompanion
 
   const statuses: Array<TransactionStatus | undefined> = [
     undefined,
@@ -198,100 +141,37 @@ export function useWalletActivityStatusCounts({
   ]
 
   const results = useQueries({
-    queries: statuses.flatMap((status) => {
-      const primary = {
-        queryKey: [
-          'wallet-activity-status-count',
+    queries: statuses.map((status) => ({
+      queryKey: [
+        'wallet-activity-status-count',
+        environment,
+        walletRail ?? null,
+        walletCurrency,
+        dualPocket ? 'merge-pocket' : 'single-pocket',
+        status ?? null,
+      ],
+      queryFn: () =>
+        listTransactions({
           environment,
-          walletRail ?? null,
-          walletCurrency,
-          mergeMode ? 'merge-pocket' : 'single-pocket',
-          status ?? null,
-        ],
-        queryFn: () =>
-          listTransactions({
-            environment,
-            rail: walletRail,
-            currency: mergeMode ? undefined : walletCurrency,
-            status,
-            limit: mergeMode ? TRANSACTIONS_LIST_MAX_LIMIT : 1,
-            offset: 0,
-          }),
-        staleTime: 30_000,
-        enabled:
-          enabled &&
-          (includePyusdCompanion
-            ? Boolean(walletRail)
-            : Boolean(walletRail || !mergeMode)),
-      }
-      if (!includePyusdCompanion) {
-        return [primary]
-      }
-      return [
-        primary,
-        {
-          queryKey: [
-            'wallet-activity-status-count',
-            environment,
-            'pyusd',
-            walletCurrency,
-            'companion',
-            status ?? null,
-          ],
-          queryFn: () =>
-            listTransactions({
-              environment,
-              rail: 'pyusd',
-              status,
-              limit: TRANSACTIONS_LIST_MAX_LIMIT,
-              offset: 0,
-            }),
-          staleTime: 30_000,
-          enabled,
-        },
-      ]
-    }),
+          rail: walletRail,
+          currency: dualPocket ? undefined : walletCurrency,
+          status,
+          limit: dualPocket ? TRANSACTIONS_LIST_MAX_LIMIT : 1,
+          offset: 0,
+        }),
+      staleTime: 30_000,
+      enabled: enabled && Boolean(walletRail || !dualPocket),
+    })),
   })
 
   const counts = useMemo(() => {
-    if (!mergeMode) {
+    if (!dualPocket) {
       const [allQuery, successQuery, pendingQuery, failedQuery] = results
       return {
         all: allQuery?.data?.total ?? 0,
         success: successQuery?.data?.total ?? 0,
         pending: pendingQuery?.data?.total ?? 0,
         failed: failedQuery?.data?.total ?? 0,
-      }
-    }
-
-    const countForPair = (primaryItems?: TransactionItem[], companionItems?: TransactionItem[]) => {
-      const byId = new Map<string, TransactionItem>()
-      for (const item of [
-        ...filterWalletTransactions(primaryItems ?? [], walletCurrency),
-        ...filterWalletTransactions(companionItems ?? [], walletCurrency),
-      ]) {
-        byId.set(item.id, item)
-      }
-      return byId.size
-    }
-
-    // results layout: [allPrimary, allCompanion?, successPrimary, successCompanion?, ...]
-    if (includePyusdCompanion && dualPocket) {
-      return {
-        all: countForPair(results[0]?.data?.items, results[1]?.data?.items),
-        success: countForPair(results[2]?.data?.items, results[3]?.data?.items),
-        pending: countForPair(results[4]?.data?.items, results[5]?.data?.items),
-        failed: countForPair(results[6]?.data?.items, results[7]?.data?.items),
-      }
-    }
-
-    if (includePyusdCompanion && !dualPocket) {
-      // primary may be europe/undefined — still pair with companion
-      return {
-        all: countForPair(results[0]?.data?.items, results[1]?.data?.items),
-        success: countForPair(results[2]?.data?.items, results[3]?.data?.items),
-        pending: countForPair(results[4]?.data?.items, results[5]?.data?.items),
-        failed: countForPair(results[6]?.data?.items, results[7]?.data?.items),
       }
     }
 
@@ -311,7 +191,7 @@ export function useWalletActivityStatusCounts({
         walletCurrency,
       ).length,
     }
-  }, [dualPocket, includePyusdCompanion, mergeMode, results, walletCurrency])
+  }, [dualPocket, results, walletCurrency])
 
   return {
     counts,

@@ -22,7 +22,7 @@ export const CRYPTO_LOGO_URLS: Record<string, string> = {
   PYUSD: 'https://assets.coingecko.com/coins/images/31212/large/PYUSD_Logo_%282%29.png',
 }
 
-/** Global badge for worldwide assets (e.g. PYUSD). */
+/** Global badge for worldwide assets. */
 export const GLOBAL_BADGE_URL = '/globe.png'
 
 const CRYPTO_CODES = new Set(Object.keys(CRYPTO_LOGO_URLS))
@@ -30,6 +30,7 @@ const CRYPTO_CODES = new Set(Object.keys(CRYPTO_LOGO_URLS))
 export type CurrencyMarketAvatarBadge =
   | { kind: 'flag'; flagCode: string }
   | { kind: 'global' }
+  | { kind: 'crypto'; cryptoCode: string; cryptoLogoUrl: string }
 
 export type CurrencyMarketAvatarModel =
   | {
@@ -48,6 +49,23 @@ export type CurrencyMarketAvatarModel =
       kind: 'fallback'
       label: string
     }
+
+/** PYUSD settles in its own pocket (currency may be PYUSD or PYUSD-USDC). */
+export function isPyusdCurrencyOrMarket(
+  currency?: string | null,
+  market?: string | null,
+) {
+  const marketKey = (market ?? '').trim().toLowerCase()
+  if (marketKey === 'pyusd') {
+    return true
+  }
+  const currencyKey = (currency ?? '').trim().toUpperCase()
+  return (
+    currencyKey === 'PYUSD' ||
+    currencyKey === 'PYUSD-USDC' ||
+    currencyKey.startsWith('PYUSD')
+  )
+}
 
 export function getFlagCdnUrl(flagCode: string, width = 80) {
   const code = flagCode.trim().toLowerCase()
@@ -71,7 +89,8 @@ export function resolveMarketFlagCode(
 
 /**
  * Country-only for local fiat (BDT, BRL).
- * Crypto primary + country/global badge for USDT / USDC / PYUSD.
+ * Crypto primary + country/global/crypto badge for USDT / USDC / PYUSD.
+ * PYUSD pocket: USDC main logo + PYUSD badge (own settlement wallet).
  */
 export function resolveCurrencyMarketAvatar(input: {
   currency?: string | null
@@ -82,14 +101,17 @@ export function resolveCurrencyMarketAvatar(input: {
   const market = (input.market ?? input.region ?? '').trim().toLowerCase()
   const flagCode = resolveMarketFlagCode(market || null, currency || null)
 
-  // PYUSD is worldwide — never badge with a US flag.
-  if (market === 'pyusd' || currency === 'PYUSD') {
+  if (isPyusdCurrencyOrMarket(currency, market)) {
     return {
       kind: 'crypto',
-      cryptoCode: 'PYUSD',
-      cryptoLogoUrl: CRYPTO_LOGO_URLS.PYUSD!,
-      badge: { kind: 'global' },
-      label: 'PYUSD · Global',
+      cryptoCode: 'USDC',
+      cryptoLogoUrl: CRYPTO_LOGO_URLS.USDC!,
+      badge: {
+        kind: 'crypto',
+        cryptoCode: 'PYUSD',
+        cryptoLogoUrl: CRYPTO_LOGO_URLS.PYUSD!,
+      },
+      label: 'USDC · PYUSD',
     }
   }
 

@@ -1,8 +1,12 @@
-import type { TransactionItem } from '../../services/transactionsSchemas.ts'
+import type {
+  TransactionDetail,
+  TransactionItem,
+} from '../../services/transactionsSchemas.ts'
 import { getTransactionMethodLabel } from './transactionFormatters.ts'
 
 type TransactionMethodTagProps = {
-  transaction: Pick<TransactionItem, 'type' | 'railLabel' | 'rail'>
+  transaction: Pick<TransactionItem, 'type' | 'railLabel' | 'rail'> &
+    Partial<Pick<TransactionDetail, 'metadata'>>
   className?: string
 }
 

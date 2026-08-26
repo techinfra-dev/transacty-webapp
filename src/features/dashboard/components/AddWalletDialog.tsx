@@ -47,7 +47,6 @@ type BrowserRow = {
 const FILTER_OPTIONS: Array<{ id: MarketBrowserFilter; label: string }> = [
   { id: 'all', label: 'All' },
   { id: 'enabled', label: 'Enabled' },
-  { id: 'available', label: 'Available' },
   { id: 'unavailable', label: 'Unavailable' },
 ]
 
@@ -430,36 +429,69 @@ export function AddWalletDialog({
 
   useLayoutEffect(() => {
     if (!isOpen) {
+      setPill({ width: 0, x: 0 })
       return
     }
 
-    const container = filtersRef.current
-    const activeChip = filterChipRefs.current[filter]
-    if (!container || !activeChip) {
-      return
-    }
+    let cancelled = false
+    let frameId = 0
+    let attempts = 0
+    let observer: ResizeObserver | null = null
 
-    const update = () => {
+    const measure = () => {
+      const container = filtersRef.current
+      const activeChip = filterChipRefs.current[filter]
+      if (!container || !activeChip) {
+        return false
+      }
       const containerRect = container.getBoundingClientRect()
       const chipRect = activeChip.getBoundingClientRect()
+      if (chipRect.width <= 0) {
+        return false
+      }
       setPill({
         x: chipRect.left - containerRect.left,
         width: chipRect.width,
       })
+      return true
     }
 
-    update()
-    const frameId = window.requestAnimationFrame(update)
+    const onResize = () => {
+      measure()
+    }
 
-    const observer = new ResizeObserver(update)
-    observer.observe(container)
-    observer.observe(activeChip)
-    window.addEventListener('resize', update)
+    const attach = () => {
+      if (cancelled) {
+        return
+      }
+      if (!measure()) {
+        // Sheet portals in after a paint — keep trying until chips exist.
+        if (attempts < 40) {
+          attempts += 1
+          frameId = window.requestAnimationFrame(attach)
+        }
+        return
+      }
+
+      const container = filtersRef.current
+      const activeChip = filterChipRefs.current[filter]
+      if (!container || !activeChip) {
+        return
+      }
+
+      observer = new ResizeObserver(onResize)
+      observer.observe(container)
+      observer.observe(activeChip)
+      window.addEventListener('resize', onResize)
+    }
+
+    attach()
 
     return () => {
+      cancelled = true
       window.cancelAnimationFrame(frameId)
-      observer.disconnect()
-      window.removeEventListener('resize', update)
+      observer?.disconnect()
+      window.removeEventListener('resize', onResize)
     }
   }, [filter, counts, isOpen])
 

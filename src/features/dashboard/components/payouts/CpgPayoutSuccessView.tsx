@@ -1,5 +1,6 @@
 import { Button } from '../../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { useTransactionDetailModalStore } from '../../../../store/transactionDetailModalStore.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { CpgPayoutInstance } from '../../services/cpgPayoutSchemas.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
@@ -36,6 +37,9 @@ export function CpgPayoutSuccessView({
     payout.settlementCurrency?.trim().toUpperCase() || INDIA_PAYOUT_SETTLEMENT_CURRENCY
   const isTerminal =
     statusLabel === 'success' || statusLabel === 'failed'
+  const openTransactionDetail = useTransactionDetailModalStore(
+    (state) => state.openTransactionDetail,
+  )
 
   return (
     <section className="payout-success">
@@ -120,6 +124,13 @@ export function CpgPayoutSuccessView({
       ) : null}
 
       <div className="mt-6 flex flex-wrap gap-3">
+        <Button
+          type="button"
+          className="payout-btn-primary"
+          onClick={() => openTransactionDetail(payout.transactionId)}
+        >
+          View transaction
+        </Button>
         <Button type="button" variant="ghost" className="payout-btn-ghost" onClick={onCreateAnother}>
           Create another payout
         </Button>

@@ -125,14 +125,12 @@ export function DashboardPage() {
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
 
-          {hasRequestableMarkets ? (
-            <Button
-              className="dash-btn-primary"
-              onClick={() => setIsAddWalletOpen(true)}
-            >
-              Add wallet
-            </Button>
-          ) : null}
+          <Button
+            className="dash-btn-primary"
+            onClick={() => setIsAddWalletOpen(true)}
+          >
+            Add wallet
+          </Button>
         </div>
       </header>
 
@@ -162,7 +160,7 @@ export function DashboardPage() {
           ) : (
             <section className="dashboard-wallets-grid">
               {wallets.map((wallet) => {
-                const amount = Number(wallet.balance)
+                const amount = Number(wallet.availableBalance ?? wallet.balance)
                 const safeAmount = Number.isFinite(amount) ? amount : 0
                 return (
                   <DashboardWalletCard
@@ -175,6 +173,7 @@ export function DashboardPage() {
                     displayLabel={wallet.displayLabel}
                     market={wallet.market}
                     region={wallet.region}
+                    activationStatus={wallet.activationStatus}
                   />
                 )
               })}

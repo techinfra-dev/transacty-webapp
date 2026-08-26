@@ -82,7 +82,16 @@ export function CurrencyMarketAvatar({
   const badgeSrc =
     model.badge.kind === 'global'
       ? GLOBAL_BADGE_URL
-      : getFlagCdnUrl(model.badge.flagCode, 40)
+      : model.badge.kind === 'crypto'
+        ? model.badge.cryptoLogoUrl
+        : getFlagCdnUrl(model.badge.flagCode, 40)
+
+  const badgeImgClass =
+    model.badge.kind === 'global'
+      ? 'currency-market-avatar-badge-img currency-market-avatar-badge-img--global'
+      : model.badge.kind === 'crypto'
+        ? 'currency-market-avatar-badge-img currency-market-avatar-badge-img--crypto'
+        : 'currency-market-avatar-badge-img'
 
   return (
     <span
@@ -108,7 +117,7 @@ export function CurrencyMarketAvatar({
       {!badgeFailed ? (
         <span className="currency-market-avatar-badge">
           <img
-            className={`currency-market-avatar-badge-img${model.badge.kind === 'global' ? ' currency-market-avatar-badge-img--global' : ''}`}
+            className={badgeImgClass}
             src={badgeSrc}
             alt=""
             loading="lazy"

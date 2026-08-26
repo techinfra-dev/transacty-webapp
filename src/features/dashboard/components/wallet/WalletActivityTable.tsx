@@ -45,7 +45,11 @@ export function WalletActivityTable({
   const walletCurrency = currency.trim().toUpperCase()
   const canQuery =
     Boolean(walletCurrency) &&
-    (Boolean(walletRail) || walletCurrency === 'USDC')
+    (Boolean(walletRail) ||
+      walletCurrency === 'USDC' ||
+      walletCurrency === 'PYUSD' ||
+      walletCurrency === 'PYUSD-USDC' ||
+      walletCurrency.startsWith('PYUSD'))
   const [statusFilter, setStatusFilter] = useState<TransactionStatusTabId>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)

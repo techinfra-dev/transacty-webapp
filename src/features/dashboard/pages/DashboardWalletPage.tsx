@@ -2,8 +2,9 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
+import { usePortalRole } from '../../../hooks/usePortalRole.ts'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
-import { IndiaH2hPayinDialog } from '../components/IndiaH2hPayinDialog.tsx'
+import { BrazilPixPayinDialog } from '../components/BrazilPixPayinDialog.tsx'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
@@ -20,25 +21,55 @@ import {
 
 const outlineBtn = 'dash-btn-outline'
 
+function isPyusdSettlementWallet(wallet: {
+  currency: string
+  market?: string | null
+  region?: string | null
+}) {
+  const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
+  return (
+    market === 'pyusd' ||
+    code === 'PYUSD' ||
+    code === 'PYUSD-USDC' ||
+    code.startsWith('PYUSD')
+  )
+}
+
+function isBrazilBrlWallet(wallet: {
+  currency: string
+  market?: string | null
+  region?: string | null
+}) {
+  const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
+  return market === 'brazil' || code === 'BRL'
+}
+
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
   const navigate = useNavigate()
+  const { canWriteMoney } = usePortalRole()
   const areBalancesHidden = useUiPreferencesStore(
     (state) => state.areBalancesHidden,
   )
   const toggleBalancesVisibility = useUiPreferencesStore(
     (state) => state.toggleBalancesVisibility,
   )
+  const [isPixPayinOpen, setIsPixPayinOpen] = useState(false)
 
   const balanceQuery = useBalanceQuery(true)
   const wallets = balanceQuery.data ? getActivatedWallets(balanceQuery.data) : null
   const activeWallet =
     wallets?.find((wallet) => wallet.id === walletId) ?? null
   const walletRail = resolveWalletTransactionRail(activeWallet)
-  const isInrWallet =
-    activeWallet?.currency.trim().toUpperCase() === 'INR' ||
-    walletRail === 'india'
-  const [isH2hOpen, setIsH2hOpen] = useState(false)
+  const isIndiaUsdtWallet =
+    walletRail === 'india' ||
+    activeWallet?.currency.trim().toUpperCase() === 'USDT'
+  const isPyusdWallet = activeWallet
+    ? isPyusdSettlementWallet(activeWallet)
+    : false
+  const isBrazilWallet = activeWallet ? isBrazilBrlWallet(activeWallet) : false
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
@@ -48,11 +79,20 @@ export function DashboardWalletPage() {
     if (isBangladeshRailPausedForWallet(activeWallet)) {
       return `${getWalletDisplayLabel(activeWallet)} · ${BANGLADESH_RAIL_PAUSE_COPY}`
     }
-    if (code === 'USDC') {
-      return `${getWalletDisplayLabel(activeWallet)} · USDC pocket (Europe + PYUSD settle here)`
+    if (isIndiaUsdtWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · USDT settlement pocket (customer pay-ins via API)`
+    }
+    if (code === 'USDC' && !isPyusdWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · Europe USDC (EUR payouts only)`
+    }
+    if (isPyusdWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · PYUSD collects → PYUSD USDC settles`
+    }
+    if (isBrazilWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · Brazil PIX settlement pocket`
     }
     return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
-  }, [activeWallet])
+  }, [activeWallet, isBrazilWallet, isIndiaUsdtWallet, isPyusdWallet])
 
   if (balanceQuery.isPending) {
     return (
@@ -115,6 +155,15 @@ export function DashboardWalletPage() {
           <Button variant="ghost" className={outlineBtn} onClick={toggleBalancesVisibility}>
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
+          {isBrazilWallet && canWriteMoney ? (
+            <Button
+              variant="ghost"
+              className={outlineBtn}
+              onClick={() => setIsPixPayinOpen(true)}
+            >
+              PIX pay-in
+            </Button>
+          ) : null}
           {activeWallet && isPayoutSupportedWallet(activeWallet) ? (
             <Button
               className="dash-btn-primary"
@@ -123,13 +172,12 @@ export function DashboardWalletPage() {
               Request payout
             </Button>
           ) : null}
-          {isInrWallet ? (
+          {isPyusdWallet && canWriteMoney ? (
             <Button
-              variant="ghost"
-              className={outlineBtn}
-              onClick={() => setIsH2hOpen(true)}
+              className="dash-btn-primary"
+              onClick={() => void navigate({ to: '/dashboard/pyusd' })}
             >
-              India H2H pay-in
+              PYUSD checkout
             </Button>
           ) : null}
         </div>
@@ -148,9 +196,9 @@ export function DashboardWalletPage() {
         walletRail={walletRail}
       />
 
-      <IndiaH2hPayinDialog
-        isOpen={isH2hOpen}
-        onClose={() => setIsH2hOpen(false)}
+      <BrazilPixPayinDialog
+        isOpen={isPixPayinOpen}
+        onClose={() => setIsPixPayinOpen(false)}
       />
     </section>
   )

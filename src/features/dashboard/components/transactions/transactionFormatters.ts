@@ -53,8 +53,14 @@ export function toTitleCase(value: string) {
 }
 
 export function getTransactionMethodLabel(
-  transaction: Pick<TransactionItem, 'type' | 'railLabel' | 'rail'>,
+  transaction: Pick<TransactionItem, 'type' | 'railLabel' | 'rail'> & {
+    metadata?: Record<string, unknown> | null
+  },
 ) {
+  const product = readTyltProduct(transaction.metadata)
+  if (product) {
+    return TYLT_PRODUCT_LABELS[product] ?? toTitleCase(product)
+  }
   const label = transaction.railLabel?.trim()
   if (label) {
     return label
@@ -64,6 +70,50 @@ export function getTransactionMethodLabel(
     return toTitleCase(rail)
   }
   return toTitleCase(transaction.type)
+}
+
+const TYLT_PRODUCT_LABELS: Record<string, string> = {
+  h2h_upi: 'India UPI pay-in',
+  cpg_payin: 'India CPG pay-in',
+  cpg_payout: 'India CPG payout',
+  eur_payin: 'Europe pay-in',
+  eur_payout: 'Europe payout',
+  'tekko-pyusd-payin': 'PYUSD pay-in',
+  tekko_pyusd_payin: 'PYUSD pay-in',
+}
+
+function readTyltProduct(metadata: Record<string, unknown> | null | undefined) {
+  if (!metadata) {
+    return null
+  }
+  const value = metadata.tyltProduct
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+export function isIndiaDisputeTransaction(
+  transaction: Pick<TransactionItem, 'rail'> & {
+    metadata?: Record<string, unknown> | null
+  },
+) {
+  const rail = transaction.rail?.trim().toLowerCase()
+  if (rail !== 'india') {
+    return false
+  }
+  const metadata = transaction.metadata
+  if (!metadata) {
+    return false
+  }
+  if (metadata.disputeState != null && String(metadata.disputeState).trim()) {
+    return true
+  }
+  const payinSnapshot = metadata.payinSnapshot
+  if (payinSnapshot && typeof payinSnapshot === 'object') {
+    const tradeEventId = (payinSnapshot as Record<string, unknown>).tradeEventId
+    if (tradeEventId === 5 || tradeEventId === '5') {
+      return true
+    }
+  }
+  return false
 }
 
 export function formatTransactionMoney(amountText: string, currency: string) {

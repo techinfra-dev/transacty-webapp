@@ -6,6 +6,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   USDT: '₮',
   USDC: '$',
   PYUSD: '$',
+  'PYUSD-USDC': '$',
   EUR: '€',
   GBP: '£',
 }
@@ -18,6 +19,7 @@ const CURRENCY_FULL_NAMES: Record<string, string> = {
   USDT: 'Tether',
   USDC: 'USD Coin',
   PYUSD: 'PayPal USD',
+  'PYUSD-USDC': 'PayPal USD (USDC)',
   EUR: 'Euro',
   GBP: 'British Pound',
   AUD: 'Australian Dollar',
@@ -73,7 +75,7 @@ export function formatSettlementCurrenciesLabel(currencies: string[]) {
 export function getMarketSettlementIcon(currencies: string[]) {
   const dollarCode = currencies.find((code) => {
     const normalized = code.trim().toUpperCase()
-    return normalized === 'USDT' || normalized === 'USDC' || normalized === 'USD'
+    return normalized === 'USDT' || normalized === 'USDC' || normalized === 'USD' || normalized === 'PYUSD' || normalized === 'PYUSD-USDC' || normalized.startsWith('PYUSD')
   })
   if (dollarCode) {
     return getCurrencySymbol(dollarCode) ?? '$'

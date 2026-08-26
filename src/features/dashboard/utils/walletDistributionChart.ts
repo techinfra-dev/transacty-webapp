@@ -1,4 +1,5 @@
 import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
+import { USD_PEGGED_CURRENCIES } from '../services/fxRatesSchemas.ts'
 
 export const WALLET_DISTRIBUTION_COLORS = [
   '#06261B',
@@ -14,39 +15,80 @@ export type WalletDistributionSlice = {
   currency: string
   label: string
   balance: number
+  /** USD-equivalent used for slice weight. */
+  usdValue: number
   percent: number
   color: string
 }
 
+function normalizeCurrencyCode(currency: string) {
+  const code = currency.trim().toUpperCase()
+  if (code.startsWith('PYUSD')) {
+    return code === 'PYUSD' ? 'PYUSD' : 'PYUSD-USDC'
+  }
+  return code
+}
+
+/** Convert a pocket balance into USD using units-per-USD rates. */
+export function balanceToUsd(
+  amount: number,
+  currency: string,
+  ratesPerUsd: Record<string, number> | undefined,
+): number {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return 0
+  }
+  const code = normalizeCurrencyCode(currency)
+  if (USD_PEGGED_CURRENCIES.has(code) || code.startsWith('PYUSD')) {
+    return amount
+  }
+  const perUsd = ratesPerUsd?.[code]
+  if (!perUsd || !Number.isFinite(perUsd) || perUsd <= 0) {
+    return 0
+  }
+  return amount / perUsd
+}
+
 export function buildWalletDistributionSlices(
   wallets: BalanceWalletItem[],
+  ratesPerUsd?: Record<string, number>,
 ): WalletDistributionSlice[] {
-  const active = wallets.filter((w) => {
-    const balance = Number(w.balance)
-    return Number.isFinite(balance) && balance > 0
-  })
+  const weighted = wallets
+    .map((wallet) => {
+      const balance = Number(wallet.availableBalance ?? wallet.balance)
+      const currency = normalizeCurrencyCode(wallet.currency)
+      const usdValue = balanceToUsd(balance, currency, ratesPerUsd)
+      const customLabel =
+        wallet.displayLabel?.trim() || wallet.label?.trim() || undefined
+      return {
+        id: wallet.id,
+        currency,
+        label: customLabel || `${currency} wallet`,
+        balance: Number.isFinite(balance) ? balance : 0,
+        usdValue,
+      }
+    })
+    .filter((row) => row.balance > 0 && row.usdValue > 0)
 
-  const total = active.reduce((sum, w) => sum + Number(w.balance), 0)
-  if (total <= 0) {
+  const totalUsd = weighted.reduce((sum, row) => sum + row.usdValue, 0)
+  if (totalUsd <= 0) {
     return []
   }
 
-  return active.map((wallet, index) => {
-    const balance = Number(wallet.balance)
-    const currency = wallet.currency.trim().toUpperCase()
-    const customLabel = wallet.label?.trim()
-    return {
-      id: wallet.id,
-      currency,
-      label: customLabel || `${currency} wallet`,
-      balance,
-      percent: (balance / total) * 100,
+  return weighted
+    .map((row, index) => ({
+      ...row,
+      percent: (row.usdValue / totalUsd) * 100,
       color: WALLET_DISTRIBUTION_COLORS[index % WALLET_DISTRIBUTION_COLORS.length],
-    }
-  })
+    }))
+    .sort((a, b) => b.usdValue - a.usdValue)
+    .map((row, index) => ({
+      ...row,
+      color: WALLET_DISTRIBUTION_COLORS[index % WALLET_DISTRIBUTION_COLORS.length],
+    }))
 }
 
-/** Donut arc angles match real balance share (legend shows the same %). */
+/** Donut arc angles match USD-equivalent share. */
 export function computeVisualSlicePercents(slices: WalletDistributionSlice[]) {
   return slices.map((slice) => slice.percent)
 }
@@ -95,15 +137,9 @@ export function buildDonutArcSegments(
   }
 
   const visualPercents = computeVisualSlicePercents(slices)
-  const ordered = slices
-    .map((slice, index) => ({
-      slice,
-      visualPercent: visualPercents[index] ?? slice.percent,
-    }))
-    .sort((a, b) => b.visualPercent - a.visualPercent)
-
   let cursor = 0
-  return ordered.map(({ slice, visualPercent }) => {
+  return slices.map((slice, index) => {
+    const visualPercent = visualPercents[index] ?? slice.percent
     const sweep = (visualPercent / 100) * 360
     const startAngle = cursor
     const endAngle = cursor + sweep

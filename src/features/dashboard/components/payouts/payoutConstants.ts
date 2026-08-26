@@ -16,7 +16,10 @@ export const payoutStepItems = [
 
 export const payoutMethodOptions = ['BKASH', 'NAGAD', 'UPAY'] as const
 export const minimumPayoutAmount = 200
+export const maximumPixPayoutAmount = 15_000
 export const minimumPixPayoutAmount = 10
+export const maximumPixPayinAmount = 15_000
+export const minimumPixPayinAmount = 10
 export const minimumEurPayoutAmount = 1
 export const minimumCpgPayoutAmount = 1
 export const EUR_PAYOUT_FIAT_CURRENCY = 'EUR'

@@ -3004,6 +3004,47 @@ button.dashboard-wallet-tab {
   color: var(--dash-surface);
 }
 
+.transactions-rail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.transactions-rail-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 2rem;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+  color: var(--dash-fg-muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 550;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.transactions-rail-chip:hover {
+  color: var(--dash-fg);
+  border-color: color-mix(in srgb, var(--dash-fg) 22%, transparent);
+}
+
+.transactions-rail-chip--active {
+  background: var(--dash-fg);
+  border-color: var(--dash-fg);
+  color: var(--dash-surface);
+}
+
+.transactions-rail-chip--active:hover {
+  color: var(--dash-surface);
+}
+
 .add-wallet-filter-label {
   display: inline-block;
 }
@@ -3371,6 +3412,12 @@ button.dashboard-wallet-tab {
 .currency-market-avatar-badge-img--global {
   object-fit: cover;
   transform: scale(1.08);
+}
+
+.currency-market-avatar-badge-img--crypto {
+  object-fit: contain;
+  padding: 8%;
+  background: var(--dash-surface);
 }
 
 .currency-market-avatar--fallback {
@@ -4546,6 +4593,19 @@ button.dashboard-wallet-tab {
   height: 3px;
   border-radius: 50%;
   background: var(--dash-fg-subtle);
+}
+
+.tx-detail-dispute-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #b45309 16%, transparent);
+  color: #92400e;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 
 .transaction-method-tag,
@@ -6061,6 +6121,18 @@ button.dashboard-wallet-tab {
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--dash-fg-muted);
+}
+
+.payout-success-quote {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--dash-hairline);
+  background: var(--dash-surface-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--dash-fg);
 }
 
 .payout-success-details {

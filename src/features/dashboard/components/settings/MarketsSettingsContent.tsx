@@ -60,7 +60,12 @@ function MarketSettingsRow({
             <p className="settings-card-desc mt-1">
               Settlement: {currencies || '—'}
             </p>
-          ) : null}
+          ) : (
+            <p className="settings-card-desc mt-1">
+              PYUSD collects → PYUSD USDC settles. EUR payouts use Europe USDC
+              only.
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="dashboard-pill dashboard-pill-neutral">
               {formatEntitlementStatusLabel(market.entitlementStatus)}

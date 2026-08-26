@@ -8,7 +8,7 @@ const RAIL_LOCAL_CURRENCY: Record<string, string> = {
   pyusd: 'PYUSD',
 }
 
-const STABLECOIN_SETTLEMENT = new Set(['USDT', 'USDC'])
+const STABLECOIN_SETTLEMENT = new Set(['USDT', 'USDC', 'PYUSD', 'PYUSD-USDC'])
 
 export type TransactionAmountDisplay = {
   localAmount: string | null
@@ -152,7 +152,9 @@ function inferLocalCurrency(
   }
   if (
     normalizedRail === 'pyusd' &&
-    settlementCurrency === 'USDC'
+    (settlementCurrency === 'PYUSD' ||
+      settlementCurrency === 'PYUSD-USDC' ||
+      settlementCurrency.startsWith('PYUSD'))
   ) {
     return 'PYUSD'
   }

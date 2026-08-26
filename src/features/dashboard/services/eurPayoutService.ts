@@ -34,6 +34,7 @@ function getEurPayoutApiErrorMessage(error: unknown) {
     const responseData = error.response.data as {
       message?: unknown
       error?: unknown
+      code?: unknown
     }
     if (
       typeof responseData.message === 'string' &&
@@ -46,6 +47,15 @@ function getEurPayoutApiErrorMessage(error: unknown) {
       responseData.error.trim().length > 0
     ) {
       return responseData.error.trim()
+    }
+    if (responseData.code === 'market_not_enabled') {
+      return 'Enable Europe in Settings → Markets before sending EUR payouts.'
+    }
+    if (responseData.code === 'payment_provider_rejected') {
+      return 'The payment provider rejected this payout. Try again later or contact support with the transaction ID.'
+    }
+    if (responseData.code === 'payment_provider_unavailable') {
+      return 'The payment provider is temporarily unavailable. Retry in a few minutes.'
     }
   }
   if (error instanceof Error && error.message.trim().length > 0) {

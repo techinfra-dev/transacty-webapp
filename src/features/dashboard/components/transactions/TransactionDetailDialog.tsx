@@ -24,6 +24,7 @@ import {
   formatTransactionMoney,
   getLedgerStatusPillClass,
   getTransactionCurrency,
+  isIndiaDisputeTransaction,
   toTitleCase,
 } from './transactionFormatters.ts'
 
@@ -306,6 +307,14 @@ function TransactionDetailBody({
         </h2>
         <div className="tx-detail-meta">
           <StatusPill status={detail.status} />
+          {isIndiaDisputeTransaction(detail) ? (
+            <>
+              <span className="tx-detail-meta-sep" aria-hidden />
+              <span className="tx-detail-dispute-badge" role="status">
+                Dispute
+              </span>
+            </>
+          ) : null}
           <span className="tx-detail-meta-sep" aria-hidden />
           <TransactionMethodTag transaction={detail} />
           <span className="tx-detail-meta-sep" aria-hidden />

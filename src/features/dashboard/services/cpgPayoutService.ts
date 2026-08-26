@@ -49,6 +49,16 @@ function getCpgPayoutApiErrorMessage(error: unknown) {
     if (responseData.code === 'market_not_enabled') {
       return 'Enable India in Settings → Markets before sending USDT payouts.'
     }
+    if (responseData.code === 'payment_provider_rejected') {
+      return (
+        (typeof responseData.message === 'string' &&
+          responseData.message.trim()) ||
+        'The payment provider rejected this payout. Try again later or contact support with the transaction ID.'
+      )
+    }
+    if (responseData.code === 'payment_provider_unavailable') {
+      return 'The payment provider is temporarily unavailable. Retry in a few minutes.'
+    }
   }
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message
