@@ -99,6 +99,7 @@ export const createTransferPayloadSchema = z.object({
   environment: portalEnvironmentSchema,
   customerWalletId: z.string().min(1),
   amount: z.string().min(1),
+  direction: z.enum(['credit', 'debit']).optional(),
   reason: z.string().min(1).optional(),
 })
 

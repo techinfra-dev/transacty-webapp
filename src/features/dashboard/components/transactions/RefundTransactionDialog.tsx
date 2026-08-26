@@ -15,6 +15,10 @@ type RefundTransactionDialogProps = {
   onRefundOfTransactionIdChange: (value: string) => void
   reason: string
   onReasonChange: (value: string) => void
+  /** When true, original transaction ID is locked (opened from a transaction row). */
+  lockTransactionId?: boolean
+  /** Stack above another modal (e.g. transaction detail). */
+  stacked?: boolean
   mutation: UseMutationResult<
     unknown,
     Error,
@@ -34,6 +38,8 @@ export function RefundTransactionDialog({
   onRefundOfTransactionIdChange,
   reason,
   onReasonChange,
+  lockTransactionId = false,
+  stacked = false,
   mutation,
   onSubmit,
 }: RefundTransactionDialogProps) {
@@ -45,9 +51,10 @@ export function RefundTransactionDialog({
           onClose()
         }
       }}
-      title="Create refund"
-      description="Return money for this customer."
+      title="Refund"
+      description="Return money against the selected transaction."
       maxWidthClassName="max-w-md"
+      rootClassName={stacked ? 'z-[130]' : undefined}
     >
       <form className="space-y-3" onSubmit={onSubmit}>
         <input type="hidden" name="customerWalletId" value={customerWalletId} readOnly />
@@ -74,7 +81,8 @@ export function RefundTransactionDialog({
             value={refundOfTransactionId}
             onChange={(event) => onRefundOfTransactionIdChange(event.target.value)}
             required
-            className="h-10 bg-(--color-card)"
+            readOnly={lockTransactionId}
+            className={`h-10 bg-(--color-card)${lockTransactionId ? ' opacity-90' : ''}`}
             placeholder="Original payin transaction UUID"
           />
         </label>
@@ -108,7 +116,7 @@ export function RefundTransactionDialog({
             Cancel
           </Button>
           <Button type="submit" className="h-10 w-full px-3 text-xs" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Creating...' : 'Create refund'}
+            {mutation.isPending ? 'Refunding...' : 'Refund'}
           </Button>
         </div>
       </form>

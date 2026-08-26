@@ -1,7 +1,8 @@
-import type { RefObject } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import type { CustomerItem } from '../../services/customersSchemas.ts'
+import { CustomersEmptyState } from './CustomersEmptyState.tsx'
 import {
   formatDateTime,
   getCustomerAvatarClassName,
@@ -14,18 +15,12 @@ type CustomersHistoryTableProps = {
   isPending: boolean
   isError: boolean
   items: CustomerItem[]
-  emptyMessage: string
+  emptyTitle: string
+  emptyDescription: string
+  showClearFilters?: boolean
+  onClearFilters?: () => void
   copiedCustomerId: string | null
-  openActionsCustomerId: string | null
-  actionsMenuRef: RefObject<HTMLDivElement | null>
   onCopyCustomerId: (customerId: string) => void
-  onToggleActions: (customerId: string) => void
-  onView: (customer: CustomerItem) => void
-  onUpdateStatus: (customer: CustomerItem) => void
-  onTransactions: (customer: CustomerItem) => void
-  onTransfer: (customer: CustomerItem) => void
-  onRefund: (customer: CustomerItem) => void
-  canWriteMoney?: boolean
 }
 
 function CopyIcon() {
@@ -36,10 +31,10 @@ function CopyIcon() {
   )
 }
 
-function MoreIcon() {
+function ChevronIcon() {
   return (
     <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current" aria-hidden>
-      <path d="M10 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm0 4.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm0 4.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
+      <path d="M7.22 4.72a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.69 10 7.22 5.78a.75.75 0 0 1 0-1.06Z" />
     </svg>
   )
 }
@@ -48,19 +43,15 @@ export function CustomersHistoryTable({
   isPending,
   isError,
   items,
-  emptyMessage,
+  emptyTitle,
+  emptyDescription,
+  showClearFilters = false,
+  onClearFilters,
   copiedCustomerId,
-  openActionsCustomerId,
-  actionsMenuRef,
   onCopyCustomerId,
-  onToggleActions,
-  onView,
-  onUpdateStatus,
-  onTransactions,
-  onTransfer,
-  onRefund,
-  canWriteMoney = true,
 }: CustomersHistoryTableProps) {
+  const navigate = useNavigate()
+
   if (isPending) {
     return (
       <div className="customers-table-state">
@@ -79,8 +70,21 @@ export function CustomersHistoryTable({
 
   if (items.length === 0) {
     return (
-      <div className="customers-table-state">{emptyMessage}</div>
+      <CustomersEmptyState
+        title={emptyTitle}
+        description={emptyDescription}
+        showClearFilters={showClearFilters}
+        onClearFilters={onClearFilters}
+      />
     )
+  }
+
+  function openCustomer(customerId: string) {
+    void navigate({
+      to: '/dashboard/customers/$customerId',
+      params: { customerId },
+      search: { tab: 'overview' },
+    })
   }
 
   return (
@@ -92,7 +96,7 @@ export function CustomersHistoryTable({
           <th className="num">Balance</th>
           <th>Status</th>
           <th>Last active</th>
-          <th className="customers-col-action" aria-label="Actions" />
+          <th className="customers-col-action" aria-label="Open" />
         </tr>
       </thead>
       <tbody>
@@ -103,7 +107,19 @@ export function CustomersHistoryTable({
           const currency = customer.currency.trim().toUpperCase()
 
           return (
-            <tr key={customer.id}>
+            <tr
+              key={customer.id}
+              className="customers-row--clickable"
+              tabIndex={0}
+              aria-label={`Open ${customer.label?.trim() || 'customer'}`}
+              onClick={() => openCustomer(customer.id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  openCustomer(customer.id)
+                }
+              }}
+            >
               <td>
                 <div className="customers-cell-customer">
                   <span
@@ -122,7 +138,10 @@ export function CustomersHistoryTable({
                         type="button"
                         className="customers-copy-btn"
                         aria-label="Copy wallet ID"
-                        onClick={() => onCopyCustomerId(customer.id)}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onCopyCustomerId(customer.id)
+                        }}
                       >
                         <CopyIcon />
                       </button>
@@ -151,59 +170,9 @@ export function CustomersHistoryTable({
                 ) : null}
               </td>
               <td className="customers-col-action">
-                <div
-                  className="customers-actions"
-                  ref={openActionsCustomerId === customer.id ? actionsMenuRef : null}
-                >
-                  <button
-                    type="button"
-                    className="customers-actions-trigger"
-                    aria-label="Open customer actions"
-                    aria-expanded={openActionsCustomerId === customer.id}
-                    onClick={() => onToggleActions(customer.id)}
-                  >
-                    <MoreIcon />
-                  </button>
-                  {openActionsCustomerId === customer.id ? (
-                    <div className="customers-actions-menu" role="menu">
-                      <button type="button" role="menuitem" onClick={() => onView(customer)}>
-                        View
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => onUpdateStatus(customer)}
-                      >
-                        Update status
-                      </button>
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => onTransactions(customer)}
-                      >
-                        Transactions
-                      </button>
-                      {canWriteMoney ? (
-                        <>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            onClick={() => onTransfer(customer)}
-                          >
-                            Create transfer
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            onClick={() => onRefund(customer)}
-                          >
-                            Create refund
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
+                <span className="customers-row-chevron" aria-hidden>
+                  <ChevronIcon />
+                </span>
               </td>
             </tr>
           )

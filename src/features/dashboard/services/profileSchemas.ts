@@ -1,12 +1,22 @@
 import { z } from 'zod'
 
-const businessProfileSchema = z.object({
-  id: z.string().min(1),
-  legalName: z.string().min(1),
-  tradingName: z.string().nullable().optional(),
-  businessType: z.string().min(1),
-  status: z.string().min(1),
-})
+const businessProfileSchema = z
+  .object({
+    id: z.string().min(1),
+    legalName: z.string().min(1),
+    tradingName: z.string().nullable().optional(),
+    businessType: z.string().min(1),
+    status: z.string().min(1),
+    registrationNumber: z.string().nullable().optional(),
+    incorporationDate: z.string().nullable().optional(),
+    industry: z.string().nullable().optional(),
+    registeredAddress: z.string().nullable().optional(),
+    operatingAddress: z.string().nullable().optional(),
+    taxId: z.string().nullable().optional(),
+    contactPhone: z.string().nullable().optional(),
+    contactEmail: z.string().nullable().optional(),
+  })
+  .passthrough()
 
 export const profileResponseSchema = z.object({
   merchantId: z.string().min(1),

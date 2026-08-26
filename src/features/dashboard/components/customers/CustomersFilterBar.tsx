@@ -1,21 +1,15 @@
-import { pageSizeOptions, statusFilterOptions } from './customerViewUtils.tsx'
 import { InputClearButton } from '../../../../components/ui/InputClearButton.tsx'
 import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
-
-const customerPageSizeOptions = pageSizeOptions.map((option) => ({
-  ...option,
-  label: `${option.value} per page`,
-}))
 
 function SearchIcon() {
   return (
     <svg
-      width="14"
-      height="14"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.7"
       strokeLinecap="round"
       aria-hidden
     >
@@ -25,13 +19,22 @@ function SearchIcon() {
   )
 }
 
+type StatusPill = {
+  id: string
+  label: string
+  count: number
+}
+
 type CustomersFilterBarProps = {
   searchQuery: string
   onSearchQueryChange: (value: string) => void
   statusFilter: string
   onStatusFilterChange: (value: string) => void
-  pageSize: number
-  onPageSizeChange: (value: number) => void
+  currencyFilter: string
+  onCurrencyFilterChange: (value: string) => void
+  currencyOptions: Array<{ value: string; label: string }>
+  statusPills: StatusPill[]
+  isCountsLoading?: boolean
 }
 
 export function CustomersFilterBar({
@@ -39,16 +42,19 @@ export function CustomersFilterBar({
   onSearchQueryChange,
   statusFilter,
   onStatusFilterChange,
-  pageSize,
-  onPageSizeChange,
+  currencyFilter,
+  onCurrencyFilterChange,
+  currencyOptions,
+  statusPills,
+  isCountsLoading = false,
 }: CustomersFilterBarProps) {
   return (
-    <div className="customers-filter-bar">
-      <label className="customers-field customers-field--search">
+    <div className="customers-toolbar">
+      <label className="customers-toolbar-search">
         <SearchIcon />
         <input
           type="text"
-          placeholder="Search by name or wallet ID"
+          placeholder="Search by name, email or wallet ID"
           value={searchQuery}
           onChange={(event) => onSearchQueryChange(event.target.value)}
           aria-label="Search customers"
@@ -61,21 +67,33 @@ export function CustomersFilterBar({
         ) : null}
       </label>
 
-      <DropdownSelect
-        options={statusFilterOptions}
-        value={statusFilter}
-        onChange={onStatusFilterChange}
-        ariaLabel="Filter customers by status"
-        className="w-full min-w-0"
-        variant="filter"
-      />
+      <div className="customers-toolbar-pills" role="tablist" aria-label="Filter by status">
+        {statusPills.map((pill) => {
+          const isActive = statusFilter === pill.id
+          return (
+            <button
+              key={pill.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`customers-toolbar-pill${isActive ? ' customers-toolbar-pill--active' : ''}`}
+              onClick={() => onStatusFilterChange(pill.id)}
+            >
+              <span>{pill.label}</span>
+              <span className="customers-toolbar-pill-count">
+                {isCountsLoading ? '—' : pill.count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
 
       <DropdownSelect
-        options={customerPageSizeOptions}
-        value={String(pageSize)}
-        onChange={(value) => onPageSizeChange(Number(value))}
-        ariaLabel="Customers per page"
-        className="w-full min-w-0"
+        options={currencyOptions}
+        value={currencyFilter}
+        onChange={onCurrencyFilterChange}
+        ariaLabel="Filter customers by currency"
+        className="customers-toolbar-currency"
         variant="filter"
       />
     </div>

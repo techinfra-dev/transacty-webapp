@@ -57,9 +57,9 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
 }
 
 const sidebarNavLinkClass =
-  'relative flex h-9 items-center gap-2.5 rounded-lg border border-transparent px-3 [font-family:var(--font-body)] text-[15px] text-(--sidebar-link) transition-[color,background-color,border-color] duration-150'
+  'relative flex h-9 items-center gap-3 rounded-lg border border-transparent px-3 [font-family:var(--font-body)] text-[15.5px] tracking-[-0.01em] text-(--sidebar-link) transition-[color,background-color,border-color,font-weight] duration-150'
 
-const sidebarNavLinkActiveClass = 'sidebar-nav-link--active font-semibold'
+const sidebarNavLinkActiveClass = 'sidebar-nav-link--active font-bold'
 
 const sidebarNavLinkInactiveClass =
   'font-medium hover:bg-(--sidebar-link-hover-bg) hover:text-(--sidebar-link-hover)'
@@ -175,11 +175,11 @@ export function DashboardSidebarNav({
         {menuSections.map((section) => (
           <div key={section.title} className="space-y-1">
             {!collapsed ? (
-              <p className="px-2 [font-family:var(--font-body)] text-[10.5px] font-semibold uppercase tracking-[0.12em] text-(--sidebar-section)">
+              <p className="px-2.5 pb-0.5 [font-family:var(--font-body)] text-[10px] font-semibold uppercase tracking-[0.14em] text-(--sidebar-section)">
                 {section.title}
               </p>
             ) : null}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {section.items.map((item) => {
                 const isActive = isDashboardNavItemActive(item.to, pathname)
                 return (
@@ -198,11 +198,15 @@ export function DashboardSidebarNav({
                   >
                     <span
                       aria-hidden
-                      className="inline-flex size-[18px] shrink-0 items-center justify-center text-inherit"
+                      className={`inline-flex size-[1.125rem] shrink-0 items-center justify-center text-inherit ${
+                        isActive ? 'opacity-100' : 'opacity-80'
+                      }`}
                     >
                       <SidebarItemIcon to={item.to} active={isActive} />
                     </span>
-                    {!collapsed ? <span>{item.label}</span> : null}
+                    {!collapsed ? (
+                      <span className="min-w-0 truncate leading-none">{item.label}</span>
+                    ) : null}
                   </Link>
                 )
               })}
@@ -236,7 +240,7 @@ export function DashboardSidebarNav({
               {!collapsed ? 'Logging out...' : null}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-2.5">
               <LogoutIcon />
               {!collapsed ? 'Logout' : null}
             </span>

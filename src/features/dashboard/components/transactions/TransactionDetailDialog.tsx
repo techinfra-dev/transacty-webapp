@@ -1,13 +1,17 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { DIALOG_EXIT_ANIMATION_MS } from '../../../../components/ui/Dialog.tsx'
+import { Button } from '../../../../components/ui/Button.tsx'
+import { Dialog, DIALOG_EXIT_ANIMATION_MS } from '../../../../components/ui/Dialog.tsx'
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { usePortalRole } from '../../../../hooks/usePortalRole.ts'
+import { useTransferRefundActions } from '../../hooks/useTransferRefundActions.ts'
 import type {
   TransactionDetail,
   TransactionStatus,
 } from '../../services/transactionsSchemas.ts'
+import { RefundTransactionDialog } from './RefundTransactionDialog.tsx'
 import { TransactionMethodTag } from './TransactionMethodTag.tsx'
 import {
   getTransactionAmountDisplay,
@@ -251,12 +255,27 @@ function TransactionTimeline({ detail }: { detail: TransactionDetail }) {
   )
 }
 
+function canRefundTransaction(detail: TransactionDetail, canWriteMoney: boolean) {
+  if (!canWriteMoney || detail.status !== 'success') {
+    return false
+  }
+  if (!detail.customerWalletId?.trim()) {
+    return false
+  }
+  // Refunds apply to money that landed on a customer wallet (payin or transfer in).
+  return detail.type === 'payin' || detail.type === 'transfer'
+}
+
 function TransactionDetailBody({
   detail,
   onClose,
+  onRefund,
+  canRefund,
 }: {
   detail: TransactionDetail
   onClose: () => void
+  onRefund?: () => void
+  canRefund?: boolean
 }) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const amounts = getTransactionAmountDisplay(detail)
@@ -375,11 +394,6 @@ function TransactionDetailBody({
               {detail.settlementCurrency}
             </TxDetailRow>
           ) : null}
-          {detail.provider ? (
-            <TxDetailRow label="Provider" dim>
-              {detail.provider}
-            </TxDetailRow>
-          ) : null}
         </div>
 
         <div className="tx-detail-sect">Customer</div>
@@ -424,13 +438,6 @@ function TransactionDetailBody({
           <TxDetailRow label="Refund of" dim mono>
             {detail.refundOfTransactionId || '—'}
           </TxDetailRow>
-          {detail.providerRefs ? (
-            <TxDetailRow label="Provider refs" mono dim>
-              {typeof detail.providerRefs === 'string'
-                ? detail.providerRefs
-                : JSON.stringify(detail.providerRefs)}
-            </TxDetailRow>
-          ) : null}
         </div>
 
         <div className="tx-detail-sect">Timeline</div>
@@ -447,6 +454,11 @@ function TransactionDetailBody({
           {copiedKey === 'idfoot' ? 'Copied' : 'Copy ID'}
         </button>
         <div className="tx-detail-foot-spacer" />
+        {canRefund && onRefund ? (
+          <button type="button" className="tx-detail-secondary-btn" onClick={onRefund}>
+            Refund
+          </button>
+        ) : null}
         <button type="button" className="tx-detail-primary-btn" onClick={onClose}>
           Done
         </button>
@@ -470,9 +482,26 @@ export function TransactionDetailDialog({
   onClose,
   detailQuery,
 }: TransactionDetailDialogProps) {
+  const { canWriteMoney } = usePortalRole()
+  const moneyActions = useTransferRefundActions()
   const exitSnapshotRef = useRef<ExitSnapshot | null>(null)
   const [isRendered, setIsRendered] = useState(Boolean(selectedTransactionId))
   const [isVisible, setIsVisible] = useState(Boolean(selectedTransactionId))
+
+  function startRefund(detail: TransactionDetail) {
+    const walletId = detail.customerWalletId?.trim()
+    if (!walletId) {
+      return
+    }
+    moneyActions.openRefundForTransaction({
+      customerWalletId: walletId,
+      transactionId: detail.id,
+      amount: detail.amount,
+    })
+  }
+
+  const isRefundOverlayOpen =
+    moneyActions.isRefundDialogOpen || moneyActions.liveMoneyConfirm === 'refund'
 
   useLayoutEffect(() => {
     if (!selectedTransactionId) {
@@ -524,9 +553,14 @@ export function TransactionDetailDialog({
     document.body.style.overflow = 'hidden'
 
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
+      if (event.key !== 'Escape') {
+        return
       }
+      // Let the stacked refund / live-confirm dialog handle Escape first.
+      if (isRefundOverlayOpen) {
+        return
+      }
+      onClose()
     }
 
     window.addEventListener('keydown', onEscape)
@@ -534,7 +568,7 @@ export function TransactionDetailDialog({
       window.removeEventListener('keydown', onEscape)
       document.body.style.overflow = previousOverflow
     }
-  }, [isRendered, onClose])
+  }, [isRendered, onClose, isRefundOverlayOpen])
 
   if (!isRendered) {
     return null
@@ -557,13 +591,25 @@ export function TransactionDetailDialog({
       )
     } else if (detailQuery.data) {
       content = (
-        <TransactionDetailBody detail={detailQuery.data} onClose={onClose} />
+        <TransactionDetailBody
+          detail={detailQuery.data}
+          onClose={onClose}
+          canRefund={canRefundTransaction(detailQuery.data, canWriteMoney)}
+          onRefund={() => startRefund(detailQuery.data)}
+        />
       )
     }
   } else {
     const snap = exitSnapshotRef.current
     if (snap?.kind === 'detail') {
-      content = <TransactionDetailBody detail={snap.detail} onClose={onClose} />
+      content = (
+        <TransactionDetailBody
+          detail={snap.detail}
+          onClose={onClose}
+          canRefund={canRefundTransaction(snap.detail, canWriteMoney)}
+          onRefund={() => startRefund(snap.detail)}
+        />
+      )
     } else if (snap?.kind === 'error') {
       content = (
         <div className="tx-detail-error-wrap">
@@ -573,22 +619,82 @@ export function TransactionDetailDialog({
     }
   }
 
-  return createPortal(
-    <div
-      className={`tx-detail-scrim ${isVisible ? '' : 'tx-detail-scrim-closed'}`}
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        className={`tx-detail-modal ${isVisible ? '' : 'tx-detail-modal-closed'}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Transaction details"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {content}
-      </div>
-    </div>,
-    document.body,
+  return (
+    <>
+      {createPortal(
+        <div
+          className={`tx-detail-scrim ${isVisible ? '' : 'tx-detail-scrim-closed'}`}
+          onClick={() => {
+            if (!isRefundOverlayOpen) {
+              onClose()
+            }
+          }}
+          role="presentation"
+        >
+          <div
+            className={`tx-detail-modal ${isVisible ? '' : 'tx-detail-modal-closed'}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Transaction details"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {content}
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      <RefundTransactionDialog
+        isOpen={moneyActions.isRefundDialogOpen}
+        onClose={() => moneyActions.setIsRefundDialogOpen(false)}
+        customerWalletId={moneyActions.refundCustomerWalletId}
+        amount={moneyActions.refundAmount}
+        onAmountChange={moneyActions.setRefundAmount}
+        refundOfTransactionId={moneyActions.refundOfTransactionId}
+        onRefundOfTransactionIdChange={moneyActions.setRefundOfTransactionId}
+        reason={moneyActions.refundReason}
+        onReasonChange={moneyActions.setRefundReason}
+        lockTransactionId={moneyActions.refundTransactionLocked}
+        stacked
+        mutation={moneyActions.createRefundMutation}
+        onSubmit={moneyActions.handleRefundSubmit}
+      />
+
+      <Dialog
+        isOpen={moneyActions.liveMoneyConfirm === 'refund'}
+        onClose={() => {
+          if (!moneyActions.createRefundMutation.isPending) {
+            moneyActions.setLiveMoneyConfirm(null)
+          }
+        }}
+        title="Confirm live refund"
+        description="This refund will be processed in the live environment and may affect real customer balances."
+        maxWidthClassName="max-w-md"
+        rootClassName="z-[140]"
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full px-3 text-xs"
+              disabled={moneyActions.createRefundMutation.isPending}
+              onClick={() => moneyActions.setLiveMoneyConfirm(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="h-10 w-full px-3 text-xs"
+              disabled={moneyActions.createRefundMutation.isPending}
+              onClick={() => void moneyActions.executeRefund()}
+            >
+              {moneyActions.createRefundMutation.isPending
+                ? 'Refunding...'
+                : 'Confirm refund'}
+            </Button>
+          </div>
+        }
+      />
+    </>
   )
 }

@@ -4,6 +4,7 @@ import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button.tsx'
 import { Dialog } from '../components/ui/Dialog.tsx'
 import { TestModeBanner } from '../components/ui/TestModeBanner.tsx'
+import { SwitchToLiveDialog } from '../features/dashboard/components/SwitchToLiveDialog.tsx'
 import { TransactionDetailDialog } from '../features/dashboard/components/transactions/TransactionDetailDialog.tsx'
 import { useTransactionDetailQuery } from '../features/dashboard/hooks/useTransactionsQueries.ts'
 import { logout } from '../features/auth/services/authService.ts'
@@ -447,41 +448,17 @@ export function DashboardLayout() {
         }
       />
 
-      <Dialog
+      <SwitchToLiveDialog
         isOpen={isLiveSwitchConfirmOpen}
         onClose={() => {
           setIsLiveSwitchConfirmOpen(false)
           setPendingEnvironment(null)
         }}
-        title="Switch to live environment?"
-        description="The dashboard will load production data: live balances, customers, and transactions. You can switch back to test anytime."
-        maxWidthClassName="max-w-md"
-        footer={
-          <div className="dialog-action-row grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 w-full px-3 text-xs"
-              onClick={() => {
-                setIsLiveSwitchConfirmOpen(false)
-                setPendingEnvironment(null)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="h-10 w-full px-3 text-xs"
-              onClick={() => {
-                if (pendingEnvironment === 'live') {
-                  void applyPortalEnvironment('live')
-                }
-              }}
-            >
-              Use live data
-            </Button>
-          </div>
-        }
+        onConfirm={() => {
+          if (pendingEnvironment === 'live') {
+            void applyPortalEnvironment('live')
+          }
+        }}
       />
 
       <TransactionDetailDialog

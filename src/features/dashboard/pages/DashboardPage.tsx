@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { DashboardActivityPanel } from '../components/DashboardActivityPanel.tsx'
@@ -8,14 +7,15 @@ import { DashboardAddWalletCard } from '../components/DashboardAddWalletCard.tsx
 import { AddWalletDialog } from '../components/AddWalletDialog.tsx'
 import { DashboardWalletCard } from '../components/DashboardWalletCard.tsx'
 import { DashboardWalletsSkeleton } from '../components/DashboardWalletsSkeleton.tsx'
+import { GoLiveChecklistCard } from '../components/GoLiveChecklistCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
 import { useMarketsQuery } from '../hooks/useMarketsQuery.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 import {
   getActivatedWallets,
-  getAddWalletCatalogGroups,
   getCatalogWallets,
 } from '../utils/balanceWalletUtils.ts'
+import { getMarketBrowserFilter, canRequestMarketAccess } from '../utils/marketDisplayUtils.ts'
 
 function MerchantKycBadge({
   kycStatus,
@@ -26,19 +26,14 @@ function MerchantKycBadge({
     'inline-flex shrink-0 items-center rounded-full px-2 py-0.5 [font-family:var(--font-body)] text-[12px] font-semibold motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-2 motion-safe:duration-300'
   if (kycStatus === undefined) {
     return (
-      <span
-        className={`${base} bg-[#E8E4DE] text-[#566167]`}
-        aria-hidden
-      >
+      <span className={`${base} bg-[#E8E4DE] text-[#566167]`} aria-hidden>
         …
       </span>
     )
   }
   if (kycStatus === 'verified') {
     return (
-      <span className={`${base} bg-[#3D6B4F] text-white`}>
-        Verified merchant
-      </span>
+      <span className={`${base} bg-[#3D6B4F] text-white`}>Verified merchant</span>
     )
   }
   const label = kycStatus === 'pending' ? 'KYC pending' : 'KYC rejected'
@@ -46,7 +41,6 @@ function MerchantKycBadge({
 }
 
 export function DashboardPage() {
-  const navigate = useNavigate()
   const areBalancesHidden = useUiPreferencesStore(
     (state) => state.areBalancesHidden,
   )
@@ -63,13 +57,20 @@ export function DashboardPage() {
     : null
   const catalog = getCatalogWallets(walletsQuery.data)
   const markets = marketsQuery.data ?? []
-  const addableWallets = useMemo(() => {
-    if (!marketsQuery.data) {
-      return []
-    }
-    return getAddWalletCatalogGroups(markets, catalog)
-  }, [markets, catalog, marketsQuery.data])
-  const canAddWallet = addableWallets.length > 0
+  // Only markets that can still be requested (Available > 0), not already enabled/down.
+  const hasRequestableMarkets = useMemo(
+    () =>
+      markets.some(
+        (market) =>
+          getMarketBrowserFilter(market) === 'available' &&
+          canRequestMarketAccess(market),
+      ),
+    [markets],
+  )
+
+  const isKycVerified = profileQuery.data?.kycStatus === 'verified'
+  const showGoLiveChecklist =
+    profileQuery.isSuccess && profileQuery.data?.kycStatus !== 'verified'
 
   const outlineBtn = 'dash-btn-outline'
 
@@ -124,52 +125,71 @@ export function DashboardPage() {
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
           </Button>
 
-          <Button
-            className="dash-btn-primary"
-            onClick={() => navigate({ to: '/dashboard/payouts' })}
-          >
-            Request payout
-          </Button>
+          {hasRequestableMarkets ? (
+            <Button
+              className="dash-btn-primary"
+              onClick={() => setIsAddWalletOpen(true)}
+            >
+              Add wallet
+            </Button>
+          ) : null}
         </div>
       </header>
 
-      {walletsQuery.isPending ? (
-        <DashboardWalletsSkeleton />
-      ) : walletsQuery.isError || wallets === null ? (
-        <section className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-          <p className="[font-family:var(--font-body)] text-sm text-rose-700">
-            Unable to load merchant wallets right now.
-          </p>
+      {showGoLiveChecklist ? (
+        <section className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">
+          <GoLiveChecklistCard
+            kycStatus={profileQuery.data?.kycStatus}
+            businessProfileStatus={profileQuery.data?.businessProfile?.status}
+          />
+          <div className="go-live-side-stack">
+            {hasRequestableMarkets ? (
+              <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
+            ) : null}
+            <DashboardWalletDistributionChart />
+          </div>
         </section>
       ) : (
-        <section className="dashboard-wallets-grid">
-          {wallets.map((wallet) => {
-            const amount = Number(wallet.balance)
-            const safeAmount = Number.isFinite(amount) ? amount : 0
-            return (
-              <DashboardWalletCard
-                key={wallet.id}
-                walletId={wallet.id}
-                currency={wallet.currency}
-                amount={safeAmount}
-                areBalancesHidden={areBalancesHidden}
-                statusLabel={wallet.status}
-                displayLabel={wallet.displayLabel}
-                market={wallet.market}
-                region={wallet.region}
-              />
-            )
-          })}
-          {canAddWallet ? (
-            <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
-          ) : null}
-        </section>
-      )}
+        <>
+          {walletsQuery.isPending ? (
+            <DashboardWalletsSkeleton />
+          ) : walletsQuery.isError || wallets === null ? (
+            <section className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+              <p className="[font-family:var(--font-body)] text-sm text-rose-700">
+                Unable to load merchant wallets right now.
+              </p>
+            </section>
+          ) : (
+            <section className="dashboard-wallets-grid">
+              {wallets.map((wallet) => {
+                const amount = Number(wallet.balance)
+                const safeAmount = Number.isFinite(amount) ? amount : 0
+                return (
+                  <DashboardWalletCard
+                    key={wallet.id}
+                    walletId={wallet.id}
+                    currency={wallet.currency}
+                    amount={safeAmount}
+                    areBalancesHidden={areBalancesHidden}
+                    statusLabel={wallet.status}
+                    displayLabel={wallet.displayLabel}
+                    market={wallet.market}
+                    region={wallet.region}
+                  />
+                )
+              })}
+              {hasRequestableMarkets ? (
+                <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
+              ) : null}
+            </section>
+          )}
 
-      <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">
-        <DashboardActivityPanel />
-        <DashboardWalletDistributionChart />
-      </section>
+          <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">
+            <DashboardActivityPanel />
+            {isKycVerified ? <DashboardWalletDistributionChart /> : null}
+          </section>
+        </>
+      )}
 
       <AddWalletDialog
         isOpen={isAddWalletOpen}

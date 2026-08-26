@@ -1,4 +1,3 @@
-import type { RefObject } from 'react'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { CustomerItem, CustomersListResponse } from '../../services/customersSchemas.ts'
 import { CustomersFooter } from './CustomersFooter.tsx'
@@ -7,7 +6,10 @@ import { CustomersHistoryTable } from './CustomersHistoryTable.tsx'
 type CustomersTableSectionProps = {
   customersQuery: UseQueryResult<CustomersListResponse, Error>
   items: CustomerItem[]
-  emptyMessage: string
+  emptyTitle: string
+  emptyDescription: string
+  showClearFilters?: boolean
+  onClearFilters?: () => void
   startItem: number
   endItem: number
   totalItems: number
@@ -15,26 +17,20 @@ type CustomersTableSectionProps = {
   currentPage: number
   totalPages: number
   copiedCustomerId: string | null
-  openActionsCustomerId: string | null
-  actionsMenuRef: RefObject<HTMLDivElement | null>
   isLiveEnvironment: boolean
   onPageSizeChange: (value: number) => void
   onPreviousPage: () => void
   onNextPage: () => void
   onCopyCustomerId: (customerId: string) => void
-  onToggleActions: (customerId: string) => void
-  onView: (customer: CustomerItem) => void
-  onUpdateStatus: (customer: CustomerItem) => void
-  onTransactions: (customer: CustomerItem) => void
-  onTransfer: (customer: CustomerItem) => void
-  onRefund: (customer: CustomerItem) => void
-  canWriteMoney?: boolean
 }
 
 export function CustomersTableSection({
   customersQuery,
   items,
-  emptyMessage,
+  emptyTitle,
+  emptyDescription,
+  showClearFilters = false,
+  onClearFilters,
   startItem,
   endItem,
   totalItems,
@@ -42,20 +38,11 @@ export function CustomersTableSection({
   currentPage,
   totalPages,
   copiedCustomerId,
-  openActionsCustomerId,
-  actionsMenuRef,
   isLiveEnvironment,
   onPageSizeChange,
   onPreviousPage,
   onNextPage,
   onCopyCustomerId,
-  onToggleActions,
-  onView,
-  onUpdateStatus,
-  onTransactions,
-  onTransfer,
-  onRefund,
-  canWriteMoney = true,
 }: CustomersTableSectionProps) {
   return (
     <section className="customers-card">
@@ -64,21 +51,14 @@ export function CustomersTableSection({
           isPending={customersQuery.isPending}
           isError={customersQuery.isError}
           items={items}
-          emptyMessage={emptyMessage}
+          emptyTitle={emptyTitle}
+          emptyDescription={emptyDescription}
+          showClearFilters={showClearFilters}
+          onClearFilters={onClearFilters}
           copiedCustomerId={copiedCustomerId}
-          openActionsCustomerId={openActionsCustomerId}
-          actionsMenuRef={actionsMenuRef}
           onCopyCustomerId={onCopyCustomerId}
-          onToggleActions={onToggleActions}
-          onView={onView}
-          onUpdateStatus={onUpdateStatus}
-          onTransactions={onTransactions}
-          onTransfer={onTransfer}
-          onRefund={onRefund}
-          canWriteMoney={canWriteMoney}
         />
       </div>
-
       <CustomersFooter
         startItem={startItem}
         endItem={endItem}

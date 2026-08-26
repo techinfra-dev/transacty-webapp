@@ -1,15 +1,24 @@
-import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
+import { useMemo, useState } from 'react'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
+import { AddWalletDialog } from '../AddWalletDialog.tsx'
+import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
+import { useMarketsQuery } from '../../hooks/useMarketsQuery.ts'
 import { useMoneyOverviewQuery } from '../../hooks/usePortalDepthQueries.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import {
+  getCatalogWallets,
   getWalletDisplayLabel,
-  getWalletUpdatedAt,
 } from '../../utils/balanceWalletUtils.ts'
 import { findRailForWallet } from '../../utils/moneyRailWalletUtils.ts'
 import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
-import { RailCard } from '../RailCard.tsx'
+import {
+  canRequestMarketAccess,
+  getMarketBrowserFilter,
+} from '../../utils/marketDisplayUtils.ts'
+import { resolveWalletTransactionRail } from '../../utils/transactionRailUtils.ts'
+import { WalletBalancePanel } from './WalletBalancePanel.tsx'
 import { WalletCurrencyTabs } from './WalletCurrencyTabs.tsx'
+import { WalletRailStatusCard } from './WalletRailStatusCard.tsx'
 
 type WalletOverviewCardProps = {
   wallets: BalanceWalletItem[]
@@ -18,130 +27,94 @@ type WalletOverviewCardProps = {
   walletsLoading?: boolean
 }
 
-function formatWalletUpdated(iso: string) {
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return iso
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
-
-function WalletMetricTile({
-  label,
-  currency,
-  amountStr,
-  areBalancesHidden,
-}: {
-  label: string
-  currency: string
-  amountStr: string | undefined
-  areBalancesHidden: boolean
-}) {
-  const n = Number(amountStr)
-  const safe = Number.isFinite(n) ? n : 0
-  return (
-    <div className="wallet-metric-tile">
-      <p className="wallet-metric-tile-label">{label}</p>
-      <p className="wallet-metric-tile-value">
-        <FormattedMoney
-          currency={currency}
-          value={safe}
-          masked={areBalancesHidden}
-        />
-      </p>
-    </div>
-  )
-}
-
 export function WalletOverviewCard({
   wallets,
   activeWalletId,
   areBalancesHidden,
   walletsLoading = false,
 }: WalletOverviewCardProps) {
+  const [isAddWalletOpen, setIsAddWalletOpen] = useState(false)
   const active = wallets.find((w) => w.id === activeWalletId)
   const moneyOverviewQuery = useMoneyOverviewQuery(Boolean(active))
+  const marketsQuery = useMarketsQuery(true)
+  const balanceQuery = useBalanceQuery(true)
+  const walletRail = resolveWalletTransactionRail(active)
   const railForWallet =
     active && moneyOverviewQuery.data
       ? findRailForWallet(moneyOverviewQuery.data.rails, active)
       : undefined
+
+  const markets = marketsQuery.data ?? []
+  const catalog = getCatalogWallets(balanceQuery.data)
+
+  const hasRequestableMarkets = useMemo(
+    () =>
+      markets.some(
+        (market) =>
+          getMarketBrowserFilter(market) === 'available' &&
+          canRequestMarketAccess(market),
+      ),
+    [markets],
+  )
 
   if (!active) {
     return null
   }
 
   const displayName = getWalletDisplayLabel(active)
+  const paused = isBangladeshRailPausedForWallet(active)
 
   return (
-    <section className="dashboard-card">
-      <WalletCurrencyTabs
-        wallets={wallets}
-        activeWalletId={activeWalletId}
-        areBalancesHidden={areBalancesHidden}
-      />
+    <>
+      <section className="dashboard-card">
+        <WalletCurrencyTabs
+          wallets={wallets}
+          activeWalletId={activeWalletId}
+          areBalancesHidden={areBalancesHidden}
+          showAddWallet={hasRequestableMarkets}
+          onAddWallet={() => setIsAddWalletOpen(true)}
+        />
 
-      <div
-        className="dashboard-card-head border-b-0! pt-3!"
-        role="tabpanel"
-        aria-label={`${displayName} account overview`}
-      >
-        <div>
-          <h2 className="dashboard-section-title text-sm">Account overview</h2>
-          <p className="dashboard-caption">
-            {displayName} · updated {formatWalletUpdated(getWalletUpdatedAt(active))}
-          </p>
-        </div>
-      </div>
-
-      <div className="wallet-overview-body">
-        {walletsLoading ? (
-          <div className="flex min-h-[120px] items-center justify-center">
-            <LoadingSpinner label="Loading wallet balances…" />
-          </div>
-        ) : (
+        <div
+          className="wallet-overview-body"
+          role="tabpanel"
+          aria-label={`${displayName} account overview`}
+        >
           <div
-            className={`wallet-overview-row ${isBangladeshRailPausedForWallet(active) ? 'wallet-overview-row--paused' : ''}`}
+            className={`wallet-overview-layout ${paused ? 'wallet-overview-layout--paused' : ''}`}
           >
-            <div className="wallet-metrics-grid">
-              <WalletMetricTile
-                label="Balance"
-                currency={active.currency}
-                amountStr={active.balance}
-                areBalancesHidden={areBalancesHidden}
-              />
-              <WalletMetricTile
-                label="Available balance"
-                currency={active.currency}
-                amountStr={active.availableBalance}
-                areBalancesHidden={areBalancesHidden}
-              />
-              <WalletMetricTile
-                label="Pending balance"
-                currency={active.currency}
-                amountStr={active.pendingBalance}
-                areBalancesHidden={areBalancesHidden}
-              />
-            </div>
+            <WalletBalancePanel
+              wallet={active}
+              walletRail={walletRail}
+              areBalancesHidden={areBalancesHidden}
+              loading={walletsLoading}
+            />
 
             {moneyOverviewQuery.isPending ? (
-              <div className="wallet-rail-slot flex min-h-[72px] items-center">
-                <LoadingSpinner label="Loading rail…" />
+              <div className="wallet-rail-status wallet-rail-status--loading">
+                <LoadingSpinner label="Loading market…" />
               </div>
             ) : railForWallet ? (
-              <div className="wallet-rail-slot">
-                <RailCard
-                  rail={railForWallet}
-                  paused={isBangladeshRailPausedForWallet(active)}
-                />
-              </div>
-            ) : null}
+              <WalletRailStatusCard rail={railForWallet} paused={paused} />
+            ) : (
+              <article className="wallet-rail-status wallet-rail-status--empty">
+                <h3 className="wallet-rail-status-title">{displayName}</h3>
+                <p className="wallet-rail-status-sub">
+                  Market activity will appear here once this pocket is linked to a
+                  settlement rail.
+                </p>
+              </article>
+            )}
           </div>
-        )}
-      </div>
-    </section>
+        </div>
+      </section>
+
+      <AddWalletDialog
+        isOpen={isAddWalletOpen}
+        onClose={() => setIsAddWalletOpen(false)}
+        markets={markets}
+        catalog={catalog}
+      />
+    </>
   )
 }

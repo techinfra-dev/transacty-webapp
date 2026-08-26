@@ -21,6 +21,8 @@ interface DialogProps {
   allowOverflow?: boolean
   showCloseButton?: boolean
   closeOnBackdrop?: boolean
+  /** Extra classes on the fixed portal root (e.g. higher z-index when stacking). */
+  rootClassName?: string
 }
 
 function joinClasses(...classNames: Array<string | undefined>) {
@@ -46,6 +48,7 @@ export function Dialog({
   allowOverflow = false,
   showCloseButton = true,
   closeOnBackdrop = true,
+  rootClassName,
 }: DialogProps) {
   const [isRendered, setIsRendered] = useState(isOpen)
   const [isVisible, setIsVisible] = useState(isOpen)
@@ -101,7 +104,8 @@ export function Dialog({
   return createPortal(
     <div
       className={joinClasses(
-        'fixed inset-0 z-110 grid place-items-center p-4',
+        'fixed inset-0 grid place-items-center p-4',
+        rootClassName ?? 'z-110',
         isVisible ? 'dialog-root-open' : 'dialog-root-closed',
       )}
     >

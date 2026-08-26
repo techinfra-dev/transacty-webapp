@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { CurrencyMarketAvatar } from '../../../components/ui/CurrencyMarketAvatar.tsx'
 import { getCurrencyFullName, getCurrencySymbol } from '../../../utils/currencyNames.ts'
 import {
   formatWalletMoney,
@@ -68,11 +69,19 @@ export function DashboardWalletCard({
       aria-current={isSelected ? 'page' : undefined}
       aria-label={`${walletTitle}, ${ariaLabel}${isPaused ? `. ${BANGLADESH_RAIL_PAUSE_COPY}` : ''}`}
     >
-      <div className="flex min-w-0 items-center gap-2">
-        <span className="dashboard-wallet-code shrink-0">
-          {badgeLabel}
-        </span>
-        <span className="dashboard-wallet-name truncate">{walletTitle}</span>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <CurrencyMarketAvatar
+          currency={code}
+          market={market}
+          region={region}
+          size="md"
+        />
+        <div className="min-w-0">
+          <span className="dashboard-wallet-name truncate block">{walletTitle}</span>
+          <span className="dashboard-wallet-code dashboard-wallet-code--inline-meta">
+            {badgeLabel}
+          </span>
+        </div>
       </div>
 
       <div className="flex min-w-0 items-baseline gap-1.5">

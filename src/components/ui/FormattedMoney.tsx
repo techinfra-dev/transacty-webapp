@@ -6,6 +6,8 @@ type FormattedMoneyProps = {
   className?: string
   symbolClassName?: string
   masked?: boolean
+  /** When true, render only the numeric amount (no code/symbol prefix). */
+  amountOnly?: boolean
 }
 
 export function FormattedMoney({
@@ -14,6 +16,7 @@ export function FormattedMoney({
   className = '',
   symbolClassName = '',
   masked = false,
+  amountOnly = false,
 }: FormattedMoneyProps) {
   const { code, symbol, amount } = getMoneyDisplayParts(currency, value)
 
@@ -24,6 +27,16 @@ export function FormattedMoney({
   ]
     .filter(Boolean)
     .join(' ')
+
+  if (amountOnly) {
+    return (
+      <span className={className}>
+        <span className="currency-amount tabular-nums">
+          {masked ? '******' : amount}
+        </span>
+      </span>
+    )
+  }
 
   if (masked) {
     if (!symbol) {

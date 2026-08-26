@@ -24,6 +24,25 @@ export const kycBusinessResponseSchema = z.object({
   status: z.string().min(1),
 })
 
+/** Full business profile returned by GET me/kyc/business (and similar). */
+export const kycBusinessDetailSchema = z
+  .object({
+    id: z.string().min(1).optional(),
+    status: z.string().min(1).optional(),
+    legalName: z.string().optional(),
+    tradingName: z.string().nullable().optional(),
+    businessType: z.string().optional(),
+    registrationNumber: z.string().nullable().optional(),
+    incorporationDate: z.string().nullable().optional(),
+    industry: z.string().nullable().optional(),
+    registeredAddress: z.string().nullable().optional(),
+    operatingAddress: z.string().nullable().optional(),
+    taxId: z.string().nullable().optional(),
+    contactPhone: z.string().nullable().optional(),
+    contactEmail: z.string().nullable().optional(),
+  })
+  .passthrough()
+
 export const kycPersonPayloadSchema = z.object({
   role: z.enum(['director', 'ubo', 'authorized_signatory']),
   fullName: kycPersonFullNameSchema,
@@ -54,12 +73,20 @@ export const kycCreatedItemResponseSchema = z.object({
   id: z.string().min(1),
 })
 
-export const kycPersonListItemSchema = z.object({
-  id: z.string().min(1),
-  role: z.string().min(1),
-  fullName: z.string().min(1),
-  status: z.string().min(1),
-})
+export const kycPersonListItemSchema = z
+  .object({
+    id: z.string().min(1),
+    role: z.string().min(1),
+    fullName: z.string().min(1),
+    status: z.string().min(1),
+    nationality: z.string().optional(),
+    dateOfBirth: z.string().optional(),
+    idType: z.string().optional(),
+    idNumber: z.string().optional(),
+    address: z.string().optional(),
+    ownershipPercentage: z.number().optional(),
+  })
+  .passthrough()
 
 export const kycPersonsListResponseSchema = z.object({
   items: z.array(kycPersonListItemSchema),
@@ -88,12 +115,17 @@ export const kycDocumentUploadUrlResponseSchema = z.object({
   expiresIn: z.number(),
 })
 
-export const kycDocumentListItemSchema = z.object({
-  id: z.string().min(1),
-  documentType: z.string().min(1),
-  status: z.string().min(1),
-  submittedAt: z.string().optional(),
-})
+export const kycDocumentListItemSchema = z
+  .object({
+    id: z.string().min(1),
+    documentType: z.string().min(1),
+    status: z.string().min(1),
+    submittedAt: z.string().optional(),
+    documentNumber: z.string().nullable().optional(),
+    merchantPersonId: z.string().nullable().optional(),
+    fileReference: z.string().optional(),
+  })
+  .passthrough()
 
 export const kycDocumentsListResponseSchema = z.object({
   items: z.array(kycDocumentListItemSchema),
@@ -105,6 +137,7 @@ export const kycSubmitResponseSchema = z.object({
 
 export type KycBusinessPayload = z.infer<typeof kycBusinessPayloadSchema>
 export type KycBusinessResponse = z.infer<typeof kycBusinessResponseSchema>
+export type KycBusinessDetail = z.infer<typeof kycBusinessDetailSchema>
 export type KycPersonPayload = z.infer<typeof kycPersonPayloadSchema>
 export type KycPersonListItem = z.infer<typeof kycPersonListItemSchema>
 export type KycDocumentPayload = z.infer<typeof kycDocumentPayloadSchema>

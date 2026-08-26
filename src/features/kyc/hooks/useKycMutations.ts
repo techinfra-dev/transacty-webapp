@@ -8,8 +8,15 @@ import {
 } from '../services/kycService.ts'
 
 export function useUpsertKycBusinessMutation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: upsertKycBusiness,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['kyc-business'] }),
+        queryClient.invalidateQueries({ queryKey: ['profile-me'] }),
+      ])
+    },
   })
 }
 
@@ -40,7 +47,16 @@ export function useCreateKycDocumentUploadUrlMutation() {
 }
 
 export function useSubmitKycMutation() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: submitKyc,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profile-me'] }),
+        queryClient.invalidateQueries({ queryKey: ['kyc-business'] }),
+        queryClient.invalidateQueries({ queryKey: ['kyc-persons'] }),
+        queryClient.invalidateQueries({ queryKey: ['kyc-documents'] }),
+      ])
+    },
   })
 }

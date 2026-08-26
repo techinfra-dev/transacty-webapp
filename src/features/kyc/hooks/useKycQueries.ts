@@ -1,5 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
-import { listKycDocuments, listKycPersons } from '../services/kycService.ts'
+import {
+  getKycBusiness,
+  listKycDocuments,
+  listKycPersons,
+} from '../services/kycService.ts'
+
+export function useKycBusinessQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['kyc-business'],
+    queryFn: getKycBusiness,
+    enabled,
+    staleTime: 15_000,
+  })
+}
 
 export function useKycPersonsQuery(enabled = true) {
   return useQuery({

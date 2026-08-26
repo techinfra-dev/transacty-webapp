@@ -3,6 +3,7 @@ import { supabaseClient } from '../../../api/supabaseClient.ts'
 import { axiosInstance } from '../../../api/axiosInstance.ts'
 import { getAuthToken } from '../../auth/services/authSession.ts'
 import {
+  kycBusinessDetailSchema,
   kycBusinessPayloadSchema,
   kycBusinessResponseSchema,
   kycCreatedItemResponseSchema,
@@ -13,6 +14,7 @@ import {
   kycPersonPayloadSchema,
   kycPersonsListResponseSchema,
   kycSubmitResponseSchema,
+  type KycBusinessDetail,
   type KycBusinessPayload,
   type KycDocumentPayload,
   type KycDocumentUploadUrlPayload,
@@ -52,6 +54,25 @@ export async function upsertKycBusiness(payload: KycBusinessPayload) {
     return kycBusinessResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getKycApiErrorMessage(error))
+  }
+}
+
+/** Loads saved business KYC fields. Returns null when unavailable. */
+export async function getKycBusiness(): Promise<KycBusinessDetail | null> {
+  try {
+    const response = await axiosInstance.get('me/kyc/business', {
+      headers: getAuthHeader(),
+    })
+    return kycBusinessDetailSchema.parse(response.data)
+  } catch (error) {
+    if (error instanceof AxiosError) {
+      const status = error.response?.status
+      if (status === 404 || status === 405 || status === 501) {
+        return null
+      }
+    }
+    // Prefer profile/draft hydration over failing the wizard open path.
+    return null
   }
 }
 

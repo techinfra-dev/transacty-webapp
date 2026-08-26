@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { CustomerItem, CustomerStatus } from '../services/customersSchemas.ts'
 import { useCustomersListQuery } from './useCustomersQueries.ts'
 import { useCustomerStatusCounts } from './useCustomerStatusCounts.ts'
@@ -6,17 +6,18 @@ import { useCustomersTotalBalance } from './useCustomersTotalBalance.ts'
 
 export function useCustomersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
+  const [currencyFilter, setCurrencyFilter] = useState('all')
   const [pageSize, setPageSize] = useState(20)
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedCustomerId, setCopiedCustomerId] = useState<string | null>(null)
-  const [openActionsCustomerId, setOpenActionsCustomerId] = useState<string | null>(null)
-  const actionsMenuRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedSearch = searchQuery.trim()
   const isSearchActive = normalizedSearch.length > 0
-  const listLimit = isSearchActive ? 200 : pageSize
-  const listOffset = isSearchActive ? 0 : (currentPage - 1) * pageSize
+  const isCurrencyFiltered = currencyFilter !== 'all'
+  const needsClientFilter = isSearchActive || isCurrencyFiltered
+  const listLimit = needsClientFilter ? 200 : pageSize
+  const listOffset = needsClientFilter ? 0 : (currentPage - 1) * pageSize
 
   const customersQuery = useCustomersListQuery({
     limit: listLimit,
@@ -31,67 +32,71 @@ export function useCustomersPage() {
     !statusCounts.isLoading,
   )
 
-  const filteredItems = useMemo(() => {
-    const items = customersQuery.data?.items ?? []
-    if (!isSearchActive) {
-      return items
-    }
-    const needle = normalizedSearch.toLowerCase()
-    return items.filter((customer) => {
-      const label = customer.label?.toLowerCase() ?? ''
-      return (
-        customer.id.toLowerCase().includes(needle) || label.includes(needle)
-      )
-    })
-  }, [customersQuery.data?.items, isSearchActive, normalizedSearch])
+  const currencyOptions = useMemo(() => {
+    const codes = (totalBalanceQuery.data?.byCurrency ?? []).map(
+      (entry) => entry.currency,
+    )
+    return [
+      { value: 'all', label: 'All currencies' },
+      ...codes.map((code) => ({ value: code, label: code })),
+    ]
+  }, [totalBalanceQuery.data?.byCurrency])
 
-  const totalItems = isSearchActive
+  const filteredItems = useMemo(() => {
+    let items = customersQuery.data?.items ?? []
+    if (isCurrencyFiltered) {
+      const needle = currencyFilter.trim().toUpperCase()
+      items = items.filter(
+        (customer) => customer.currency.trim().toUpperCase() === needle,
+      )
+    }
+    if (isSearchActive) {
+      const needle = normalizedSearch.toLowerCase()
+      items = items.filter((customer) => {
+        const label = customer.label?.toLowerCase() ?? ''
+        return (
+          customer.id.toLowerCase().includes(needle) || label.includes(needle)
+        )
+      })
+    }
+    return items
+  }, [
+    currencyFilter,
+    customersQuery.data?.items,
+    isCurrencyFiltered,
+    isSearchActive,
+    normalizedSearch,
+  ])
+
+  const totalItems = needsClientFilter
     ? filteredItems.length
     : (customersQuery.data?.total ?? 0)
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
 
   const displayedItems = useMemo(() => {
-    if (!isSearchActive) {
+    if (!needsClientFilter) {
       return filteredItems
     }
     const start = (currentPage - 1) * pageSize
     return filteredItems.slice(start, start + pageSize)
-  }, [filteredItems, isSearchActive, currentPage, pageSize])
+  }, [filteredItems, needsClientFilter, currentPage, pageSize])
 
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
   const endItem = Math.min(currentPage * pageSize, totalItems)
 
+  const hasActiveFilters =
+    statusFilter !== 'all' || currencyFilter !== 'all' || isSearchActive
+
   useEffect(() => {
     setCurrentPage(1)
-  }, [statusFilter, pageSize, normalizedSearch])
+  }, [statusFilter, currencyFilter, pageSize, normalizedSearch])
 
   useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages)
     }
   }, [currentPage, totalPages])
-
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (!actionsMenuRef.current?.contains(event.target as Node)) {
-        setOpenActionsCustomerId(null)
-      }
-    }
-
-    function handleEscapeKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setOpenActionsCustomerId(null)
-      }
-    }
-
-    window.addEventListener('mousedown', handleOutsideClick)
-    window.addEventListener('keydown', handleEscapeKey)
-    return () => {
-      window.removeEventListener('mousedown', handleOutsideClick)
-      window.removeEventListener('keydown', handleEscapeKey)
-    }
-  }, [])
 
   async function copyCustomerId(customerId: string) {
     try {
@@ -103,15 +108,18 @@ export function useCustomersPage() {
     }
   }
 
-  function toggleActions(customerId: string) {
-    setOpenActionsCustomerId((previousValue) =>
-      previousValue === customerId ? null : customerId,
-    )
+  function clearFilters() {
+    setStatusFilter('all')
+    setCurrencyFilter('all')
+    setSearchQuery('')
   }
 
   return {
     statusFilter,
     setStatusFilter,
+    currencyFilter,
+    setCurrencyFilter,
+    currencyOptions,
     pageSize,
     setPageSize,
     currentPage,
@@ -127,10 +135,10 @@ export function useCustomersPage() {
     startItem,
     endItem,
     copiedCustomerId,
-    openActionsCustomerId,
-    actionsMenuRef,
     copyCustomerId,
-    toggleActions,
+    hasActiveFilters,
+    clearFilters,
+    normalizedSearch,
   }
 }
 

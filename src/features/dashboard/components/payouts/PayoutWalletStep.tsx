@@ -1,4 +1,5 @@
 import { FormattedMoney } from '../../../../components/ui/FormattedMoney.tsx'
+import { CurrencyMarketAvatar } from '../../../../components/ui/CurrencyMarketAvatar.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getWalletDisplayLabel } from '../../utils/balanceWalletUtils.ts'
@@ -96,7 +97,12 @@ export function PayoutWalletStep({
             <span className="payout-wallet-radio" aria-hidden>
               <span className="payout-wallet-radio-dot" />
             </span>
-            <span className="payout-wallet-code">{code}</span>
+            <CurrencyMarketAvatar
+              currency={code}
+              market={wallet.market}
+              region={wallet.region}
+              size="md"
+            />
             <span className="payout-wallet-copy">
               <span className="payout-wallet-name">{getCurrencyFullName(code)}</span>
               <span className="payout-wallet-meta">

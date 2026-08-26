@@ -22,6 +22,52 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   pyusd: 'PYUSD',
 }
 
+/** Short codes for market avatars in the add-wallet browser. */
+export const MARKET_AVATAR_CODES: Record<MerchantMarket, string> = {
+  bangladesh: 'BD',
+  india: 'IN',
+  europe: 'EU',
+  brazil: 'BR',
+  pyusd: 'PY',
+}
+
+/** Human-readable rail hints shown under currency badges. */
+export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
+  bangladesh: 'Bank transfer · Local rails',
+  india: 'UPI · Bank transfer',
+  europe: 'SEPA · Instant',
+  brazil: 'Pix',
+  pyusd: 'Stablecoin settlement',
+}
+
+export type MarketBrowserFilter = 'all' | 'enabled' | 'available' | 'unavailable'
+
+export function getMarketAvatarCode(market: string) {
+  const key = market.trim().toLowerCase() as MerchantMarket
+  return MARKET_AVATAR_CODES[key] ?? market.trim().slice(0, 2).toUpperCase()
+}
+
+export function getMarketRailSummary(market: string) {
+  const key = market.trim().toLowerCase() as MerchantMarket
+  return MARKET_RAIL_SUMMARIES[key] ?? 'Local settlement rails'
+}
+
+export function getMarketBrowserFilter(
+  market: PortalMarketRow,
+): Exclude<MarketBrowserFilter, 'all'> {
+  // Only truly offline / suspended markets — not merely "not enabled yet".
+  if (
+    market.entitlementStatus === 'suspended' ||
+    isMarketTemporarilyDown(market)
+  ) {
+    return 'unavailable'
+  }
+  if (market.entitlementStatus === 'approved') {
+    return 'enabled'
+  }
+  return 'available'
+}
+
 export function getMarketDisplayName(
   market: string,
   displayName?: string | null,
@@ -55,13 +101,17 @@ export function formatKybStatusLabel(status: MarketKybStatus) {
 }
 
 export function canRequestMarketAccess(market: PortalMarketRow) {
-  if (isBangladeshRailPausedForMarket(market.market)) {
+  if (isMarketTemporarilyDown(market) || market.entitlementStatus === 'suspended') {
     return false
+  }
+  // Not-enabled markets stay requestable after global KYB is complete.
+  if (market.entitlementStatus === 'disabled') {
+    return true
   }
   if (typeof market.canRequest === 'boolean') {
     return market.canRequest
   }
-  return market.entitlementStatus === 'disabled'
+  return false
 }
 
 export function formatMarketUnlockCopy(market: PortalMarketRow) {
@@ -73,18 +123,20 @@ export function formatMarketUnlockCopy(market: PortalMarketRow) {
   return [...new Set(messages)].join(' · ') || null
 }
 
+/** Provider / rail is offline — not the same as “not enabled yet”. */
+export function isMarketTemporarilyDown(market: PortalMarketRow) {
+  if (isBangladeshRailPausedForMarket(market.market)) {
+    return true
+  }
+  return (market.blockers ?? []).some(
+    (blocker) => blocker.code === 'provider_unavailable',
+  )
+}
+
 export function isMarketUnavailable(market: PortalMarketRow) {
-  if (market.ready === false) {
-    return true
-  }
-  if (
-    (market.blockers ?? []).some(
-      (blocker) => blocker.code === 'provider_unavailable',
-    )
-  ) {
-    return true
-  }
-  return isBangladeshRailPausedForMarket(market.market)
+  return (
+    market.entitlementStatus === 'suspended' || isMarketTemporarilyDown(market)
+  )
 }
 
 export function isMarketRequestPending(market: PortalMarketRow) {

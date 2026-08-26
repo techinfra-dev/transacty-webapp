@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
+import type { TransferDirection } from '../components/transactions/TransferTransactionDialog.tsx'
 import {
   useCreateRefundMutation,
   useCreateTransferMutation,
@@ -11,11 +12,14 @@ export function useTransferRefundActions() {
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false)
   const [transferCustomerWalletId, setTransferCustomerWalletId] = useState('')
   const [transferAmount, setTransferAmount] = useState('')
+  const [transferDirection, setTransferDirection] =
+    useState<TransferDirection>('credit')
   const [transferReason, setTransferReason] = useState('')
   const [refundCustomerWalletId, setRefundCustomerWalletId] = useState('')
   const [refundAmount, setRefundAmount] = useState('')
   const [refundOfTransactionId, setRefundOfTransactionId] = useState('')
   const [refundReason, setRefundReason] = useState('')
+  const [refundTransactionLocked, setRefundTransactionLocked] = useState(false)
   const [liveMoneyConfirm, setLiveMoneyConfirm] = useState<
     null | 'transfer' | 'refund'
   >(null)
@@ -26,6 +30,7 @@ export function useTransferRefundActions() {
   function openTransferForCustomer(customerWalletId: string) {
     setTransferCustomerWalletId(customerWalletId)
     setTransferAmount('')
+    setTransferDirection('credit')
     setTransferReason('')
     setIsTransferDialogOpen(true)
   }
@@ -35,6 +40,20 @@ export function useTransferRefundActions() {
     setRefundAmount('')
     setRefundOfTransactionId('')
     setRefundReason('')
+    setRefundTransactionLocked(false)
+    setIsRefundDialogOpen(true)
+  }
+
+  function openRefundForTransaction(params: {
+    customerWalletId: string
+    transactionId: string
+    amount?: string | null
+  }) {
+    setRefundCustomerWalletId(params.customerWalletId)
+    setRefundOfTransactionId(params.transactionId.trim())
+    setRefundAmount(params.amount?.trim() || '')
+    setRefundReason('')
+    setRefundTransactionLocked(true)
     setIsRefundDialogOpen(true)
   }
 
@@ -53,10 +72,13 @@ export function useTransferRefundActions() {
       await createTransferMutation.mutateAsync({
         customerWalletId: transferCustomerWalletId.trim(),
         amount: transferAmount.trim(),
-        reason: transferReason.trim().length > 0 ? transferReason.trim() : undefined,
+        direction: transferDirection,
+        reason:
+          transferReason.trim().length > 0 ? transferReason.trim() : undefined,
       })
       setTransferCustomerWalletId('')
       setTransferAmount('')
+      setTransferDirection('credit')
       setTransferReason('')
       setIsTransferDialogOpen(false)
     } catch {
@@ -86,6 +108,7 @@ export function useTransferRefundActions() {
       setRefundAmount('')
       setRefundOfTransactionId('')
       setRefundReason('')
+      setRefundTransactionLocked(false)
       setIsRefundDialogOpen(false)
     } catch {
       // Error is rendered by mutation state.
@@ -102,6 +125,8 @@ export function useTransferRefundActions() {
     setTransferCustomerWalletId,
     transferAmount,
     setTransferAmount,
+    transferDirection,
+    setTransferDirection,
     transferReason,
     setTransferReason,
     refundCustomerWalletId,
@@ -112,6 +137,7 @@ export function useTransferRefundActions() {
     setRefundOfTransactionId,
     refundReason,
     setRefundReason,
+    refundTransactionLocked,
     createTransferMutation,
     createRefundMutation,
     handleTransferSubmit,
@@ -122,5 +148,6 @@ export function useTransferRefundActions() {
     setLiveMoneyConfirm,
     openTransferForCustomer,
     openRefundForCustomer,
+    openRefundForTransaction,
   }
 }
