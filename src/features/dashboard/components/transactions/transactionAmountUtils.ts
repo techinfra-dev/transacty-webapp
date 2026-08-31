@@ -385,15 +385,41 @@ export function getTransactionWalletPocketCurrency(
   return amounts.settlementCurrency
 }
 
+/** PYUSD collects as `PYUSD`; settlement pocket may be `PYUSD-USDC`. */
+export function normalizeWalletPocketCurrency(currency: string) {
+  const code = currency.trim().toUpperCase()
+  if (
+    code === 'PYUSD' ||
+    code === 'PYUSD-USDC' ||
+    code.startsWith('PYUSD')
+  ) {
+    return 'PYUSD'
+  }
+  return code
+}
+
+/** Currency code to send on list APIs for a merchant pocket. */
+export function walletCurrencyToListApiParam(walletCurrency: string) {
+  const code = walletCurrency.trim().toUpperCase()
+  if (!code) {
+    return undefined
+  }
+  return normalizeWalletPocketCurrency(code)
+}
+
 export function transactionMatchesCurrency(
   transaction: TransactionLike,
   walletCurrency: string,
 ) {
-  const target = walletCurrency.trim().toUpperCase()
+  const target = normalizeWalletPocketCurrency(walletCurrency)
   if (!target) {
     return true
   }
-  return getTransactionWalletPocketCurrency(transaction).toUpperCase() === target
+  return (
+    normalizeWalletPocketCurrency(
+      getTransactionWalletPocketCurrency(transaction),
+    ) === target
+  )
 }
 
 export function getTransactionHeaderAmountDisplay(

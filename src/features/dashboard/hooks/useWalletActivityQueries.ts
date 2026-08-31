@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { TRANSACTIONS_LIST_MAX_LIMIT } from '../components/transactions/transactionConstants.ts'
-import { transactionMatchesCurrency } from '../components/transactions/transactionAmountUtils.ts'
+import {
+  transactionMatchesCurrency,
+  walletCurrencyToListApiParam,
+} from '../components/transactions/transactionAmountUtils.ts'
 import { listTransactions } from '../services/transactionsService.ts'
 import type {
   TransactionItem,
@@ -57,6 +60,7 @@ export function useWalletActivityQueries({
 }: UseWalletActivityQueriesParams) {
   const listStatus = statusFilter === 'all' ? undefined : statusFilter
   const dualPocket = isDualPocketRail(walletRail)
+  const listCurrency = walletCurrencyToListApiParam(walletCurrency)
   const offset = (currentPage - 1) * pageSize
 
   const bulkListQuery = useTransactionsListQuery(
@@ -72,7 +76,7 @@ export function useWalletActivityQueries({
   const pagedListQuery = useTransactionsListQuery(
     {
       rail: walletRail,
-      currency: walletCurrency,
+      currency: listCurrency,
       status: listStatus,
       limit: pageSize,
       offset,
@@ -132,6 +136,7 @@ export function useWalletActivityStatusCounts({
 }) {
   const environment = usePortalEnvironmentStore((state) => state.environment)
   const dualPocket = isDualPocketRail(walletRail)
+  const listCurrency = walletCurrencyToListApiParam(walletCurrency)
 
   const statuses: Array<TransactionStatus | undefined> = [
     undefined,
@@ -146,7 +151,7 @@ export function useWalletActivityStatusCounts({
         'wallet-activity-status-count',
         environment,
         walletRail ?? null,
-        walletCurrency,
+        listCurrency ?? walletCurrency,
         dualPocket ? 'merge-pocket' : 'single-pocket',
         status ?? null,
       ],
@@ -154,7 +159,7 @@ export function useWalletActivityStatusCounts({
         listTransactions({
           environment,
           rail: walletRail,
-          currency: dualPocket ? undefined : walletCurrency,
+          currency: dualPocket ? undefined : listCurrency,
           status,
           limit: dualPocket ? TRANSACTIONS_LIST_MAX_LIMIT : 1,
           offset: 0,

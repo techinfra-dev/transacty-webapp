@@ -6,6 +6,7 @@ import { DashboardWalletDistributionChart } from '../components/DashboardWalletD
 import { DashboardAddWalletCard } from '../components/DashboardAddWalletCard.tsx'
 import { AddWalletDialog } from '../components/AddWalletDialog.tsx'
 import { DashboardWalletCard } from '../components/DashboardWalletCard.tsx'
+import { DashboardWalletsRow } from '../components/DashboardWalletsRow.tsx'
 import { DashboardWalletsSkeleton } from '../components/DashboardWalletsSkeleton.tsx'
 import { GoLiveChecklistCard } from '../components/GoLiveChecklistCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
@@ -158,7 +159,7 @@ export function DashboardPage() {
               </p>
             </section>
           ) : (
-            <section className="dashboard-wallets-grid">
+            <DashboardWalletsRow currencyCount={wallets.length}>
               {wallets.map((wallet) => {
                 const amount = Number(wallet.availableBalance ?? wallet.balance)
                 const safeAmount = Number.isFinite(amount) ? amount : 0
@@ -180,7 +181,7 @@ export function DashboardPage() {
               {hasRequestableMarkets ? (
                 <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
               ) : null}
-            </section>
+            </DashboardWalletsRow>
           )}
 
           <section className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start">

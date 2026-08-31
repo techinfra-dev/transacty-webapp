@@ -1,6 +1,7 @@
 import type { BalanceResponse, BalanceWalletItem } from '../services/balanceSchemas.ts'
 import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.ts'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
+import { isBangladeshRailPausedForWallet } from './bangladeshRailPause.ts'
 import { MARKET_ORDER } from './marketDisplayUtils.ts'
 
 /** INR pockets are never shown as standalone merchant balance cards. */
@@ -108,10 +109,54 @@ export function isWalletActivated(wallet: BalanceWalletItem) {
   return wallet.walletActivated === true
 }
 
+/** Paused rails, suspended pockets, or non-active activation — sink these after usable wallets. */
+export function isWalletUnavailableOrDown(
+  wallet: Pick<
+    BalanceWalletItem,
+    'currency' | 'market' | 'region' | 'status' | 'activationStatus'
+  >,
+) {
+  if (isBangladeshRailPausedForWallet(wallet)) {
+    return true
+  }
+
+  const activation = wallet.activationStatus
+  if (
+    activation === 'not_enabled' ||
+    activation === 'pending_kyb' ||
+    activation === 'suspended'
+  ) {
+    return true
+  }
+
+  const status = (wallet.status ?? '').trim().toLowerCase()
+  return (
+    status === 'unavailable' ||
+    status === 'inactive' ||
+    status === 'suspended' ||
+    status === 'disabled' ||
+    status === 'paused' ||
+    status === 'blocked' ||
+    status.includes('unavailable')
+  )
+}
+
+export function sortWalletsUnavailableLast<T extends BalanceWalletItem>(
+  wallets: T[],
+): T[] {
+  return [...wallets].sort((a, b) => {
+    const aDown = isWalletUnavailableOrDown(a) ? 1 : 0
+    const bDown = isWalletUnavailableOrDown(b) ? 1 : 0
+    return aDown - bDown
+  })
+}
+
 export function getActivatedWallets(
   balance: BalanceResponse | undefined,
 ): BalanceWalletItem[] {
-  return filterVisibleWallets(balance?.items ?? []).filter(isWalletActivated)
+  return sortWalletsUnavailableLast(
+    filterVisibleWallets(balance?.items ?? []).filter(isWalletActivated),
+  )
 }
 
 export function getCatalogWallets(
