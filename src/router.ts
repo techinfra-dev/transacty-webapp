@@ -1,4 +1,5 @@
 import { createRouter } from '@tanstack/react-router'
+import { NotFound } from './components/NotFound.tsx'
 import { RoutePending } from './components/RoutePending.tsx'
 import { Route as rootRoute } from './routes/__root.tsx'
 import { Route as indexRoute } from './routes/index.tsx'
@@ -46,6 +47,7 @@ const routeTree = rootRoute.addChildren([
 export const router = createRouter({
   routeTree,
   defaultPendingComponent: RoutePending,
+  defaultNotFoundComponent: NotFound,
 })
 
 declare module '@tanstack/react-router' {
