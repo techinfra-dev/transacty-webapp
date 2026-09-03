@@ -5956,6 +5956,160 @@ button.dashboard-wallet-tab {
   background: var(--dash-surface-2) !important;
 }
 
+/* ── Payout amount entry ────────────────────────────────────────────────── */
+@keyframes payout-amount-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.payout-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px 22px;
+  border: 1px solid var(--dash-border-strong);
+  border-radius: calc(var(--dash-radius) * 1.6);
+  background: var(--dash-surface-2);
+  text-align: center;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+  animation: payout-amount-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.payout-amount:focus-within {
+  border-color: color-mix(in srgb, #9d8f82 60%, var(--dash-border-strong));
+  box-shadow: 0 0 0 4px color-mix(in srgb, #9d8f82 12%, transparent);
+}
+
+.payout-amount-eyebrow {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dash-fg-subtle);
+}
+
+.payout-amount-entry {
+  display: flex;
+  max-width: 100%;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Input auto-grows with its value instead of sitting in a fixed-width box. */
+.payout-amount-sizer {
+  display: inline-grid;
+  max-width: 100%;
+}
+
+.payout-amount-sizer::after {
+  content: attr(data-value);
+  visibility: hidden;
+  white-space: pre;
+}
+
+.payout-amount-sizer::after,
+.payout-amount-input {
+  grid-area: 1 / 1;
+  min-width: 2ch;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 8vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.payout-amount-input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--dash-fg);
+  text-align: center;
+  outline: none;
+}
+
+.payout-amount-input::placeholder {
+  color: var(--dash-fg-subtle);
+}
+
+.payout-amount-currency {
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 3vw, 1.25rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--dash-fg-muted);
+}
+
+.payout-amount-max {
+  border: 1px solid var(--dash-border-strong);
+  border-radius: 999px;
+  background: var(--dash-surface);
+  padding: 5px 14px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dash-fg-muted);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.payout-amount-max:hover {
+  border-color: color-mix(in srgb, #9d8f82 55%, transparent);
+  background: var(--dash-surface-3);
+  color: var(--dash-fg);
+}
+
+.payout-amount-limits {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dash-fg-subtle);
+}
+
+.payout-amount-available {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--dash-fg-muted);
+}
+
+.payout-amount-available strong {
+  font-weight: 600;
+  color: var(--dash-fg);
+}
+
+.payout-amount-caption {
+  margin: 2px 0 0;
+  padding-top: 10px;
+  width: 100%;
+  border-top: 1px solid var(--dash-hairline);
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dash-fg-subtle);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payout-amount {
+    animation: none;
+  }
+}
+
 .payout-currency-badge {
   display: inline-flex;
   width: fit-content;

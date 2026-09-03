@@ -1,6 +1,5 @@
 import { Input } from '../../../../components/ui/Input.tsx'
 import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
-import type { BalanceResponse } from '../../services/balanceSchemas.ts'
 import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payoutsSchemas.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
@@ -13,13 +12,12 @@ import {
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   cpgNetworkDropdownOptions,
-  minimumPayoutAmount,
   payoutMethodOptions,
   type PayoutRail,
 } from './payoutConstants.ts'
 import { NgnBeneficiaryFields } from './NgnBeneficiaryFields.tsx'
+import { PayoutAmountField } from './PayoutAmountField.tsx'
 import { eurPayoutCountryOptionsWithPlaceholder } from '../../utils/eurPayoutCountryOptions.ts'
-import { formatPayoutMoney } from './payoutFormatters.ts'
 
 interface PayoutFormStepsProps {
   step: number
@@ -36,7 +34,6 @@ interface PayoutFormStepsProps {
   setNgnPayload: React.Dispatch<React.SetStateAction<NgnPayoutFormPayload>>
   displayCurrency: string
   settlementCurrency: string
-  payoutLimits: BalanceResponse['limits']['payout'] | undefined
   effectiveMinimumAmount: number
   effectiveMaximumAmount: number | undefined
   formattedWalletBalance: string
@@ -64,7 +61,6 @@ export function PayoutFormSteps({
   setNgnPayload,
   displayCurrency,
   settlementCurrency,
-  payoutLimits,
   effectiveMinimumAmount,
   effectiveMaximumAmount,
   formattedWalletBalance,
@@ -85,36 +81,76 @@ export function PayoutFormSteps({
     ...paymentMethodOptions,
   ]
 
-  const rangeHint = (() => {
+  const amountValue =
+    payoutRail === 'eur'
+      ? eurPayload.amount
+      : payoutRail === 'cpg'
+        ? cpgPayload.amount
+        : payoutRail === 'pix'
+          ? brPayload.amount
+          : payoutRail === 'ngn'
+            ? ngnPayload.amount
+            : payload.amount
+
+  function setAmountValue(nextAmount: string) {
+    if (payoutRail === 'eur') {
+      setEurPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
+    if (payoutRail === 'cpg') {
+      setCpgPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
+    if (payoutRail === 'pix') {
+      setBrPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
+    if (payoutRail === 'ngn') {
+      setNgnPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
+    setPayload((previousPayload) => ({
+      ...previousPayload,
+      amount: nextAmount,
+    }))
+  }
+
+  const amountPocketCaption =
+    payoutRail === 'eur'
+      ? `Settlement wallet: ${settlementCurrency || EUR_PAYOUT_SETTLEMENT_CURRENCY}`
+      : payoutRail === 'cpg'
+        ? 'India settlement pocket · on-chain USDT payout'
+        : payoutRail === 'pix'
+          ? 'Brazil (PIX) settlement pocket'
+          : payoutRail === 'ngn'
+            ? 'Nigeria settlement pocket · bank transfer payout'
+            : undefined
+
+  // Limits and balance live in the amount card — this only carries what the
+  // card cannot show.
+  const amountFootnote = (() => {
     if (!displayCurrency) {
       return 'Select a wallet to see amount limits.'
     }
-    const minLabel = formatPayoutMoney(displayCurrency, String(effectiveMinimumAmount))
     if (payoutRail === 'eur') {
-      return `Enter the EUR amount sent to the beneficiary bank account. Your ${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet (${formattedWalletBalance}) will be debited at the quoted rate when you submit. Minimum ${minLabel}.`
-    }
-    if (payoutRail === 'cpg') {
-      return `Send USDT from your India settlement pocket to an on-chain address. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
-    }
-    if (payoutRail === 'pix') {
-      return `Send BRL from your Brazil wallet via PIX. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
+      return `Your ${settlementCurrency || EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet is debited at the quoted rate when you submit.`
     }
     if (payoutRail === 'ngn') {
-      const maxLabel = formatPayoutMoney(
-        displayCurrency,
-        String(effectiveMaximumAmount ?? 0),
-      )
-      return `Send NGN to a Nigerian bank account. Available: ${formattedWalletBalance}. Allowed range: ${minLabel} – ${maxLabel}.`
+      return 'Bank transfers cannot be reversed once submitted.'
     }
-    if (payoutLimits?.max) {
-      const maxLabel = formatPayoutMoney(displayCurrency, String(payoutLimits.max))
-      return `Allowed range: ${minLabel} – ${maxLabel}. Available: ${formattedWalletBalance}.`
-    }
-    if (effectiveMaximumAmount !== undefined) {
-      const maxLabel = formatPayoutMoney(displayCurrency, String(effectiveMaximumAmount))
-      return `Minimum ${minLabel}. Maximum ${maxLabel} (wallet balance).`
-    }
-    return `Minimum payout amount: ${formatPayoutMoney(displayCurrency, String(minimumPayoutAmount))}.`
+    return null
   })()
 
   if (step < 2 || step > 4) {
@@ -139,83 +175,20 @@ export function PayoutFormSteps({
                       : 'Enter how much to send from the selected wallet.'}
             </p>
 
-            <div className="payout-field sm:col-span-2">
-              <span className="payout-field-label">Payout currency</span>
-              <span className="payout-currency-badge">{displayCurrency || '—'}</span>
-              {payoutRail === 'eur' ? (
-                <span className="payout-field-hint">
-                  Settlement wallet: {settlementCurrency || EUR_PAYOUT_SETTLEMENT_CURRENCY}
-                </span>
-              ) : payoutRail === 'cpg' ? (
-                <span className="payout-field-hint">
-                  India settlement pocket · on-chain USDT payout
-                </span>
-              ) : payoutRail === 'pix' ? (
-                <span className="payout-field-hint">
-                  Brazil (PIX) settlement pocket
-                </span>
-              ) : payoutRail === 'ngn' ? (
-                <span className="payout-field-hint">
-                  Nigeria settlement pocket · bank transfer payout
-                </span>
+            <div className="sm:col-span-2">
+              <PayoutAmountField
+                currency={displayCurrency}
+                value={amountValue}
+                onChange={setAmountValue}
+                minimumAmount={effectiveMinimumAmount}
+                maximumAmount={effectiveMaximumAmount}
+                availableLabel={formattedWalletBalance}
+                caption={amountPocketCaption}
+              />
+              {amountFootnote ? (
+                <p className="payout-field-hint mt-3">{amountFootnote}</p>
               ) : null}
             </div>
-
-            <label className="payout-field sm:col-span-2">
-              <span className="payout-field-label">Amount</span>
-              <Input
-                value={
-                  payoutRail === 'eur'
-                    ? eurPayload.amount
-                    : payoutRail === 'cpg'
-                      ? cpgPayload.amount
-                    : payoutRail === 'pix'
-                      ? brPayload.amount
-                      : payoutRail === 'ngn'
-                        ? ngnPayload.amount
-                        : payload.amount
-                }
-                onChange={(event) => {
-                  const nextAmount = event.target.value
-                  if (payoutRail === 'eur') {
-                    setEurPayload((previousPayload) => ({
-                      ...previousPayload,
-                      amount: nextAmount,
-                    }))
-                    return
-                  }
-                  if (payoutRail === 'cpg') {
-                    setCpgPayload((previousPayload) => ({
-                      ...previousPayload,
-                      amount: nextAmount,
-                    }))
-                    return
-                  }
-                  if (payoutRail === 'pix') {
-                    setBrPayload((previousPayload) => ({
-                      ...previousPayload,
-                      amount: nextAmount,
-                    }))
-                    return
-                  }
-                  if (payoutRail === 'ngn') {
-                    setNgnPayload((previousPayload) => ({
-                      ...previousPayload,
-                      amount: nextAmount,
-                    }))
-                    return
-                  }
-                  setPayload((previousPayload) => ({
-                    ...previousPayload,
-                    amount: nextAmount,
-                  }))
-                }}
-                placeholder="0.00"
-                inputMode="decimal"
-                className="payout-field-input max-w-sm"
-              />
-              <span className="payout-field-hint">{rangeHint}</span>
-            </label>
           </div>
         ) : null}
 
@@ -460,20 +433,6 @@ export function PayoutFormSteps({
                   <span className="text-(--color-secondary)">Bank:</span>{' '}
                   {ngnPayload.bankName || ngnPayload.bankCode || '—'}
                 </p>
-                {ngnPayload.merchantReference.trim() ? (
-                  <p className="mt-2">
-                    <span className="text-(--color-secondary)">Reference:</span>{' '}
-                    {ngnPayload.merchantReference}
-                  </p>
-                ) : null}
-                {ngnPayload.description.trim() ? (
-                  <p className="mt-2">
-                    <span className="text-(--color-secondary)">
-                      Description:
-                    </span>{' '}
-                    {ngnPayload.description}
-                  </p>
-                ) : null}
               </div>
             </div>
           ) : payoutRail === 'cpg' ? (

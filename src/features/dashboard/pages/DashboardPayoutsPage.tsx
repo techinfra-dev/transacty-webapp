@@ -152,7 +152,6 @@ export function DashboardPayoutsPage() {
                   setNgnPayload={flow.setNgnPayload}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
-                  payoutLimits={flow.payoutLimits}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
                   effectiveMaximumAmount={flow.effectiveMaximumAmount}
                   formattedWalletBalance={flow.formattedWalletBalance}

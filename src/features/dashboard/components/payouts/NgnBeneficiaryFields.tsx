@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
-import { Button } from '../../../../components/ui/Button.tsx'
+import { useMemo, useRef, useState } from 'react'
 import { DropdownSelect } from '../../../../components/ui/DropdownSelect.tsx'
 import { Input } from '../../../../components/ui/Input.tsx'
+import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import {
   useNgnBanksQuery,
   useVerifyNgnAccountMutation,
@@ -35,26 +35,23 @@ export function NgnBeneficiaryFields({
     [banksQuery.data, banksQuery.isPending],
   )
 
-  const isAccountNumberComplete = /^\d{10}$/.test(ngnPayload.accountNumber.trim())
-  const canVerify =
-    Boolean(ngnPayload.bankCode.trim()) &&
-    isAccountNumberComplete &&
-    !verifyMutation.isPending
+  /**
+   * Name enquiry fires on every completed account number, so a slow earlier
+   * response must never overwrite the current input.
+   */
+  const requestIdRef = useRef(0)
 
-  /** Any change to bank or account invalidates a previously resolved name. */
-  function resetVerification(patch: Partial<NgnPayoutFormPayload>) {
-    setVerifyError(null)
-    verifyMutation.reset()
-    setNgnPayload((previous) => ({ ...previous, ...patch, accountName: '' }))
-  }
-
-  async function handleVerify() {
+  async function runVerification(bankCode: string, accountNumber: string) {
+    const requestId = (requestIdRef.current += 1)
     setVerifyError(null)
     try {
       const verification = await verifyMutation.mutateAsync({
-        accountNumber: ngnPayload.accountNumber.trim(),
-        bankCode: ngnPayload.bankCode.trim(),
+        accountNumber,
+        bankCode,
       })
+      if (requestId !== requestIdRef.current) {
+        return
+      }
       const accountName = verification.accountName?.trim() ?? ''
       if (!accountName) {
         setVerifyError(
@@ -68,11 +65,47 @@ export function NgnBeneficiaryFields({
         bankName: verification.bankName?.trim() || previous.bankName,
       }))
     } catch (error) {
+      if (requestId !== requestIdRef.current) {
+        return
+      }
       setVerifyError(
         error instanceof Error
           ? error.message
           : 'Unable to verify this account right now.',
       )
+    }
+  }
+
+  function handleBankChange(bankCode: string) {
+    const bank = banksQuery.data?.find((item) => item.bankCode === bankCode)
+    requestIdRef.current += 1
+    setVerifyError(null)
+    setNgnPayload((previous) => ({
+      ...previous,
+      bankCode,
+      bankName: bank?.bankName ?? '',
+      accountName: '',
+    }))
+
+    const accountNumber = ngnPayload.accountNumber.trim()
+    if (bankCode && /^\d{10}$/.test(accountNumber)) {
+      void runVerification(bankCode, accountNumber)
+    }
+  }
+
+  function handleAccountNumberChange(rawValue: string) {
+    const accountNumber = rawValue.replace(/\D/g, '').slice(0, 10)
+    requestIdRef.current += 1
+    setVerifyError(null)
+    setNgnPayload((previous) => ({
+      ...previous,
+      accountNumber,
+      accountName: '',
+    }))
+
+    const bankCode = ngnPayload.bankCode.trim()
+    if (bankCode && accountNumber.length === 10) {
+      void runVerification(bankCode, accountNumber)
     }
   }
 
@@ -93,15 +126,9 @@ export function NgnBeneficiaryFields({
           options={bankOptions}
           value={ngnPayload.bankCode}
           disabled={banksQuery.isPending || banksQuery.isError}
-          onChange={(bankCode) => {
-            const bank = banksQuery.data?.find(
-              (item) => item.bankCode === bankCode,
-            )
-            resetVerification({
-              bankCode,
-              bankName: bank?.bankName ?? '',
-            })
-          }}
+          onChange={handleBankChange}
+          searchable
+          searchPlaceholder="Search banks…"
           className="payout-field-select w-full max-w-md"
         />
         {banksQuery.isError ? (
@@ -119,31 +146,21 @@ export function NgnBeneficiaryFields({
           inputMode="numeric"
           maxLength={10}
           autoComplete="off"
-          onChange={(event) =>
-            resetVerification({
-              accountNumber: event.target.value.replace(/\D/g, '').slice(0, 10),
-            })
-          }
+          onChange={(event) => handleAccountNumberChange(event.target.value)}
           className="payout-field-input max-w-sm font-[ui-monospace,monospace]"
         />
         <span className="payout-field-hint">
-          Nigerian NUBAN account numbers are 10 digits.
+          {ngnPayload.bankCode.trim()
+            ? 'Enter all 10 digits — we confirm the account name automatically.'
+            : 'Select a bank first, then enter the 10-digit NUBAN.'}
         </span>
       </label>
 
-      <div className="payout-field sm:col-span-2">
-        <Button
-          type="button"
-          variant="ghost"
-          className="dash-btn-outline self-start"
-          disabled={!canVerify}
-          onClick={() => void handleVerify()}
-        >
-          {verifyMutation.isPending ? 'Verifying…' : 'Verify account'}
-        </Button>
-      </div>
-
-      {ngnPayload.accountName ? (
+      {verifyMutation.isPending ? (
+        <div className="payout-field sm:col-span-2">
+          <LoadingSpinner label="Confirming account name…" />
+        </div>
+      ) : ngnPayload.accountName ? (
         <div className="payout-field sm:col-span-2">
           <span className="payout-field-label">Account name</span>
           <p className="[font-family:var(--font-body)] text-sm font-semibold text-(--dash-fg)">
@@ -159,36 +176,6 @@ export function NgnBeneficiaryFields({
       {verifyError ? (
         <p className="payout-alert sm:col-span-2">{verifyError}</p>
       ) : null}
-
-      <label className="payout-field">
-        <span className="payout-field-label">Reference (optional)</span>
-        <Input
-          placeholder="wd-1001"
-          value={ngnPayload.merchantReference}
-          onChange={(event) =>
-            setNgnPayload((previous) => ({
-              ...previous,
-              merchantReference: event.target.value,
-            }))
-          }
-          className="payout-field-input"
-        />
-      </label>
-
-      <label className="payout-field">
-        <span className="payout-field-label">Description (optional)</span>
-        <Input
-          placeholder="Supplier payment"
-          value={ngnPayload.description}
-          onChange={(event) =>
-            setNgnPayload((previous) => ({
-              ...previous,
-              description: event.target.value,
-            }))
-          }
-          className="payout-field-input"
-        />
-      </label>
     </div>
   )
 }

@@ -15,6 +15,9 @@ interface DropdownSelectProps {
   menuPlacement?: 'bottom' | 'top'
   disabled?: boolean
   variant?: 'default' | 'filter'
+  /** Adds a filter box to the menu — for long lists such as bank directories. */
+  searchable?: boolean
+  searchPlaceholder?: string
 }
 
 function joinClasses(...classNames: Array<string | undefined>) {
@@ -30,17 +33,37 @@ export function DropdownSelect({
   menuPlacement = 'bottom',
   disabled = false,
   variant = 'default',
+  searchable = false,
+  searchPlaceholder = 'Search…',
 }: DropdownSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   const rootRef = useRef<HTMLDivElement | null>(null)
   const buttonRef = useRef<HTMLButtonElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
   const selectedOption = useMemo(
     () => options.find((option) => option.value === value) ?? options[0],
     [options, value],
   )
+
+  const visibleOptions = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!searchable || !term) {
+      return options
+    }
+    return options.filter((option) => option.label.toLowerCase().includes(term))
+  }, [options, query, searchable])
+
+  useEffect(() => {
+    if (isOpen && searchable) {
+      searchRef.current?.focus()
+    } else {
+      setQuery('')
+    }
+  }, [isOpen, searchable])
 
   useLayoutEffect(() => {
     if (!isOpen || !buttonRef.current) {
@@ -118,39 +141,76 @@ export function DropdownSelect({
       role="listbox"
       aria-label={ariaLabel}
       style={menuStyle}
-      className={
+      className={`min-w-40 overflow-x-hidden rounded-lg border shadow-[0_8px_24px_rgba(15,7,0,0.14)] ${
+        searchable ? 'flex flex-col overflow-hidden' : 'overflow-y-auto py-1'
+      } ${
         variant === 'filter'
-          ? 'min-w-40 overflow-y-auto overflow-x-hidden rounded-lg border border-(--dash-border-strong) bg-(--dash-surface) py-1 shadow-[0_8px_24px_rgba(15,7,0,0.14)]'
-          : 'min-w-40 overflow-y-auto overflow-x-hidden rounded-lg border border-(--color-accent)/45 bg-(--color-card) py-1 shadow-[0_4px_16px_rgba(15,7,0,0.16)]'
-      }
+          ? 'border-(--dash-border-strong) bg-(--dash-surface)'
+          : 'border-(--color-accent)/45 bg-(--color-card)'
+      }`}
     >
-      {options.map((option) => {
-        const isSelected = option.value === value
-
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="option"
-            aria-selected={isSelected}
-            className={`block w-full cursor-pointer px-3 py-2 text-left [font-family:var(--font-body)] text-sm transition ${
-              isSelected
-                ? variant === 'filter'
-                  ? 'bg-(--dash-surface-3) font-semibold text-(--dash-fg)'
-                  : 'bg-(--color-primary) text-(--color-background)'
-                : variant === 'filter'
-                  ? 'text-(--dash-fg-muted) hover:bg-(--dash-surface-2) hover:text-(--dash-fg)'
-                  : 'text-(--color-foreground) hover:bg-(--color-background)'
-            }`}
-            onClick={() => {
-              onChange(option.value)
-              setIsOpen(false)
+      {searchable ? (
+        <div className="shrink-0 border-b border-(--dash-hairline) p-2">
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter picks the top match so the list never needs the mouse.
+              if (
+                event.key === 'Enter' &&
+                query.trim() &&
+                visibleOptions.length > 0
+              ) {
+                event.preventDefault()
+                onChange(visibleOptions[0].value)
+                setIsOpen(false)
+              }
             }}
-          >
-            {option.label}
-          </button>
-        )
-      })}
+            placeholder={searchPlaceholder}
+            aria-label={`${ariaLabel} search`}
+            autoComplete="off"
+            className="h-9 w-full rounded-md border border-(--dash-border) bg-(--dash-surface-2) px-2.5 [font-family:var(--font-body)] text-sm text-(--dash-fg) outline-none placeholder:text-(--dash-fg-subtle) focus:border-(--dash-border-strong)"
+          />
+        </div>
+      ) : null}
+
+      <div className={searchable ? 'min-h-0 flex-1 overflow-y-auto py-1' : ''}>
+        {visibleOptions.length === 0 ? (
+          <p className="px-3 py-3 [font-family:var(--font-body)] text-sm text-(--dash-fg-subtle)">
+            No matches
+          </p>
+        ) : null}
+
+        {visibleOptions.map((option) => {
+          const isSelected = option.value === value
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              className={`block w-full cursor-pointer px-3 py-2 text-left [font-family:var(--font-body)] text-sm transition ${
+                isSelected
+                  ? variant === 'filter'
+                    ? 'bg-(--dash-surface-3) font-semibold text-(--dash-fg)'
+                    : 'bg-(--color-primary) text-(--color-background)'
+                  : variant === 'filter'
+                    ? 'text-(--dash-fg-muted) hover:bg-(--dash-surface-2) hover:text-(--dash-fg)'
+                    : 'text-(--color-foreground) hover:bg-(--color-background)'
+              }`}
+              onClick={() => {
+                onChange(option.value)
+                setIsOpen(false)
+              }}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
     </div>
   ) : null
 
