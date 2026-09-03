@@ -13,6 +13,7 @@ export const transactionRailFilterOptions: {
   { value: 'india', label: 'India' },
   { value: 'europe', label: 'Europe' },
   { value: 'brazil', label: 'Brazil' },
+  { value: 'nigeria', label: 'Nigeria' },
   { value: 'pyusd', label: 'PYUSD' },
 ]
 
@@ -38,6 +39,7 @@ export function resolveWalletTransactionRail(
     region === 'india' ||
     region === 'europe' ||
     region === 'brazil' ||
+    region === 'nigeria' ||
     region === 'pyusd'
   ) {
     return region
@@ -49,6 +51,9 @@ export function resolveWalletTransactionRail(
   }
   if (currency === 'BRL') {
     return 'brazil'
+  }
+  if (currency === 'NGN') {
+    return 'nigeria'
   }
   if (currency === 'INR') {
     return 'india'

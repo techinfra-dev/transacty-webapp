@@ -5,16 +5,19 @@ import type { BeneficiaryAccountInfo, CardHolderInfo } from '../../services/payo
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
+import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
+  NIGERIA_PAYOUT_CURRENCY,
   cpgNetworkDropdownOptions,
   minimumPayoutAmount,
   payoutMethodOptions,
   type PayoutRail,
 } from './payoutConstants.ts'
+import { NgnBeneficiaryFields } from './NgnBeneficiaryFields.tsx'
 import { eurPayoutCountryOptionsWithPlaceholder } from '../../utils/eurPayoutCountryOptions.ts'
 import { formatPayoutMoney } from './payoutFormatters.ts'
 
@@ -29,6 +32,8 @@ interface PayoutFormStepsProps {
   setCpgPayload: React.Dispatch<React.SetStateAction<CpgPayoutFormPayload>>
   brPayload: BrPayoutFormPayload
   setBrPayload: React.Dispatch<React.SetStateAction<BrPayoutFormPayload>>
+  ngnPayload: NgnPayoutFormPayload
+  setNgnPayload: React.Dispatch<React.SetStateAction<NgnPayoutFormPayload>>
   displayCurrency: string
   settlementCurrency: string
   payoutLimits: BalanceResponse['limits']['payout'] | undefined
@@ -55,6 +60,8 @@ export function PayoutFormSteps({
   setCpgPayload,
   brPayload,
   setBrPayload,
+  ngnPayload,
+  setNgnPayload,
   displayCurrency,
   settlementCurrency,
   payoutLimits,
@@ -92,6 +99,13 @@ export function PayoutFormSteps({
     if (payoutRail === 'pix') {
       return `Send BRL from your Brazil wallet via PIX. Available: ${formattedWalletBalance}. Minimum ${minLabel}.`
     }
+    if (payoutRail === 'ngn') {
+      const maxLabel = formatPayoutMoney(
+        displayCurrency,
+        String(effectiveMaximumAmount ?? 0),
+      )
+      return `Send NGN to a Nigerian bank account. Available: ${formattedWalletBalance}. Allowed range: ${minLabel} – ${maxLabel}.`
+    }
     if (payoutLimits?.max) {
       const maxLabel = formatPayoutMoney(displayCurrency, String(payoutLimits.max))
       return `Allowed range: ${minLabel} – ${maxLabel}. Available: ${formattedWalletBalance}.`
@@ -120,7 +134,9 @@ export function PayoutFormSteps({
                   ? `Enter how much ${INDIA_PAYOUT_SETTLEMENT_CURRENCY} to send to the beneficiary crypto wallet.`
                   : payoutRail === 'pix'
                     ? 'Enter how much BRL to send via PIX from your Brazil wallet.'
-                    : 'Enter how much to send from the selected wallet.'}
+                    : payoutRail === 'ngn'
+                      ? 'Enter how much NGN to send from your Nigeria wallet to a bank account.'
+                      : 'Enter how much to send from the selected wallet.'}
             </p>
 
             <div className="payout-field sm:col-span-2">
@@ -138,6 +154,10 @@ export function PayoutFormSteps({
                 <span className="payout-field-hint">
                   Brazil (PIX) settlement pocket
                 </span>
+              ) : payoutRail === 'ngn' ? (
+                <span className="payout-field-hint">
+                  Nigeria settlement pocket · bank transfer payout
+                </span>
               ) : null}
             </div>
 
@@ -149,8 +169,10 @@ export function PayoutFormSteps({
                     ? eurPayload.amount
                     : payoutRail === 'cpg'
                       ? cpgPayload.amount
-                      : payoutRail === 'pix'
-                        ? brPayload.amount
+                    : payoutRail === 'pix'
+                      ? brPayload.amount
+                      : payoutRail === 'ngn'
+                        ? ngnPayload.amount
                         : payload.amount
                 }
                 onChange={(event) => {
@@ -176,6 +198,13 @@ export function PayoutFormSteps({
                     }))
                     return
                   }
+                  if (payoutRail === 'ngn') {
+                    setNgnPayload((previousPayload) => ({
+                      ...previousPayload,
+                      amount: nextAmount,
+                    }))
+                    return
+                  }
                   setPayload((previousPayload) => ({
                     ...previousPayload,
                     amount: nextAmount,
@@ -191,7 +220,12 @@ export function PayoutFormSteps({
         ) : null}
 
         {step === 3 ? (
-          payoutRail === 'eur' ? (
+          payoutRail === 'ngn' ? (
+            <NgnBeneficiaryFields
+              ngnPayload={ngnPayload}
+              setNgnPayload={setNgnPayload}
+            />
+          ) : payoutRail === 'eur' ? (
             <div className="payout-field-grid">
               <h2 className="payout-panel-section-title sm:col-span-2">
                 Beneficiary bank account
@@ -398,7 +432,51 @@ export function PayoutFormSteps({
         ) : null}
 
         {step === 4 ? (
-          payoutRail === 'cpg' ? (
+          payoutRail === 'ngn' ? (
+            <div className="payout-field-grid">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                Review payout
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Confirm the verified recipient before submitting. Bank transfers
+                cannot be reversed once sent.
+              </p>
+              <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                <p>
+                  <span className="text-(--color-secondary)">Amount:</span>{' '}
+                  {ngnPayload.amount || '—'} {NIGERIA_PAYOUT_CURRENCY}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Account name:</span>{' '}
+                  {ngnPayload.accountName || '—'}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">
+                    Account number:
+                  </span>{' '}
+                  {ngnPayload.accountNumber || '—'}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Bank:</span>{' '}
+                  {ngnPayload.bankName || ngnPayload.bankCode || '—'}
+                </p>
+                {ngnPayload.merchantReference.trim() ? (
+                  <p className="mt-2">
+                    <span className="text-(--color-secondary)">Reference:</span>{' '}
+                    {ngnPayload.merchantReference}
+                  </p>
+                ) : null}
+                {ngnPayload.description.trim() ? (
+                  <p className="mt-2">
+                    <span className="text-(--color-secondary)">
+                      Description:
+                    </span>{' '}
+                    {ngnPayload.description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : payoutRail === 'cpg' ? (
             <div className="payout-field-grid">
               <h2 className="payout-panel-section-title sm:col-span-2">Review payout</h2>
               <p className="payout-panel-section-desc sm:col-span-2">

@@ -9,6 +9,7 @@ export const merchantMarketSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'nigeria',
   'pyusd',
 ])
 

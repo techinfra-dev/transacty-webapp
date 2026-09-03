@@ -1,8 +1,20 @@
 import { Fragment } from 'react'
-import { payoutStepItems } from './payoutConstants.ts'
+import { payoutStepItems, type PayoutRail } from './payoutConstants.ts'
 
 interface PayoutStepperProps {
   step: number
+  payoutRail?: PayoutRail | null
+}
+
+/** Rails that verify or review the recipient instead of collecting a sender. */
+function getStepLabel(
+  item: (typeof payoutStepItems)[number],
+  payoutRail: PayoutRail | null | undefined,
+) {
+  if (item.id === 4 && (payoutRail === 'ngn' || payoutRail === 'cpg')) {
+    return 'Review'
+  }
+  return item.label
 }
 
 function StepCheckIcon() {
@@ -16,7 +28,7 @@ function StepCheckIcon() {
   )
 }
 
-export function PayoutStepper({ step }: PayoutStepperProps) {
+export function PayoutStepper({ step, payoutRail }: PayoutStepperProps) {
   return (
     <nav className="payout-stepper" aria-label="Payout steps">
       <div className="payout-stepper-track">
@@ -46,7 +58,7 @@ export function PayoutStepper({ step }: PayoutStepperProps) {
                 <span
                   className={`payout-stepper-label ${isActive || isDone ? 'payout-stepper-label--active' : ''}`}
                 >
-                  {item.label}
+                  {getStepLabel(item, payoutRail)}
                 </span>
               </div>
             </Fragment>

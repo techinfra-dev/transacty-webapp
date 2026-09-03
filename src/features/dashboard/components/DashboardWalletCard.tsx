@@ -71,6 +71,9 @@ function activationFooterNote(
   if (code === 'BRL' || marketKey === 'brazil') {
     return 'Brazil (PIX)'
   }
+  if (code === 'NGN' || marketKey === 'nigeria') {
+    return 'Virtual account · bank payouts'
+  }
   return 'Merchant pocket'
 }
 

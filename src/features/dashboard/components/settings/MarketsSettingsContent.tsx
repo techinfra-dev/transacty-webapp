@@ -20,6 +20,7 @@ import {
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../../services/marketSchemas.ts'
+import { NIGERIA_MARKET_SUMMARY } from '../../utils/nigeriaMarket.ts'
 import { ServicesBoardCard } from './ServicesBoardCard.tsx'
 
 function formatMarketDate(iso: string) {
@@ -56,14 +57,18 @@ function MarketSettingsRow({
       <div className="settings-card-body flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="settings-card-title">{displayName}</h3>
-          {market.market !== 'pyusd' ? (
-            <p className="settings-card-desc mt-1">
-              Settlement: {currencies || '—'}
-            </p>
-          ) : (
+          {market.market === 'pyusd' ? (
             <p className="settings-card-desc mt-1">
               PYUSD collects → PYUSD USDC settles. EUR payouts use Europe USDC
               only.
+            </p>
+          ) : market.market === 'nigeria' ? (
+            <p className="settings-card-desc mt-1">
+              {NIGERIA_MARKET_SUMMARY}
+            </p>
+          ) : (
+            <p className="settings-card-desc mt-1">
+              Settlement: {currencies || '—'}
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
@@ -95,6 +100,8 @@ function MarketSettingsRow({
         <div className="shrink-0">
           {isUnavailable ? (
             <span className="add-wallet-row-pill">Temporarily down</span>
+          ) : action === 'switch_to_live' ? (
+            <span className="add-wallet-row-done">Active · live only</span>
           ) : canRequestMarketAccess(market) && !requested ? (
             <button
               type="button"

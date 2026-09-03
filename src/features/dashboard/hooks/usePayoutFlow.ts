@@ -15,6 +15,10 @@ import {
   useCpgPayoutRequestQuery,
 } from './useCpgPayoutMutations.ts'
 import {
+  useCreateNgnPayoutMutation,
+  useNgnPayoutQuery,
+} from './useNgnPayoutMutations.ts'
+import {
   createPayoutPayloadSchema,
   type BeneficiaryAccountInfo,
   type CardHolderInfo,
@@ -39,6 +43,15 @@ import {
   type BrPayoutResponse,
 } from '../services/brPayoutSchemas.ts'
 import {
+  createNgnPayoutPayloadSchema,
+  type NgnPayoutFormPayload,
+  type NgnPayoutInstance,
+} from '../services/ngnPayoutSchemas.ts'
+import {
+  NIGERIA_LIVE_ONLY_COPY,
+  NIGERIA_LIVE_ONLY_ENVIRONMENT,
+} from '../utils/nigeriaMarket.ts'
+import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
@@ -48,10 +61,13 @@ import {
   initialBrPayoutPayload,
   initialCpgPayoutPayload,
   initialEurPayoutPayload,
+  initialNgnPayoutPayload,
   initialPayoutPayload,
   isPayoutSupportedWallet,
   minimumCpgPayoutAmount,
   minimumEurPayoutAmount,
+  minimumNgnPayoutAmount,
+  maximumNgnPayoutAmount,
   minimumPayoutAmount,
   minimumPixPayoutAmount,
   maximumPixPayoutAmount,
@@ -71,18 +87,24 @@ export function usePayoutFlow() {
   const [createdEurPayout, setCreatedEurPayout] = useState<EurPayoutInstance | null>(null)
   const [createdCpgPayout, setCreatedCpgPayout] = useState<CpgPayoutInstance | null>(null)
   const [createdBrPayout, setCreatedBrPayout] = useState<BrPayoutResponse | null>(null)
+  const [createdNgnPayout, setCreatedNgnPayout] =
+    useState<NgnPayoutInstance | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null)
   const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
   const [brPayload, setBrPayload] = useState<BrPayoutFormPayload>(initialBrPayoutPayload)
   const [eurPayload, setEurPayload] = useState<EurPayoutFormPayload>(initialEurPayoutPayload)
   const [cpgPayload, setCpgPayload] = useState<CpgPayoutFormPayload>(initialCpgPayoutPayload)
+  const [ngnPayload, setNgnPayload] = useState<NgnPayoutFormPayload>(
+    initialNgnPayoutPayload,
+  )
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
 
   const createPayoutMutation = useCreatePayoutMutation()
   const createEurPayoutMutation = useCreateEurPayoutMutation()
   const createCpgPayoutMutation = useCreateCpgPayoutMutation()
   const createBrPayoutMutation = useCreateBrPayoutMutation()
+  const createNgnPayoutMutation = useCreateNgnPayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
   const marketsQuery = useMarketsQuery(true)
@@ -136,6 +158,15 @@ export function usePayoutFlow() {
     [marketsQuery.data],
   )
 
+  const isNigeriaMarketApproved = useMemo(
+    () =>
+      marketsQuery.data?.some(
+        (market) =>
+          market.market === 'nigeria' && market.entitlementStatus === 'approved',
+      ) ?? false,
+    [marketsQuery.data],
+  )
+
   const walletBalance = useMemo(() => {
     if (!selectedWallet) {
       return null
@@ -155,7 +186,9 @@ export function usePayoutFlow() {
         ? Math.max(minimumCpgPayoutAmount, payoutLimits?.min ?? 0)
         : payoutRail === 'pix'
           ? Math.max(minimumPixPayoutAmount, payoutLimits?.min ?? 0)
-          : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
+          : payoutRail === 'ngn'
+            ? Math.max(minimumNgnPayoutAmount, payoutLimits?.min ?? 0)
+            : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
 
   const effectiveMaximumAmount = useMemo(() => {
     if (payoutRail === 'eur') {
@@ -167,6 +200,9 @@ export function usePayoutFlow() {
     }
     if (payoutRail === 'pix') {
       limits.push(maximumPixPayoutAmount)
+    }
+    if (payoutRail === 'ngn') {
+      limits.push(maximumNgnPayoutAmount)
     }
     if (walletBalance !== null) {
       limits.push(walletBalance)
@@ -181,7 +217,9 @@ export function usePayoutFlow() {
         ? cpgPayload.amount
         : payoutRail === 'pix'
           ? brPayload.amount
-          : payload.amount
+          : payoutRail === 'ngn'
+            ? ngnPayload.amount
+            : payload.amount
 
   const formattedPreviewAmount = useMemo(
     () =>
@@ -202,6 +240,7 @@ export function usePayoutFlow() {
     createdBrPayout?.id ||
     createdBrPayout?.reference ||
     createdCpgPayout?.transactionId ||
+    createdNgnPayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
     createdPayout?.id
@@ -216,6 +255,11 @@ export function usePayoutFlow() {
     step === 5 && payoutRail === 'cpg',
   )
 
+  const ngnPayoutStatusQuery = useNgnPayoutQuery(
+    createdNgnPayout?.transactionId,
+    step === 5 && payoutRail === 'ngn',
+  )
+
   const hasBeneficiaryDetails =
     payoutRail === 'eur'
       ? eurPayload.iban.trim().length > 0
@@ -225,8 +269,11 @@ export function usePayoutFlow() {
         : payoutRail === 'pix'
           ? brPayload.benificiaryAccountInfo.number.trim().length > 0 ||
             brPayload.benificiaryAccountInfo.holderName.trim().length > 0
-          : payload.benificiaryAccountInfo.number.trim().length > 0 ||
-            payload.benificiaryAccountInfo.holderName.trim().length > 0
+          : payoutRail === 'ngn'
+            ? ngnPayload.accountNumber.trim().length > 0 ||
+              ngnPayload.accountName.trim().length > 0
+            : payload.benificiaryAccountInfo.number.trim().length > 0 ||
+              payload.benificiaryAccountInfo.holderName.trim().length > 0
 
   const hasSenderDetails =
     payoutRail === 'eur'
@@ -239,8 +286,11 @@ export function usePayoutFlow() {
         : payoutRail === 'pix'
           ? brPayload.cardHolderInfo.firstName.trim().length > 0 ||
             brPayload.cardHolderInfo.lastName.trim().length > 0
-          : payload.cardHolderInfo.firstName.trim().length > 0 ||
-            payload.cardHolderInfo.lastName.trim().length > 0
+          : payoutRail === 'ngn'
+            ? ngnPayload.accountName.trim().length > 0 &&
+              ngnPayload.bankName.trim().length > 0
+            : payload.cardHolderInfo.firstName.trim().length > 0 ||
+              payload.cardHolderInfo.lastName.trim().length > 0
 
   useEffect(() => {
     if (wallets.length === 0) {
@@ -319,7 +369,7 @@ export function usePayoutFlow() {
       return BANGLADESH_RAIL_PAUSE_COPY
     }
     if (!isPayoutSupportedWallet(selectedWallet)) {
-      return 'Payouts are available for BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'
+      return 'Payouts are available for BRL (Brazil PIX), NGN (Nigeria), USDT (India), and USDC (Europe) wallets only.'
     }
     if (selectedWallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
@@ -341,6 +391,14 @@ export function usePayoutFlow() {
       !isBrazilMarketApproved
     ) {
       return 'Brazil market access must be approved before sending PIX payouts.'
+    }
+    if (getPayoutRailForWallet(selectedWallet) === 'ngn') {
+      if (!isNigeriaMarketApproved) {
+        return 'Nigeria market access must be approved before sending NGN payouts.'
+      }
+      if (portalEnvironment !== NIGERIA_LIVE_ONLY_ENVIRONMENT) {
+        return NIGERIA_LIVE_ONLY_COPY
+      }
     }
     if (
       getWalletMarket(selectedWallet) === 'europe' &&
@@ -423,6 +481,19 @@ export function usePayoutFlow() {
       return null
     }
 
+    if (payoutRail === 'ngn') {
+      if (!ngnPayload.bankCode.trim()) {
+        return 'Select the beneficiary bank.'
+      }
+      if (!/^\d{10}$/.test(ngnPayload.accountNumber.trim())) {
+        return 'Enter the 10-digit beneficiary account number.'
+      }
+      if (!ngnPayload.accountName.trim()) {
+        return 'Verify the account to confirm the recipient name before continuing.'
+      }
+      return null
+    }
+
     if (payoutRail === 'pix') {
       const beneficiary = brPayload.benificiaryAccountInfo
       if (
@@ -453,6 +524,11 @@ export function usePayoutFlow() {
   function validateSenderStep() {
     if (payoutRail === 'cpg') {
       return null
+    }
+
+    // Nigeria step 4 is a review of the verified beneficiary — no extra fields.
+    if (payoutRail === 'ngn') {
+      return validateBeneficiaryStep()
     }
 
     if (payoutRail === 'eur') {
@@ -594,6 +670,39 @@ export function usePayoutFlow() {
       return
     }
 
+    if (payoutRail === 'ngn') {
+      const normalizedPayload = {
+        // Nigeria has no sandbox — the API rejects environment: "test".
+        environment: NIGERIA_LIVE_ONLY_ENVIRONMENT,
+        amount: ngnPayload.amount.trim(),
+        merchantReference: ngnPayload.merchantReference.trim() || undefined,
+        description: ngnPayload.description.trim() || undefined,
+        beneficiary: {
+          accountNumber: ngnPayload.accountNumber.trim(),
+          bankCode: ngnPayload.bankCode.trim(),
+          accountName: ngnPayload.accountName.trim(),
+          bankName: ngnPayload.bankName.trim(),
+        },
+      }
+
+      const parsedPayload = createNgnPayoutPayloadSchema.safeParse(normalizedPayload)
+      if (!parsedPayload.success) {
+        setClientError(
+          parsedPayload.error.issues[0]?.message || 'Invalid NGN payout request.',
+        )
+        return
+      }
+
+      try {
+        const response = await createNgnPayoutMutation.mutateAsync(parsedPayload.data)
+        setCreatedNgnPayout(response)
+        setStep(5)
+      } catch {
+        // API error is surfaced via mutation state.
+      }
+      return
+    }
+
     if (payoutRail === 'pix') {
       const normalizedPayload = {
         environment: portalEnvironment,
@@ -695,14 +804,18 @@ export function usePayoutFlow() {
     ? isPayoutSupportedWallet(selectedWallet) &&
       (getPayoutRailForWallet(selectedWallet) !== 'eur' || isEuropeMarketApproved) &&
       (getPayoutRailForWallet(selectedWallet) !== 'cpg' || isIndiaMarketApproved) &&
-      (getPayoutRailForWallet(selectedWallet) !== 'pix' || isBrazilMarketApproved)
+      (getPayoutRailForWallet(selectedWallet) !== 'pix' || isBrazilMarketApproved) &&
+      (getPayoutRailForWallet(selectedWallet) !== 'ngn' ||
+        (isNigeriaMarketApproved &&
+          portalEnvironment === NIGERIA_LIVE_ONLY_ENVIRONMENT))
     : false
 
   const isSubmitting =
     createPayoutMutation.isPending ||
     createEurPayoutMutation.isPending ||
     createCpgPayoutMutation.isPending ||
-    createBrPayoutMutation.isPending
+    createBrPayoutMutation.isPending ||
+    createNgnPayoutMutation.isPending
 
   const mutationErrorMessage =
     payoutRail === 'eur'
@@ -717,9 +830,13 @@ export function usePayoutFlow() {
           ? createBrPayoutMutation.isError
             ? createBrPayoutMutation.error.message
             : undefined
-          : createPayoutMutation.isError
-            ? createPayoutMutation.error.message
-            : undefined
+          : payoutRail === 'ngn'
+            ? createNgnPayoutMutation.isError
+              ? createNgnPayoutMutation.error.message
+              : undefined
+            : createPayoutMutation.isError
+              ? createPayoutMutation.error.message
+              : undefined
 
   function handleResetFlow() {
     setStep(1)
@@ -729,11 +846,13 @@ export function usePayoutFlow() {
     setCreatedEurPayout(null)
     setCreatedCpgPayout(null)
     setCreatedBrPayout(null)
+    setCreatedNgnPayout(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
     setBrPayload(initialBrPayoutPayload)
     setEurPayload(initialEurPayoutPayload)
     setCpgPayload(initialCpgPayoutPayload)
+    setNgnPayload(initialNgnPayoutPayload)
     setSelectedWalletId(
       wallets.find((wallet) => isPayoutSupportedWallet(wallet))?.id ??
         wallets[0]?.id ??
@@ -750,6 +869,7 @@ export function usePayoutFlow() {
     createdEurPayout,
     createdCpgPayout,
     createdBrPayout,
+    createdNgnPayout,
     payload,
     setPayload,
     brPayload,
@@ -758,15 +878,19 @@ export function usePayoutFlow() {
     setEurPayload,
     cpgPayload,
     setCpgPayload,
+    ngnPayload,
+    setNgnPayload,
     payoutRail,
     displayCurrency,
     createPayoutMutation,
     createEurPayoutMutation,
     createCpgPayoutMutation,
     createBrPayoutMutation,
+    createNgnPayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
     cpgPayoutStatusQuery,
+    ngnPayoutStatusQuery,
     balanceQuery,
     marketsQuery,
     wallets,

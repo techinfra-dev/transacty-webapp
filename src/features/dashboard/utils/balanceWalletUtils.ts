@@ -2,7 +2,7 @@ import type { BalanceResponse, BalanceWalletItem } from '../services/balanceSche
 import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.ts'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { isBangladeshRailPausedForWallet } from './bangladeshRailPause.ts'
-import { MARKET_ORDER } from './marketDisplayUtils.ts'
+import { MARKET_ORDER, isLiveOnlyMarket } from './marketDisplayUtils.ts'
 
 /** INR pockets are never shown as standalone merchant balance cards. */
 export const HIDDEN_WALLET_CURRENCIES = new Set(['INR'])
@@ -186,6 +186,7 @@ export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | nul
     raw === 'india' ||
     raw === 'europe' ||
     raw === 'brazil' ||
+    raw === 'nigeria' ||
     raw === 'pyusd'
   ) {
     return raw
@@ -199,6 +200,7 @@ export type CatalogWalletAction =
   | 'complete_kyc'
   | 'suspended'
   | 'provisioning'
+  | 'switch_to_live'
   | 'none'
 
 export type MarketWalletAction = CatalogWalletAction
@@ -231,6 +233,14 @@ export function getCatalogWalletAction(
 
   if (entitlement === 'suspended' || activationStatus === 'suspended') {
     return 'suspended'
+  }
+  // Live-only rails have no test pocket, so approved access still reads as
+  // not-enabled here. Point at the environment switch instead of a re-request.
+  if (
+    entitlement === 'approved' &&
+    isLiveOnlyMarket(market?.market ?? getWalletMarket(wallet))
+  ) {
+    return kyb === 'verified' ? 'switch_to_live' : 'complete_kyc'
   }
   if (entitlement === 'disabled' || activationStatus === 'not_enabled') {
     return 'request_access'

@@ -3,6 +3,7 @@ import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { BrPixPayoutSuccessView } from '../components/payouts/BrPixPayoutSuccessView.tsx'
 import { CpgPayoutSuccessView } from '../components/payouts/CpgPayoutSuccessView.tsx'
 import { EurPayoutSuccessView } from '../components/payouts/EurPayoutSuccessView.tsx'
+import { NgnPayoutSuccessView } from '../components/payouts/NgnPayoutSuccessView.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
 import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
 import { PayoutPinnedSummary } from '../components/payouts/PayoutPinnedSummary.tsx'
@@ -15,6 +16,7 @@ import {
   BANGLADESH_RAIL_PAUSE_COPY,
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
+import { NIGERIA_LIVE_ONLY_COPY } from '../utils/nigeriaMarket.ts'
 
 export function DashboardPayoutsPage() {
   const { canWriteMoney } = usePortalRole()
@@ -43,6 +45,15 @@ export function DashboardPayoutsPage() {
             brPayload={flow.brPayload}
             createdPayout={flow.createdBrPayout}
             formattedPreviewAmount={flow.formattedPreviewAmount}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.payoutRail === 'ngn' && flow.createdNgnPayout ? (
+          <NgnPayoutSuccessView
+            environment={flow.portalEnvironment}
+            ngnPayload={flow.ngnPayload}
+            createdPayout={flow.createdNgnPayout}
+            polledPayout={flow.ngnPayoutStatusQuery.data}
+            isPolling={flow.ngnPayoutStatusQuery.isFetching}
             onCreateAnother={flow.handleResetFlow}
           />
         ) : flow.payoutRail === 'cpg' && flow.createdCpgPayout ? (
@@ -80,15 +91,16 @@ export function DashboardPayoutsPage() {
           <header className="payout-page-head">
             <h1 className="payout-page-title">New payout</h1>
             <p className="payout-page-subtitle">
-              Send Brazil PIX payouts, India USDT on-chain payouts, or Europe
-              USDC → EUR bank transfers from your activated merchant wallets.
-              Bangladesh BDT payouts are temporarily unavailable.
+              Send Brazil PIX payouts, Nigeria NGN bank transfers, India USDT
+              on-chain payouts, or Europe USDC → EUR bank transfers from your
+              activated merchant wallets. Bangladesh BDT payouts are temporarily
+              unavailable.
             </p>
           </header>
 
           <div className="payout-layout">
             <div className="payout-main">
-              <PayoutStepper step={flow.step} />
+              <PayoutStepper step={flow.step} payoutRail={flow.payoutRail} />
 
               {flow.step === 1 ? (
                 <div className="payout-panel">
@@ -114,7 +126,11 @@ export function DashboardPayoutsPage() {
                           ? 'India market access must be approved before USDT payouts are available.'
                           : flow.payoutRail === 'pix' && !flow.marketsQuery.isPending
                             ? 'Brazil market access must be approved before PIX payouts are available.'
-                            : 'Payouts are available for BRL (Brazil PIX), USDT (India), and USDC (Europe) wallets only.'}
+                            : flow.payoutRail === 'ngn' && !flow.marketsQuery.isPending
+                              ? flow.portalEnvironment !== 'live'
+                                ? NIGERIA_LIVE_ONLY_COPY
+                                : 'Nigeria market access must be approved before NGN payouts are available.'
+                              : 'Payouts are available for BRL (Brazil PIX), NGN (Nigeria), USDT (India), and USDC (Europe) wallets only.'}
                     </p>
                   ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
@@ -132,6 +148,8 @@ export function DashboardPayoutsPage() {
                   setCpgPayload={flow.setCpgPayload}
                   brPayload={flow.brPayload}
                   setBrPayload={flow.setBrPayload}
+                  ngnPayload={flow.ngnPayload}
+                  setNgnPayload={flow.setNgnPayload}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
                   payoutLimits={flow.payoutLimits}
@@ -172,6 +190,7 @@ export function DashboardPayoutsPage() {
               eurPayload={flow.eurPayload}
               cpgPayload={flow.cpgPayload}
               brPayload={flow.brPayload}
+              ngnPayload={flow.ngnPayload}
               formattedPreviewAmount={flow.formattedPreviewAmount}
               hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
               hasSenderDetails={flow.hasSenderDetails}
@@ -195,7 +214,9 @@ export function DashboardPayoutsPage() {
               ? 'You are about to submit a real India USDT payout in the live environment. USDT will be debited from your wallet.'
               : flow.payoutRail === 'pix'
                 ? 'You are about to submit a real Brazil PIX payout in the live environment. BRL will be debited from your wallet.'
-                : 'You are about to submit a real payout in the live environment. This may move real funds.'
+                : flow.payoutRail === 'ngn'
+                  ? 'You are about to send a real NGN bank transfer. NGN will be debited from your wallet and bank transfers cannot be reversed.'
+                  : 'You are about to submit a real payout in the live environment. This may move real funds.'
         }
         maxWidthClassName="max-w-md"
         footer={

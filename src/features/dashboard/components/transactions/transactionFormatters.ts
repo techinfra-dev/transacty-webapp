@@ -8,6 +8,7 @@ const RAIL_CURRENCY: Record<string, string> = {
   india: 'INR',
   bangladesh: 'BDT',
   europe: 'EUR',
+  nigeria: 'NGN',
 }
 
 /** Prefer API currency; fall back to rail default when currency is omitted. */
@@ -80,6 +81,12 @@ const TYLT_PRODUCT_LABELS: Record<string, string> = {
   eur_payout: 'Europe payout',
   'tekko-pyusd-payin': 'PYUSD pay-in',
   tekko_pyusd_payin: 'PYUSD pay-in',
+  'tekko-ngn-va': 'Nigeria NGN virtual account',
+  tekko_ngn_va: 'Nigeria NGN virtual account',
+  'tekko-ngn-payout': 'Nigeria NGN payout',
+  tekko_ngn_payout: 'Nigeria NGN payout',
+  'tekko-ngn-collect': 'Nigeria NGN collect (legacy)',
+  tekko_ngn_collect: 'Nigeria NGN collect (legacy)',
 }
 
 function readTyltProduct(metadata: Record<string, unknown> | null | undefined) {

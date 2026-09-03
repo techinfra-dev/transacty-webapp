@@ -30,6 +30,7 @@ export const transactionRailApiSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'nigeria',
   'pyusd',
 ])
 
@@ -39,6 +40,7 @@ export const transactionRailFilterSchema = z.enum([
   'india',
   'europe',
   'brazil',
+  'nigeria',
   'pyusd',
 ])
 

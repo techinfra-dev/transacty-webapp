@@ -11,6 +11,7 @@ export const MARKET_ORDER: MerchantMarket[] = [
   'india',
   'europe',
   'brazil',
+  'nigeria',
   'pyusd',
 ]
 
@@ -19,6 +20,7 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   india: 'India',
   europe: 'Europe',
   brazil: 'Brazil',
+  nigeria: 'Nigeria',
   pyusd: 'PYUSD',
 }
 
@@ -28,6 +30,7 @@ export const MARKET_AVATAR_CODES: Record<MerchantMarket, string> = {
   india: 'IN',
   europe: 'EU',
   brazil: 'BR',
+  nigeria: 'NG',
   pyusd: 'PY',
 }
 
@@ -37,7 +40,23 @@ export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
   india: 'UPI · Bank transfer',
   europe: 'SEPA · Instant',
   brazil: 'Pix',
+  nigeria: 'Virtual account · Bank payout',
   pyusd: 'Stablecoin settlement · PYUSD → PYUSD USDC',
+}
+
+/**
+ * Markets whose provider has no sandbox. Approved access still shows up as an
+ * inactive pocket in the test catalog — that means "switch to live", not
+ * "not approved".
+ */
+export const LIVE_ONLY_MARKETS = new Set<MerchantMarket>(['nigeria'])
+
+export const LIVE_ONLY_MARKET_COPY =
+  'Approved — switch the portal to Live to use this market.'
+
+export function isLiveOnlyMarket(market: string | null | undefined) {
+  const key = (market ?? '').trim().toLowerCase() as MerchantMarket
+  return LIVE_ONLY_MARKETS.has(key)
 }
 
 export type MarketBrowserFilter = 'all' | 'enabled' | 'available' | 'unavailable'

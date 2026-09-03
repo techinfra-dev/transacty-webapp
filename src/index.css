@@ -9509,3 +9509,164 @@ button.dashboard-wallet-tab {
     transform: none;
   }
 }
+
+/* ── NGN virtual account details ────────────────────────────────────────── */
+@keyframes ngn-va-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.ngn-va {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ngn-va-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  animation: ngn-va-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ngn-va-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, #9d8f82 34%, var(--dash-border-strong));
+  border-radius: calc(var(--dash-radius) * 1.5);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, #9d8f82 12%, transparent),
+      transparent 58%
+    ),
+    var(--dash-surface-2);
+  animation: ngn-va-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Clay rail keeps the hero from reading as just another panel. */
+.ngn-va-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: #9d8f82;
+}
+
+.ngn-va-eyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dash-fg-subtle);
+}
+
+.ngn-va-number {
+  margin-top: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: clamp(2rem, 9vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
+  color: var(--dash-fg);
+  word-break: break-all;
+}
+
+.ngn-va-bank {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--dash-fg);
+}
+
+.ngn-va-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.ngn-va-copy {
+  flex: 1 1 auto;
+  min-width: 11rem;
+  height: 44px;
+  border-radius: var(--dash-radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.ngn-va-copy:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.ngn-va-copy--done {
+  background: var(--dash-success) !important;
+  color: var(--dash-surface) !important;
+}
+
+.ngn-va-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+  animation: ngn-va-enter 360ms cubic-bezier(0.22, 1, 0.36, 1) 70ms both;
+}
+
+@media (min-width: 480px) {
+  .ngn-va-grid {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.ngn-va-field {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: var(--dash-surface-2);
+}
+
+.ngn-va-field-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dash-fg-subtle);
+}
+
+.ngn-va-field-value {
+  margin-top: 4px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dash-fg);
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ngn-va-status,
+  .ngn-va-hero,
+  .ngn-va-grid {
+    animation: none;
+  }
+
+  .ngn-va-copy:hover:not(:disabled) {
+    transform: none;
+  }
+}

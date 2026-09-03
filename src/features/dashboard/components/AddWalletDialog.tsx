@@ -149,6 +149,9 @@ function statusLabel(
   if (action === 'complete_kyc') {
     return 'Needs KYC'
   }
+  if (action === 'switch_to_live') {
+    return 'Live only'
+  }
   // Available tab: not enabled yet (requestable), not offline.
   return 'Not enabled'
 }
@@ -190,9 +193,10 @@ function MarketBrowserRow({
 
     // Request stays available after KYB — any not-enabled market can be requested.
     if (
-      action === 'request_access' ||
-      canRequestMarketAccess(market) ||
-      market.entitlementStatus === 'disabled'
+      action !== 'switch_to_live' &&
+      (action === 'request_access' ||
+        canRequestMarketAccess(market) ||
+        market.entitlementStatus === 'disabled')
     ) {
       if (
         justRequested ||
@@ -240,6 +244,10 @@ function MarketBrowserRow({
           Complete verification
         </button>
       )
+    }
+
+    if (action === 'switch_to_live') {
+      return <span className="add-wallet-row-pill">Live only</span>
     }
 
     if (action === 'provisioning') {

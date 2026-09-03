@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { usePortalRole } from '../../../hooks/usePortalRole.ts'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { BrazilPixPayinDialog } from '../components/BrazilPixPayinDialog.tsx'
+import { NgnVirtualAccountDialog } from '../components/NgnVirtualAccountDialog.tsx'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
@@ -46,6 +47,16 @@ function isBrazilBrlWallet(wallet: {
   return market === 'brazil' || code === 'BRL'
 }
 
+function isNigeriaNgnWallet(wallet: {
+  currency: string
+  market?: string | null
+  region?: string | null
+}) {
+  const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
+  return market === 'nigeria' || code === 'NGN'
+}
+
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
   const navigate = useNavigate()
@@ -57,6 +68,7 @@ export function DashboardWalletPage() {
     (state) => state.toggleBalancesVisibility,
   )
   const [isPixPayinOpen, setIsPixPayinOpen] = useState(false)
+  const [isNgnVirtualAccountOpen, setIsNgnVirtualAccountOpen] = useState(false)
 
   const balanceQuery = useBalanceQuery(true)
   const wallets = balanceQuery.data ? getActivatedWallets(balanceQuery.data) : null
@@ -70,6 +82,7 @@ export function DashboardWalletPage() {
     ? isPyusdSettlementWallet(activeWallet)
     : false
   const isBrazilWallet = activeWallet ? isBrazilBrlWallet(activeWallet) : false
+  const isNigeriaWallet = activeWallet ? isNigeriaNgnWallet(activeWallet) : false
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
@@ -91,8 +104,17 @@ export function DashboardWalletPage() {
     if (isBrazilWallet) {
       return `${getWalletDisplayLabel(activeWallet)} · Brazil PIX settlement pocket`
     }
+    if (isNigeriaWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · permanent virtual account · NGN bank payouts`
+    }
     return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
-  }, [activeWallet, isBrazilWallet, isIndiaUsdtWallet, isPyusdWallet])
+  }, [
+    activeWallet,
+    isBrazilWallet,
+    isIndiaUsdtWallet,
+    isNigeriaWallet,
+    isPyusdWallet,
+  ])
 
   if (balanceQuery.isPending) {
     return (
@@ -172,6 +194,14 @@ export function DashboardWalletPage() {
               Request payout
             </Button>
           ) : null}
+          {isNigeriaWallet ? (
+            <Button
+              className="dash-btn-primary"
+              onClick={() => setIsNgnVirtualAccountOpen(true)}
+            >
+              Virtual account
+            </Button>
+          ) : null}
           {isPyusdWallet && canWriteMoney ? (
             <Button
               className="dash-btn-primary"
@@ -199,6 +229,11 @@ export function DashboardWalletPage() {
       <BrazilPixPayinDialog
         isOpen={isPixPayinOpen}
         onClose={() => setIsPixPayinOpen(false)}
+      />
+
+      <NgnVirtualAccountDialog
+        isOpen={isNgnVirtualAccountOpen}
+        onClose={() => setIsNgnVirtualAccountOpen(false)}
       />
     </section>
   )
