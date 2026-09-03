@@ -395,6 +395,15 @@ export function getEntitlementOnlyAction(
   if (market.entitlementStatus === 'suspended') {
     return 'suspended'
   }
+  // Live-only rails ship no test pocket, so an approved market never has a
+  // catalog row to act on. Point at the environment switch instead of letting
+  // it read as a plain active market with no wallet anywhere.
+  if (
+    market.entitlementStatus === 'approved' &&
+    isLiveOnlyMarket(market.market)
+  ) {
+    return market.kybStatus === 'verified' ? 'switch_to_live' : 'complete_kyc'
+  }
   if (
     market.entitlementStatus === 'disabled' ||
     market.entitlementStatus === 'not_requested' ||
