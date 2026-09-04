@@ -5,7 +5,7 @@ import {
   getCpgPayoutRequest,
 } from '../services/cpgPayoutService.ts'
 import type { CreateCpgPayoutPayload } from '../services/cpgPayoutSchemas.ts'
-import { prepareMoneyWriteHeaders } from '../utils/prepareSensitiveMutation.ts'
+import { runPayoutWrite } from '../utils/prepareSensitiveMutation.ts'
 
 function invalidatePayoutQueries(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -19,8 +19,11 @@ export function useCreateCpgPayoutMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: CreateCpgPayoutPayload) => {
-      const { stepUpToken } = await prepareMoneyWriteHeaders()
-      return createCpgPayout(payload, { stepUpToken })
+      return runPayoutWrite(
+        ({ stepUpToken, pin }) =>
+          createCpgPayout({ ...payload, pin }, { stepUpToken }),
+        { description: 'Enter your payout PIN to send this USDT payout.' },
+      )
     },
     onSuccess: async () => {
       await invalidatePayoutQueries(queryClient)

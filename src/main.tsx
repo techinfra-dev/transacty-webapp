@@ -16,6 +16,21 @@ registerPortalSecurityInterceptor({
       search: { tab: 'security' },
     })
   },
+  onPayoutPinSetupRequired: (adminRequired) => {
+    const pathname = router.state.location.pathname
+    if (
+      pathname.includes('/onboarding/') ||
+      pathname.includes('reset-payout-pin') ||
+      pathname.includes('forgot-payout-pin')
+    ) {
+      return
+    }
+    void router.navigate({
+      to: adminRequired
+        ? '/dashboard/onboarding/waiting-for-admin'
+        : '/dashboard/onboarding/payout-pin',
+    })
+  },
   onSessionExpired: () => {
     void router.navigate({ to: '/login' })
   },

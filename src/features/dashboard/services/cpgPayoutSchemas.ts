@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAYOUT_PIN_PATTERN } from './payoutPinSchemas.ts'
 import { payoutEnvironmentSchema } from './payoutsSchemas.ts'
 
 const amountPattern = /^\d+(\.\d{1,2})?$/
@@ -15,6 +16,8 @@ export const createCpgPayoutPayloadSchema = z.object({
     .min(1, 'Amount is required.')
     .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
   settledCurrency: z.literal('USDT'),
+  // Collected at submit time by the PIN prompt — never persisted client-side.
+  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   networkSymbol: z.string().min(1, 'Network is required.'),
   destinationDetails: cpgPayoutDestinationDetailsSchema,
 })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAYOUT_PIN_PATTERN } from './payoutPinSchemas.ts'
 import { payoutEnvironmentSchema } from './payoutsSchemas.ts'
 
 const amountPattern = /^\d+(\.\d{1,2})?$/
@@ -48,6 +49,8 @@ export const createNgnPayoutPayloadSchema = z.object({
     .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
   merchantReference: z.string().trim().min(1).optional(),
   description: z.string().trim().min(1).optional(),
+  // Collected at submit time by the PIN prompt — never persisted client-side.
+  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   beneficiary: ngnPayoutBeneficiarySchema,
 })
 

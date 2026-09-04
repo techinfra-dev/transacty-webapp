@@ -9,6 +9,7 @@ import { TransactionDetailDialog } from '../features/dashboard/components/transa
 import { useTransactionDetailQuery } from '../features/dashboard/hooks/useTransactionsQueries.ts'
 import { logout } from '../features/auth/services/authService.ts'
 import { PortalStepUpDialog } from '../features/auth/components/PortalStepUpDialog.tsx'
+import { PayoutPinDialog } from '../features/auth/components/PayoutPinDialog.tsx'
 import { useProfileQuery } from '../features/dashboard/hooks/useProfileQuery.ts'
 import { KycActivationModal } from '../features/kyc/components/KycActivationModal.tsx'
 import { useKycDialogStore } from '../store/kycDialogStore.ts'
@@ -17,6 +18,7 @@ import {
   clearAuthSession,
   getAuthUser,
   markMfaEnrolledInSession,
+  markPayoutPinConfiguredInSession,
   subscribeToAuthSessionUpdates,
   updateAuthSessionUser,
 } from '../features/auth/services/authSession.ts'
@@ -130,7 +132,20 @@ export function DashboardLayout() {
     }
     if (profile.mfaEnabled && (!user.mfaEnabled || user.mfaSetupRequired)) {
       markMfaEnrolledInSession()
-      return
+    }
+    if (
+      profile.payoutPinConfigured &&
+      (!user.payoutPinConfigured || user.payoutPinSetupRequired)
+    ) {
+      markPayoutPinConfiguredInSession()
+    } else if (
+      typeof profile.payoutPinSetupRequired === 'boolean' &&
+      profile.payoutPinSetupRequired !== user.payoutPinSetupRequired
+    ) {
+      updateAuthSessionUser({
+        payoutPinSetupRequired: profile.payoutPinSetupRequired,
+        payoutPinConfigured: profile.payoutPinConfigured,
+      })
     }
     // Role can change server-side; stale roles would leave money UI visible.
     if (profile.role !== user.role || profile.merchantSlug !== user.merchantSlug) {
@@ -141,6 +156,8 @@ export function DashboardLayout() {
     }
   }, [
     profileQuery.data?.mfaEnabled,
+    profileQuery.data?.payoutPinConfigured,
+    profileQuery.data?.payoutPinSetupRequired,
     profileQuery.data?.role,
     profileQuery.data?.merchantSlug,
   ])
@@ -467,6 +484,7 @@ export function DashboardLayout() {
         detailQuery={transactionDetailQuery}
       />
       <PortalStepUpDialog />
+      <PayoutPinDialog />
     </section>
   )
 }

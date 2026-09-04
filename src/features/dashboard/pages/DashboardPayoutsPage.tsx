@@ -109,10 +109,7 @@ export function DashboardPayoutsPage() {
                     isLoading={flow.balanceQuery.isLoading}
                     isError={flow.balanceQuery.isError}
                     selectedWalletId={flow.selectedWalletId}
-                    onSelectWallet={(walletId) => {
-                      flow.setSelectedWalletId(walletId)
-                      flow.setClientError(null)
-                    }}
+                    onSelectWallet={flow.handleSelectWallet}
                   />
                   {flow.step === 1 &&
                   flow.selectedWallet &&

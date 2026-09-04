@@ -7,6 +7,8 @@ import {
   authSessionResponseSchema,
   forgotPasswordRequestSchema,
   forgotPasswordResponseSchema,
+  forgotPayoutPinRequestSchema,
+  forgotPayoutPinResponseSchema,
   getForgotPasswordFormErrorMessage,
   getLoginFormErrorMessage,
   getSignupFormErrorMessage,
@@ -22,6 +24,7 @@ import {
   stepUpRequestSchema,
   stepUpResponseSchema,
   type ForgotPasswordRequest,
+  type ForgotPayoutPinRequest,
   type LoginRequest,
   type LoginResponse,
   type MfaVerifyRequest,
@@ -135,6 +138,23 @@ export async function forgotPassword(payload: ForgotPasswordRequest) {
       parsed.data,
     )
     return forgotPasswordResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error))
+  }
+}
+
+export async function forgotPayoutPin(payload: ForgotPayoutPinRequest) {
+  const parsed = forgotPayoutPinRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(getForgotPasswordFormErrorMessage(payload.email))
+  }
+
+  try {
+    const response = await axiosInstance.post(
+      'auth/payout-pin/forgot',
+      parsed.data,
+    )
+    return forgotPayoutPinResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error))
   }

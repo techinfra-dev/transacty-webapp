@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAYOUT_PIN_PATTERN } from './payoutPinSchemas.ts'
 import {
   beneficiaryAccountInfoSchema,
   cardHolderInfoSchema,
@@ -13,6 +14,8 @@ export const createBrPayoutPayloadSchema = z.object({
     .string()
     .min(1, 'Amount is required.')
     .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
+  // Collected at submit time by the PIN prompt — never persisted client-side.
+  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   benificiaryAccountInfo: beneficiaryAccountInfoSchema,
   cardHolderInfo: cardHolderInfoSchema,
 })

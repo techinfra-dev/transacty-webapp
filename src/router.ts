@@ -8,6 +8,10 @@ import { Route as loginRoute } from './routes/login.tsx'
 import { Route as signupRoute } from './routes/signup.tsx'
 import { Route as forgotPasswordRoute } from './routes/forgot-password.tsx'
 import { Route as resetPasswordRoute } from './routes/reset-password.tsx'
+import { Route as forgotPayoutPinRoute } from './routes/forgot-payout-pin.tsx'
+import { Route as resetPayoutPinRoute } from './routes/reset-payout-pin.tsx'
+import { Route as dashboardOnboardingPayoutPinRoute } from './routes/dashboard.onboarding.payout-pin.tsx'
+import { Route as dashboardOnboardingWaitingRoute } from './routes/dashboard.onboarding.waiting-for-admin.tsx'
 import { Route as dashboardRoute } from './routes/dashboard.tsx'
 import { Route as dashboardIndexRoute } from './routes/dashboard.index.tsx'
 import { Route as dashboardTransactionsRoute } from './routes/dashboard.transactions.tsx'
@@ -29,6 +33,8 @@ const dashboardRouteTree = dashboardRoute.addChildren([
   dashboardPayoutsRoute,
   dashboardPyusdRoute,
   dashboardSettingsRoute,
+  dashboardOnboardingPayoutPinRoute,
+  dashboardOnboardingWaitingRoute,
 ])
 
 const authRouteTree = authRoute.addChildren([
@@ -36,6 +42,8 @@ const authRouteTree = authRoute.addChildren([
   signupRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
+  forgotPayoutPinRoute,
+  resetPayoutPinRoute,
 ])
 
 const routeTree = rootRoute.addChildren([

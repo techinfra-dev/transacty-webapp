@@ -27,6 +27,15 @@ export interface OtpInputProps {
   'aria-describedby'?: string
   autoFocus?: boolean
   className?: string
+  /** Hides the digits — used for the payout PIN. */
+  mask?: boolean
+  /** Larger boxes for standalone prompts. */
+  size?: 'md' | 'lg'
+  /** Marks every box as invalid (e.g. a rejected PIN). */
+  hasError?: boolean
+  /** Fires once when every box is filled — used to authorize without a second click. */
+  onComplete?: (value: string) => void
+  align?: 'center' | 'start'
 }
 
 export function OtpInput({
@@ -40,6 +49,11 @@ export function OtpInput({
   'aria-describedby': ariaDescribedBy,
   autoFocus = false,
   className,
+  mask = false,
+  size = 'md',
+  hasError = false,
+  onComplete,
+  align = 'center',
 }: OtpInputProps) {
   const reactId = useId()
   const groupId = idProp ?? `otp-${reactId}`
@@ -63,13 +77,23 @@ export function OtpInput({
     }
   }, [autoFocus, disabled, focusIndex])
 
+  const emitIfComplete = useCallback(
+    (nextValue: string) => {
+      onChange(nextValue)
+      if (onComplete && nextValue.length === length) {
+        onComplete(nextValue)
+      }
+    },
+    [length, onChange, onComplete],
+  )
+
   const handleChange = useCallback(
     (index: number, raw: string) => {
       const cleaned = digitsOnly(raw, length)
 
       if (cleaned.length === 0) {
         if (index < value.length) {
-          onChange(value.slice(0, index) + value.slice(index + 1))
+          emitIfComplete(value.slice(0, index) + value.slice(index + 1))
         }
         return
       }
@@ -77,21 +101,24 @@ export function OtpInput({
       if (cleaned.length === 1) {
         const d = cleaned
         const i = Math.min(index, value.length)
+        let next = value
         if (i < value.length) {
-          onChange(value.slice(0, i) + d + value.slice(i + 1))
+          next = value.slice(0, i) + d + value.slice(i + 1)
         } else if (i === value.length && value.length < length) {
-          onChange(value + d)
+          next = value + d
         }
+        emitIfComplete(next)
         if (i < length - 1) {
           focusIndex(i + 1)
         }
         return
       }
 
-      onChange(cleaned.slice(0, length))
-      focusIndex(Math.min(cleaned.length, length) - 1)
+      const next = cleaned.slice(0, length)
+      emitIfComplete(next)
+      focusIndex(Math.min(next.length, length) - 1)
     },
-    [focusIndex, length, onChange, value],
+    [emitIfComplete, focusIndex, length, value],
   )
 
   const handleKeyDown = useCallback(
@@ -129,10 +156,11 @@ export function OtpInput({
       if (!pasted) {
         return
       }
-      onChange(pasted.slice(0, length))
-      focusIndex(Math.min(pasted.length, length) - 1)
+      const next = pasted.slice(0, length)
+      emitIfComplete(next)
+      focusIndex(Math.min(next.length, length) - 1)
     },
-    [focusIndex, length, onChange],
+    [emitIfComplete, focusIndex, length],
   )
 
   return (
@@ -146,7 +174,12 @@ export function OtpInput({
       {name ? (
         <input type="hidden" name={name} value={digitsOnly(value, length)} readOnly />
       ) : null}
-      <div className="flex justify-center gap-2 sm:gap-2.5">
+      <div
+        className={joinClasses(
+          'flex gap-2 sm:gap-2.5',
+          align === 'start' ? 'justify-start' : 'justify-center',
+        )}
+      >
         {Array.from({ length }, (_, index) => {
           const digit = index < value.length ? value[index]! : ''
           const inputId = `${groupId}-${index}`
@@ -156,17 +189,17 @@ export function OtpInput({
               key={index}
               ref={(el) => setInputRef(index, el)}
               id={inputId}
-              type="text"
+              type={mask ? 'password' : 'text'}
               inputMode="numeric"
-              autoComplete={index === 0 ? 'one-time-code' : 'off'}
+              autoComplete={mask ? 'off' : index === 0 ? 'one-time-code' : 'off'}
               maxLength={1}
               disabled={disabled}
               value={digit}
               aria-label={`Digit ${index + 1} of ${length}`}
               className={joinClasses(
-                'h-12 w-10 rounded-xl border bg-(--color-card) text-center [font-family:var(--font-body)] text-lg font-semibold tabular-nums text-(--color-foreground) outline-none transition sm:h-14 sm:w-11',
-                'border-(--color-accent)/40 shadow-sm',
-                'focus:border-(--color-primary) focus:ring-2 focus:ring-(--color-primary)/20',
+                'otp-cell',
+                size === 'lg' ? 'otp-cell--lg' : 'otp-cell--md',
+                hasError ? 'otp-cell--error' : undefined,
                 'disabled:cursor-not-allowed disabled:opacity-60',
               )}
               onChange={(event) => handleChange(index, event.target.value)}

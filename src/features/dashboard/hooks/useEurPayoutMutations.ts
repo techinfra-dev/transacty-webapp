@@ -6,7 +6,7 @@ import {
   getEurPayoutInstance,
 } from '../services/eurPayoutService.ts'
 import type { CreateEurPayoutPayload } from '../services/eurPayoutSchemas.ts'
-import { prepareMoneyWriteHeaders } from '../utils/prepareSensitiveMutation.ts'
+import { runPayoutWrite } from '../utils/prepareSensitiveMutation.ts'
 
 function invalidatePayoutQueries(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -20,8 +20,11 @@ export function useCreateEurPayoutMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: CreateEurPayoutPayload) => {
-      const { stepUpToken } = await prepareMoneyWriteHeaders()
-      return createEurPayout(payload, { stepUpToken })
+      return runPayoutWrite(
+        ({ stepUpToken, pin }) =>
+          createEurPayout({ ...payload, pin }, { stepUpToken }),
+        { description: 'Enter your payout PIN to send this EUR payout.' },
+      )
     },
     onSuccess: async () => {
       await invalidatePayoutQueries(queryClient)
@@ -34,8 +37,11 @@ export function useApproveEurPayoutMutation() {
   const environment = usePortalEnvironmentStore((state) => state.environment)
   return useMutation({
     mutationFn: async (transactionId: string) => {
-      const { stepUpToken } = await prepareMoneyWriteHeaders()
-      return approveEurPayout({ transactionId, environment }, { stepUpToken })
+      return runPayoutWrite(
+        ({ stepUpToken, pin }) =>
+          approveEurPayout({ transactionId, environment, pin }, { stepUpToken }),
+        { description: 'Enter your payout PIN to approve this EUR payout.' },
+      )
     },
     onSuccess: async (_data, transactionId) => {
       await Promise.all([

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAYOUT_PIN_PATTERN } from './payoutPinSchemas.ts'
 
 export const payoutEnvironmentSchema = z.enum(['test', 'live'])
 
@@ -25,6 +26,8 @@ export const createPayoutPayloadSchema = z.object({
     .string()
     .min(1, 'Amount is required.')
     .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
+  // Collected at submit time by the PIN prompt — never persisted client-side.
+  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   // API contract currently expects this misspelled key.
   benificiaryAccountInfo: beneficiaryAccountInfoSchema,
   cardHolderInfo: cardHolderInfoSchema,

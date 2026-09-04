@@ -16,6 +16,7 @@ type RetriableConfig = InternalAxiosRequestConfig & {
 
 const STEP_UP_ACTIONS: PortalStepUpAction[] = [
   'money.write',
+  'payout_pin.write',
   'api_keys.write',
   'webhook.write',
   'audit.export',
@@ -35,6 +36,7 @@ function isAuthRoute(url: string | undefined) {
 
 export function registerPortalSecurityInterceptor(handlers: {
   onMfaSetupRequired: () => void
+  onPayoutPinSetupRequired: (adminRequired: boolean) => void
   onSessionExpired: () => void
 }) {
   axiosInstance.interceptors.response.use(
@@ -74,6 +76,17 @@ export function registerPortalSecurityInterceptor(handlers: {
       if (parsed.data.mfaSetupRequired) {
         updateAuthSessionUser({ mfaSetupRequired: true })
         handlers.onMfaSetupRequired()
+        return Promise.reject(error)
+      }
+
+      if (parsed.data.payoutPinSetupRequired) {
+        updateAuthSessionUser({
+          payoutPinSetupRequired: true,
+          payoutPinConfigured: parsed.data.payoutPinConfigured ?? false,
+        })
+        handlers.onPayoutPinSetupRequired(
+          Boolean(parsed.data.payoutPinAdminRequired),
+        )
         return Promise.reject(error)
       }
 

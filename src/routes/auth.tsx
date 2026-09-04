@@ -22,6 +22,18 @@ function resolveAuthHeading(pathname: string) {
       subtitle: 'Choose a new password for your account',
     }
   }
+  if (pathname === '/forgot-payout-pin') {
+    return {
+      title: 'Forgot payout PIN',
+      subtitle: 'We’ll email a reset link to your admin address',
+    }
+  }
+  if (pathname === '/reset-payout-pin') {
+    return {
+      title: 'Reset payout PIN',
+      subtitle: 'Choose a new 4-digit PIN for your merchant',
+    }
+  }
   return {
     title: 'Sign in',
     subtitle: 'Login to your account',

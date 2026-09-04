@@ -12,6 +12,8 @@ export interface AuthSessionUser {
   needsActivation: boolean
   mfaEnabled: boolean
   mfaSetupRequired: boolean
+  payoutPinConfigured: boolean
+  payoutPinSetupRequired: boolean
 }
 
 const AUTH_SESSION_UPDATED_EVENT = 'transcaty:auth-session-updated'
@@ -33,6 +35,8 @@ export function storeAuthSession(payload: AuthSessionResponse) {
       needsActivation: payload.needsActivation,
       mfaEnabled: payload.mfaEnabled ?? false,
       mfaSetupRequired: payload.mfaSetupRequired ?? false,
+      payoutPinConfigured: payload.payoutPinConfigured ?? false,
+      payoutPinSetupRequired: payload.payoutPinSetupRequired ?? false,
     } satisfies AuthSessionUser),
   )
   notifyAuthSessionUpdated()
@@ -70,6 +74,8 @@ function parseAuthUser(rawUser: string): AuthSessionUser | null {
         needsActivation: parsedUser.needsActivation,
         mfaEnabled: Boolean(parsedUser.mfaEnabled),
         mfaSetupRequired: Boolean(parsedUser.mfaSetupRequired),
+        payoutPinConfigured: Boolean(parsedUser.payoutPinConfigured),
+        payoutPinSetupRequired: Boolean(parsedUser.payoutPinSetupRequired),
       }
     }
     return null
@@ -114,6 +120,8 @@ export function updateAuthSessionUser(
       | 'email'
       | 'mfaEnabled'
       | 'mfaSetupRequired'
+      | 'payoutPinConfigured'
+      | 'payoutPinSetupRequired'
       | 'merchantSlug'
     >
   >,
@@ -134,5 +142,12 @@ export function markMfaEnrolledInSession() {
   updateAuthSessionUser({
     mfaEnabled: true,
     mfaSetupRequired: false,
+  })
+}
+
+export function markPayoutPinConfiguredInSession() {
+  updateAuthSessionUser({
+    payoutPinConfigured: true,
+    payoutPinSetupRequired: false,
   })
 }

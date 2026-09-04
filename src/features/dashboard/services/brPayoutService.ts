@@ -8,6 +8,7 @@ import {
   getStableIdempotencyKey,
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
+import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
 import {
   createBrPayoutPayloadSchema,
   createBrPayoutResponseSchema,
@@ -65,6 +66,7 @@ export async function createBrPayout(
     releaseIdempotencyKey('me/br/payouts', validatedPayload)
     return created
   } catch (error) {
+    assertNotPayoutPinError(error)
     throw new Error(getBrPayoutApiErrorMessage(error))
   }
 }

@@ -9,6 +9,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
+import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
 import {
   createNgnPayoutPayloadSchema,
   ngnAccountVerificationSchema,
@@ -110,6 +111,7 @@ export async function createNgnPayout(
     releaseIdempotencyKey(PAYOUTS_PATH, body)
     return created
   } catch (error) {
+    assertNotPayoutPinError(error)
     throw new Error(getNgnPayoutApiErrorMessage(error))
   }
 }

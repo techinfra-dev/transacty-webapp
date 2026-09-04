@@ -31,6 +31,7 @@ import {
   parseOtpauthTotpUrl,
 } from '../../../../utils/otpauth.ts'
 import { SettingsCard } from './SettingsCard.tsx'
+import { PayoutPinSettingsCard } from './PayoutPinSettingsCard.tsx'
 import { SecurityAuditLogTable } from './SecurityAuditLogTable.tsx'
 import { SecurityRecentActivityTable } from './SecurityRecentActivityTable.tsx'
 import {
@@ -238,7 +239,7 @@ function SetupCard({
 
 export function SecuritySettingsContent() {
   const navigate = useNavigate()
-  const { isAdmin } = usePortalRole()
+  const { isAdmin, mfaSetupRequired } = usePortalRole()
   const [setupData, setSetupData] = useState<MfaSetupResponse | null>(null)
   const [setupError, setSetupError] = useState<string | null>(null)
   const [disableError, setDisableError] = useState<string | null>(null)
@@ -570,6 +571,8 @@ export function SecuritySettingsContent() {
           </div>
         </section>
       ) : null}
+
+      {!mfaSetupRequired ? <PayoutPinSettingsCard /> : null}
 
       {mfaStatus.enabled ? (
         <SettingsCard

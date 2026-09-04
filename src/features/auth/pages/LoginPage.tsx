@@ -1,5 +1,5 @@
 import { useState, type ComponentProps } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { OtpInput } from '../../../components/ui/OtpInput.tsx'
@@ -25,6 +25,8 @@ export function LoginPage() {
   const [mfaCode, setMfaCode] = useState('')
 
   const navigate = useNavigate()
+  const search = useRouterState({ select: (state) => state.location.search })
+  const nextPath = new URLSearchParams(search).get('next')
   const loginMutation = useLoginMutation()
   const mfaVerifyMutation = useMfaVerifyMutation()
 
@@ -60,7 +62,7 @@ export function LoginPage() {
         return
       }
 
-      await navigate(getPostAuthNavigateOptions())
+      await navigate(getPostAuthNavigateOptions(nextPath))
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -85,7 +87,7 @@ export function LoginPage() {
         mfaToken,
         code: mfaCode,
       })
-      await navigate(getPostAuthNavigateOptions())
+      await navigate(getPostAuthNavigateOptions(nextPath))
     } catch (error) {
       setErrorMessage(
         error instanceof Error

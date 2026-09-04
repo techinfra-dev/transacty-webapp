@@ -10,7 +10,7 @@ import type {
   VerifyNgnAccountPayload,
 } from '../services/ngnPayoutSchemas.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
-import { prepareMoneyWriteHeaders } from '../utils/prepareSensitiveMutation.ts'
+import { runPayoutWrite } from '../utils/prepareSensitiveMutation.ts'
 
 function invalidatePayoutQueries(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
@@ -43,8 +43,11 @@ export function useCreateNgnPayoutMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (payload: CreateNgnPayoutPayload) => {
-      const { stepUpToken } = await prepareMoneyWriteHeaders()
-      return createNgnPayout(payload, { stepUpToken })
+      return runPayoutWrite(
+        ({ stepUpToken, pin }) =>
+          createNgnPayout({ ...payload, pin }, { stepUpToken }),
+        { description: 'Enter your payout PIN to send this NGN transfer.' },
+      )
     },
     onSuccess: async () => {
       await invalidatePayoutQueries(queryClient)

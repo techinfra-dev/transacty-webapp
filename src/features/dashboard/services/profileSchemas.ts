@@ -33,6 +33,9 @@ export const profileResponseSchema = z.object({
   documentsCount: z.number(),
   mfaEnabled: z.boolean(),
   mfaPendingSetup: z.boolean(),
+  mfaSetupRequired: z.boolean().optional(),
+  payoutPinConfigured: z.boolean().optional().default(false),
+  payoutPinSetupRequired: z.boolean().optional().default(false),
 })
 
 export const updateProfileRequestSchema = z.object({

@@ -31,6 +31,8 @@ export function usePortalRole() {
       canManageDeveloperSettings: canManageDeveloperSettings(user?.role),
       mfaEnabled: Boolean(user?.mfaEnabled),
       mfaSetupRequired: Boolean(user?.mfaSetupRequired),
+      payoutPinConfigured: Boolean(user?.payoutPinConfigured),
+      payoutPinSetupRequired: Boolean(user?.payoutPinSetupRequired),
     }
   }, [user])
 }

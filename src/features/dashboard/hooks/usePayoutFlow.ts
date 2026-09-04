@@ -361,38 +361,33 @@ export function usePayoutFlow() {
     }))
   }
 
-  function validateWalletStep() {
-    if (!selectedWallet) {
+  /**
+   * Takes the wallet explicitly so a click can validate the wallet it just
+   * picked, before the selection lands in state.
+   */
+  function validateWalletStep(wallet = selectedWallet) {
+    if (!wallet) {
       return 'Select a merchant wallet to continue.'
     }
-    if (isBangladeshRailPausedForWallet(selectedWallet)) {
+    if (isBangladeshRailPausedForWallet(wallet)) {
       return BANGLADESH_RAIL_PAUSE_COPY
     }
-    if (!isPayoutSupportedWallet(selectedWallet)) {
+    if (!isPayoutSupportedWallet(wallet)) {
       return 'Payouts are available for BRL (Brazil PIX), NGN (Nigeria), USDT (India), and USDC (Europe) wallets only.'
     }
-    if (selectedWallet.status.toLowerCase() !== 'active') {
+    if (wallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
     }
-    if (
-      getPayoutRailForWallet(selectedWallet) === 'eur' &&
-      !isEuropeMarketApproved
-    ) {
+    if (getPayoutRailForWallet(wallet) === 'eur' && !isEuropeMarketApproved) {
       return 'Europe market access must be approved before sending EUR payouts.'
     }
-    if (
-      getPayoutRailForWallet(selectedWallet) === 'cpg' &&
-      !isIndiaMarketApproved
-    ) {
+    if (getPayoutRailForWallet(wallet) === 'cpg' && !isIndiaMarketApproved) {
       return 'India market access must be approved before sending USDT payouts.'
     }
-    if (
-      getPayoutRailForWallet(selectedWallet) === 'pix' &&
-      !isBrazilMarketApproved
-    ) {
+    if (getPayoutRailForWallet(wallet) === 'pix' && !isBrazilMarketApproved) {
       return 'Brazil market access must be approved before sending PIX payouts.'
     }
-    if (getPayoutRailForWallet(selectedWallet) === 'ngn') {
+    if (getPayoutRailForWallet(wallet) === 'ngn') {
       if (!isNigeriaMarketApproved) {
         return 'Nigeria market access must be approved before sending NGN payouts.'
       }
@@ -401,8 +396,8 @@ export function usePayoutFlow() {
       }
     }
     if (
-      getWalletMarket(selectedWallet) === 'europe' &&
-      getPayoutRailForWallet(selectedWallet) !== 'eur'
+      getWalletMarket(wallet) === 'europe' &&
+      getPayoutRailForWallet(wallet) !== 'eur'
     ) {
       return `Europe payouts debit your ${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet and send ${EUR_PAYOUT_FIAT_CURRENCY} to an IBAN.`
     }
@@ -800,6 +795,17 @@ export function usePayoutFlow() {
     setStep((previousStep) => Math.min(previousStep + 1, 4))
   }
 
+  /** Picking a usable wallet is unambiguous, so it advances without Continue. */
+  function handleSelectWallet(walletId: string) {
+    setSelectedWalletId(walletId)
+    setClientError(null)
+
+    const wallet = wallets?.find((item) => item.id === walletId)
+    if (validateWalletStep(wallet) === null) {
+      setStep((previousStep) => Math.max(previousStep, 2))
+    }
+  }
+
   const isSelectedWalletPayoutSupported = selectedWallet
     ? isPayoutSupportedWallet(selectedWallet) &&
       (getPayoutRailForWallet(selectedWallet) !== 'eur' || isEuropeMarketApproved) &&
@@ -919,6 +925,7 @@ export function usePayoutFlow() {
     isLivePayoutConfirmOpen,
     setIsLivePayoutConfirmOpen,
     handleNextStep,
+    handleSelectWallet,
     handleResetFlow,
     portalEnvironment,
     isSelectedWalletPayoutSupported,

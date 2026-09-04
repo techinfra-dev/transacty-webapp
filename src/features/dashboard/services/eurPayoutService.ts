@@ -10,6 +10,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
+import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
 import {
   createEurPayoutPayloadSchema,
   eurPayoutApproveResponseSchema,
@@ -80,6 +81,7 @@ export async function createEurPayout(
     releaseIdempotencyKey('me/eur/payout-instances', body)
     return created
   } catch (error) {
+    assertNotPayoutPinError(error)
     throw new Error(getEurPayoutApiErrorMessage(error))
   }
 }
@@ -88,13 +90,15 @@ export async function approveEurPayout(
   params: {
     transactionId: string
     environment: PortalEnvironment
+    /** Approving releases the money, so it carries the payout PIN too. */
+    pin: string
   },
   options: PortalRequestHeaderOptions = {},
 ): Promise<EurPayoutApproveResponse> {
   try {
     const response = await axiosInstance.post(
       `me/eur/payout-instances/${encodeURIComponent(params.transactionId)}/approve`,
-      {},
+      { pin: params.pin },
       {
         headers: getPortalAuthHeaders({
           ...options,
@@ -110,6 +114,7 @@ export async function approveEurPayout(
     )
     return eurPayoutApproveResponseSchema.parse(response.data)
   } catch (error) {
+    assertNotPayoutPinError(error)
     throw new Error(getEurPayoutApiErrorMessage(error))
   }
 }

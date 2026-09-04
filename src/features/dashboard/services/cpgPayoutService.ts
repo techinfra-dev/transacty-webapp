@@ -10,6 +10,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
+import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
 import {
   createCpgPayoutPayloadSchema,
   cpgPayoutInstanceSchema,
@@ -82,6 +83,7 @@ export async function createCpgPayout(
     releaseIdempotencyKey('me/cpg/payout-requests', body)
     return created
   } catch (error) {
+    assertNotPayoutPinError(error)
     throw new Error(getCpgPayoutApiErrorMessage(error))
   }
 }

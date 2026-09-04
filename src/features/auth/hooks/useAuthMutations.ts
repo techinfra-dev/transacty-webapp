@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import {
   forgotPassword,
+  forgotPayoutPin,
   login,
   resetPassword,
   revokeSessions,
@@ -49,6 +50,12 @@ export function useSignupMutation() {
 export function useForgotPasswordMutation() {
   return useMutation({
     mutationFn: forgotPassword,
+  })
+}
+
+export function useForgotPayoutPinMutation() {
+  return useMutation({
+    mutationFn: forgotPayoutPin,
   })
 }
 

@@ -7,6 +7,7 @@ import { usePortalStepUpStore } from '../../../store/portalStepUpStore.ts'
 
 function actionLabel(action: string | null) {
   if (action === 'money.write') return 'money operations'
+  if (action === 'payout_pin.write') return 'payout PIN changes'
   if (action === 'api_keys.write') return 'API key changes'
   if (action === 'webhook.write') return 'webhook changes'
   if (action === 'audit.export') return 'audit export'

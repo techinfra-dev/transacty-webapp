@@ -3,7 +3,12 @@ import {
   getAuthUser,
   isAuthenticated,
 } from '../features/auth/services/authSession.ts'
-import { isPathAllowedDuringMfaSetup } from '../features/auth/utils/postAuthNavigation.ts'
+import {
+  getPayoutPinOnboardingTarget,
+  isPathAllowedDuringMfaSetup,
+  isPathAllowedDuringPayoutPinSetup,
+} from '../features/auth/utils/postAuthNavigation.ts'
+import { isAdminRole } from '../utils/portalRoles.ts'
 import { hydratePortalEnvironmentForUser } from '../store/portalEnvironmentStore.ts'
 import { Route as rootRoute } from './__root.tsx'
 
@@ -23,6 +28,19 @@ export const Route = createRoute({
       throw redirect({
         to: '/dashboard/settings',
         search: { tab: 'security' },
+      })
+    }
+    if (
+      user &&
+      !user.mfaSetupRequired &&
+      user.payoutPinSetupRequired &&
+      !isPathAllowedDuringPayoutPinSetup(
+        location.pathname,
+        isAdminRole(user.role),
+      )
+    ) {
+      throw redirect({
+        to: getPayoutPinOnboardingTarget(isAdminRole(user.role)),
       })
     }
   },

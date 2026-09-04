@@ -104,6 +104,7 @@ export const portalRoleSchema = z.enum(['admin', 'finance', 'viewer'])
 
 export type PortalStepUpAction =
   | 'money.write'
+  | 'payout_pin.write'
   | 'api_keys.write'
   | 'webhook.write'
   | 'audit.export'
@@ -111,6 +112,7 @@ export type PortalStepUpAction =
 
 export const portalStepUpActionSchema = z.enum([
   'money.write',
+  'payout_pin.write',
   'api_keys.write',
   'webhook.write',
   'audit.export',
@@ -127,6 +129,8 @@ export const authSessionResponseSchema = z.object({
   needsActivation: z.boolean(),
   mfaEnabled: z.boolean().optional().default(false),
   mfaSetupRequired: z.boolean().optional().default(false),
+  payoutPinConfigured: z.boolean().optional().default(false),
+  payoutPinSetupRequired: z.boolean().optional().default(false),
   merchant: merchantSchema,
 })
 
@@ -200,6 +204,16 @@ export const resetPasswordResponseSchema = z.object({
   ok: z.boolean(),
 })
 
+/** Payout PIN reset email — unauthenticated, generic response (no enumeration). */
+export const forgotPayoutPinRequestSchema = z.object({
+  email: z.string().trim().pipe(z.email()),
+})
+
+export const forgotPayoutPinResponseSchema = z.object({
+  ok: z.boolean(),
+  message: z.string().optional(),
+})
+
 export const logoutResponseSchema = z.object({
   ok: z.boolean(),
 })
@@ -209,6 +223,13 @@ export const apiErrorSchema = z.object({
   message: z.string(),
   stepUpRequired: z.boolean().optional(),
   mfaSetupRequired: z.boolean().optional(),
+  payoutPinRequired: z.boolean().optional(),
+  payoutPinConfigured: z.boolean().optional(),
+  payoutPinInvalid: z.boolean().optional(),
+  payoutPinLocked: z.boolean().optional(),
+  payoutPinSetupRequired: z.boolean().optional(),
+  payoutPinAdminRequired: z.boolean().optional(),
+  lockedUntil: z.string().optional(),
   action: z.string().optional(),
   reason: z.string().optional(),
 })
@@ -229,3 +250,5 @@ export type RevokeSessionsRequest = z.infer<typeof revokeSessionsRequestSchema>
 export type RevokeSessionsResponse = z.infer<typeof revokeSessionsResponseSchema>
 export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequestSchema>
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>
+export type ForgotPayoutPinRequest = z.infer<typeof forgotPayoutPinRequestSchema>
+export type ApiErrorBody = z.infer<typeof apiErrorSchema>

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PAYOUT_PIN_PATTERN } from './payoutPinSchemas.ts'
 import { payoutEnvironmentSchema } from './payoutsSchemas.ts'
 
 const amountPattern = /^\d+(\.\d{1,2})?$/
@@ -31,6 +32,8 @@ export const createEurPayoutPayloadSchema = z.object({
     .min(1, 'Amount is required.')
     .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
   currencySymbol: z.literal('EUR'),
+  // Collected at submit time by the PIN prompt — never persisted client-side.
+  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   returnUrl: z.string().url('Return URL is required.'),
   merchantUrl: z.string().url('Merchant URL is required.'),
   userDetails: eurPayoutUserDetailsSchema,
