@@ -8,6 +8,11 @@ import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
+  NGN_INSUFFICIENT_BALANCE_COPY,
+  NGN_PAYOUT_FAILED_COPY,
+  type NgnPayoutSubmitError,
+} from '../../utils/ngnPayoutErrors.ts'
+import {
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
@@ -44,6 +49,7 @@ interface PayoutFormStepsProps {
   updateEurUserField: (field: keyof EurPayoutUserDetails, value: string) => void
   clientError: string | null
   mutationErrorMessage: string | undefined
+  ngnSubmitError?: NgnPayoutSubmitError | null
 }
 
 export function PayoutFormSteps({
@@ -71,6 +77,7 @@ export function PayoutFormSteps({
   updateEurUserField,
   clientError,
   mutationErrorMessage,
+  ngnSubmitError = null,
 }: PayoutFormStepsProps) {
   const paymentMethodOptions = payoutMethodOptions.map((methodOption) => ({
     label: methodOption,
@@ -628,8 +635,22 @@ export function PayoutFormSteps({
           )
         ) : null}
 
-        {clientError ? <p className="payout-alert">{clientError}</p> : null}
-        {mutationErrorMessage ? (
+        {ngnSubmitError?.code === 'insufficient_balance' ? (
+          <div className="payout-alert" role="alert">
+            <p>{NGN_INSUFFICIENT_BALANCE_COPY}</p>
+            <p className="payout-alert-meta">
+              NGN wallet balance:{' '}
+              <strong>{ngnSubmitError.formattedBalance}</strong>
+            </p>
+          </div>
+        ) : ngnSubmitError?.code === 'payout_failed' ? (
+          <p className="payout-alert" role="alert">
+            {NGN_PAYOUT_FAILED_COPY}
+          </p>
+        ) : clientError ? (
+          <p className="payout-alert">{clientError}</p>
+        ) : null}
+        {mutationErrorMessage && !ngnSubmitError ? (
           <p className="payout-alert">{mutationErrorMessage}</p>
         ) : null}
       </div>

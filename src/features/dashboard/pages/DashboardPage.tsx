@@ -92,7 +92,7 @@ export function DashboardPage() {
           <Button
             variant="ghost"
             className={outlineBtn}
-            onClick={() => walletsQuery.refetch()}
+            onClick={() => void walletsQuery.refetch()}
             disabled={walletsQuery.isRefetching}
           >
             {walletsQuery.isRefetching ? (

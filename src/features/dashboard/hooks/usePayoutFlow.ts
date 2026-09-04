@@ -53,7 +53,16 @@ import {
   NIGERIA_LIVE_ONLY_ENVIRONMENT,
   isNigeriaWallet,
 } from '../utils/nigeriaMarket.ts'
-import { NgnBvnRequiredError } from '../utils/ngnBvnErrors.ts'
+import { getNgnVirtualAccount } from '../services/ngnVirtualAccountService.ts'
+import { isNgnBvnRequired } from '../services/ngnVirtualAccountSchemas.ts'
+import { PayoutPinError } from '../utils/payoutPinErrors.ts'
+import {
+  NgnBvnRequiredError,
+  NgnInsufficientBalanceError,
+  NgnPayoutFailedError,
+  NgnPayoutUncodedError,
+  type NgnPayoutSubmitError,
+} from '../utils/ngnPayoutErrors.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
@@ -87,6 +96,9 @@ export function usePayoutFlow() {
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [step, setStep] = useState(1)
   const [clientError, setClientError] = useState<string | null>(null)
+  const [ngnSubmitError, setNgnSubmitError] = useState<NgnPayoutSubmitError | null>(
+    null,
+  )
   const [createdPayout, setCreatedPayout] = useState<CreatePayoutResponse | null>(null)
   const [createdEurPayout, setCreatedEurPayout] = useState<EurPayoutInstance | null>(null)
   const [createdCpgPayout, setCreatedCpgPayout] = useState<CpgPayoutInstance | null>(null)
@@ -577,8 +589,35 @@ export function usePayoutFlow() {
     return validateSenderStep()
   }
 
+  function navigateToNgnVirtualAccount() {
+    const ngnWallet =
+      selectedWallet && isNigeriaWallet(selectedWallet)
+        ? selectedWallet
+        : wallets.find((wallet) => isNigeriaWallet(wallet))
+    if (!ngnWallet) {
+      return false
+    }
+    createNgnPayoutMutation.reset()
+    void navigate({
+      to: '/dashboard/wallets/$walletId',
+      params: { walletId: ngnWallet.id },
+      search: { va: 'bvn' },
+    })
+    return true
+  }
+
+  async function routeUncodedFailureToBvnIfNeeded() {
+    try {
+      const account = await getNgnVirtualAccount()
+      return isNgnBvnRequired(account) ? navigateToNgnVirtualAccount() : false
+    } catch {
+      return false
+    }
+  }
+
   function handleCreatePayout() {
     setClientError(null)
+    setNgnSubmitError(null)
     const validationError = validateCurrentStep()
     if (validationError) {
       setClientError(validationError)
@@ -596,6 +635,7 @@ export function usePayoutFlow() {
   async function executeCreatePayout() {
     setIsLivePayoutConfirmOpen(false)
     setApproveError(null)
+    setNgnSubmitError(null)
 
     if (payoutRail === 'eur') {
       const beneficiaryName =
@@ -697,21 +737,33 @@ export function usePayoutFlow() {
         setCreatedNgnPayout(response)
         setStep(5)
       } catch (error) {
+        if (error instanceof PayoutPinError) {
+          return
+        }
         if (error instanceof NgnBvnRequiredError) {
-          const ngnWallet =
-            selectedWallet && isNigeriaWallet(selectedWallet)
-              ? selectedWallet
-              : wallets.find((wallet) => isNigeriaWallet(wallet))
-          if (ngnWallet) {
-            createNgnPayoutMutation.reset()
-            void navigate({
-              to: '/dashboard/wallets/$walletId',
-              params: { walletId: ngnWallet.id },
-              search: { va: 'bvn' },
-            })
+          if (!navigateToNgnVirtualAccount()) {
+            setClientError(error.message)
+          }
+          return
+        }
+        if (error instanceof NgnInsufficientBalanceError) {
+          createNgnPayoutMutation.reset()
+          setNgnSubmitError({
+            code: 'insufficient_balance',
+            formattedBalance: formattedWalletBalance,
+          })
+          setStep(2)
+          return
+        }
+        if (error instanceof NgnPayoutFailedError) {
+          createNgnPayoutMutation.reset()
+          setNgnSubmitError({ code: 'payout_failed' })
+          return
+        }
+        if (error instanceof NgnPayoutUncodedError) {
+          if (await routeUncodedFailureToBvnIfNeeded()) {
             return
           }
-          setClientError(error.message)
         }
       }
       return
@@ -811,6 +863,7 @@ export function usePayoutFlow() {
       return
     }
     setClientError(null)
+    setNgnSubmitError(null)
     setStep((previousStep) => Math.min(previousStep + 1, 4))
   }
 
@@ -818,6 +871,7 @@ export function usePayoutFlow() {
   function handleSelectWallet(walletId: string) {
     setSelectedWalletId(walletId)
     setClientError(null)
+    setNgnSubmitError(null)
 
     const wallet = wallets?.find((item) => item.id === walletId)
     if (validateWalletStep(wallet) === null) {
@@ -856,9 +910,11 @@ export function usePayoutFlow() {
             ? createBrPayoutMutation.error.message
             : undefined
           : payoutRail === 'ngn'
-            ? createNgnPayoutMutation.isError
-              ? createNgnPayoutMutation.error.message
-              : undefined
+            ? ngnSubmitError
+              ? undefined
+              : createNgnPayoutMutation.isError
+                ? createNgnPayoutMutation.error.message
+                : undefined
             : createPayoutMutation.isError
               ? createPayoutMutation.error.message
               : undefined
@@ -866,6 +922,7 @@ export function usePayoutFlow() {
   function handleResetFlow() {
     setStep(1)
     setClientError(null)
+    setNgnSubmitError(null)
     setApproveError(null)
     setCreatedPayout(null)
     setCreatedEurPayout(null)
@@ -890,6 +947,8 @@ export function usePayoutFlow() {
     setStep,
     clientError,
     setClientError,
+    ngnSubmitError,
+    setNgnSubmitError,
     createdPayout,
     createdEurPayout,
     createdCpgPayout,

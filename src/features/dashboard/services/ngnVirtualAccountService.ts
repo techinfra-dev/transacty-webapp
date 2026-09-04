@@ -9,7 +9,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
-import { parseNgnBvnRequiredError } from '../utils/ngnBvnErrors.ts'
+import { parseNgnBvnRequiredError } from '../utils/ngnPayoutErrors.ts'
 import {
   ngnVirtualAccountSchema,
   provisionNgnVirtualAccountPayloadSchema,

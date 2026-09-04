@@ -176,10 +176,17 @@ export function DashboardWalletPage() {
           <Button
             variant="ghost"
             className={outlineBtn}
-            onClick={() => balanceQuery.refetch()}
+            onClick={() => void balanceQuery.refetch()}
             disabled={balanceQuery.isRefetching}
           >
-            {balanceQuery.isRefetching ? 'Refreshing...' : 'Refresh balances'}
+            {balanceQuery.isRefetching ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-(--dash-fg-muted)/35 border-t-(--dash-fg-muted)" />
+                Refreshing...
+              </span>
+            ) : (
+              'Refresh balances'
+            )}
           </Button>
           <Button variant="ghost" className={outlineBtn} onClick={toggleBalancesVisibility}>
             {areBalancesHidden ? 'Show balances' : 'Hide balances'}
@@ -224,7 +231,6 @@ export function DashboardWalletPage() {
         wallets={wallets}
         activeWalletId={activeWallet.id}
         areBalancesHidden={areBalancesHidden}
-        walletsLoading={balanceQuery.isPending || balanceQuery.isRefetching}
       />
 
       <WalletActivityTable

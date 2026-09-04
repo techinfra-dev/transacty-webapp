@@ -10,7 +10,15 @@ import {
 } from '../../../utils/idempotency.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
 import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
-import { assertNotNgnBvnRequired } from '../utils/ngnBvnErrors.ts'
+import {
+  NGN_INSUFFICIENT_BALANCE_CODE,
+  NGN_INSUFFICIENT_BALANCE_COPY,
+  NGN_PAYOUT_FAILED_CODE,
+  NGN_PAYOUT_FAILED_COPY,
+  NGN_BVN_REQUIRED_CODE,
+  NGN_BVN_REQUIRED_COPY,
+  assertNgnPayoutCodedError,
+} from '../utils/ngnPayoutErrors.ts'
 import {
   createNgnPayoutPayloadSchema,
   ngnAccountVerificationSchema,
@@ -33,8 +41,19 @@ function getNgnPayoutApiErrorMessage(error: unknown) {
       error?: unknown
       code?: unknown
     }
-    if (responseData.code === 'ngn_bvn_required') {
-      return 'Complete BVN verification before NGN payouts. Open your Nigeria wallet and submit BVN under Virtual account.'
+    if (
+      responseData.code === NGN_BVN_REQUIRED_CODE ||
+      (!responseData.code &&
+        typeof responseData.message === 'string' &&
+        responseData.message.toLowerCase().includes('bvn verification'))
+    ) {
+      return NGN_BVN_REQUIRED_COPY
+    }
+    if (responseData.code === NGN_INSUFFICIENT_BALANCE_CODE) {
+      return NGN_INSUFFICIENT_BALANCE_COPY
+    }
+    if (responseData.code === NGN_PAYOUT_FAILED_CODE) {
+      return NGN_PAYOUT_FAILED_COPY
     }
     if (responseData.code === 'payment_unavailable') {
       return 'Nigeria NGN payouts are live-only. Switch the portal to Live and try again.'
@@ -116,7 +135,7 @@ export async function createNgnPayout(
     return created
   } catch (error) {
     assertNotPayoutPinError(error)
-    assertNotNgnBvnRequired(error)
+    assertNgnPayoutCodedError(error)
     throw new Error(getNgnPayoutApiErrorMessage(error))
   }
 }

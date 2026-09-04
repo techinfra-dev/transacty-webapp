@@ -159,6 +159,7 @@ export function DashboardPayoutsPage() {
                   updateEurUserField={flow.updateEurUserField}
                   clientError={flow.clientError}
                   mutationErrorMessage={flow.mutationErrorMessage}
+                  ngnSubmitError={flow.ngnSubmitError}
                 />
               )}
 
@@ -170,6 +171,7 @@ export function DashboardPayoutsPage() {
                 }
                 onPrevious={() => {
                   flow.setClientError(null)
+                  flow.setNgnSubmitError(null)
                   flow.setStep((previousStep) => Math.max(previousStep - 1, 1))
                 }}
                 onContinue={flow.handleNextStep}

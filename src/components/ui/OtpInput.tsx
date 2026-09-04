@@ -4,6 +4,7 @@ import {
   useId,
   useRef,
   type ClipboardEvent,
+  type CSSProperties,
   type KeyboardEvent,
 } from 'react'
 
@@ -35,7 +36,8 @@ export interface OtpInputProps {
   hasError?: boolean
   /** Fires once when every box is filled — used to authorize without a second click. */
   onComplete?: (value: string) => void
-  align?: 'center' | 'start'
+  /** `stretch` grows the boxes to fill the row — used for the 4-digit payout PIN. */
+  align?: 'center' | 'start' | 'stretch'
 }
 
 export function OtpInput({
@@ -176,9 +178,14 @@ export function OtpInput({
       ) : null}
       <div
         className={joinClasses(
-          'flex gap-2 sm:gap-2.5',
-          align === 'start' ? 'justify-start' : 'justify-center',
+          'otp-row',
+          align === 'stretch'
+            ? 'otp-row--fill'
+            : align === 'start'
+              ? 'otp-row--start'
+              : 'otp-row--center',
         )}
+        style={{ ['--otp-length']: length } as CSSProperties}
       >
         {Array.from({ length }, (_, index) => {
           const digit = index < value.length ? value[index]! : ''

@@ -5905,14 +5905,23 @@ button.dashboard-wallet-tab {
   color: var(--dash-danger);
 }
 
+.payout-alert p {
+  margin: 0;
+}
+
 .payout-alert--panel {
   margin: 0;
   border-radius: 0;
   border-width: 1px 0 0;
 }
 
-.payout-alert--inline {
-  margin-top: 0;
+.payout-alert-meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.payout-alert-meta strong {
+  font-weight: 700;
 }
 
 .payout-panel-divider {
@@ -5957,6 +5966,35 @@ button.dashboard-wallet-tab {
 }
 
 /* ── OTP / PIN boxes ────────────────────────────────────────────────────── */
+.otp-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .otp-row {
+    gap: 0.625rem;
+  }
+}
+
+.otp-row--center {
+  justify-content: center;
+}
+
+.otp-row--start {
+  justify-content: flex-start;
+}
+
+.otp-row--fill {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(var(--otp-length, 4), minmax(0, 1fr));
+}
+
+.otp-row--fill .otp-cell {
+  width: 100%;
+}
+
 .otp-cell {
   appearance: none;
   border-radius: 14px;

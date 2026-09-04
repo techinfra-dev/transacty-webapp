@@ -88,7 +88,7 @@ export function PayoutPinDialog() {
         description ??
         'Enter the PIN your team uses to authorize payouts.'
       }
-      maxWidthClassName="max-w-[26rem]"
+      maxWidthClassName="max-w-[20.5rem]"
       bodyVariant="plain"
       closeOnBackdrop={!isLocked}
       footer={
@@ -121,7 +121,7 @@ export function PayoutPinDialog() {
             mask
             size="lg"
             hasError={Boolean(errorMessage)}
-            align="start"
+            align="stretch"
             aria-label="Payout PIN"
           />
         </div>

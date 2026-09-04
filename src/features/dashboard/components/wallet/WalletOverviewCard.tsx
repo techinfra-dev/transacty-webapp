@@ -24,14 +24,12 @@ type WalletOverviewCardProps = {
   wallets: BalanceWalletItem[]
   activeWalletId: string
   areBalancesHidden: boolean
-  walletsLoading?: boolean
 }
 
 export function WalletOverviewCard({
   wallets,
   activeWalletId,
   areBalancesHidden,
-  walletsLoading = false,
 }: WalletOverviewCardProps) {
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false)
   const active = wallets.find((w) => w.id === activeWalletId)
@@ -87,7 +85,6 @@ export function WalletOverviewCard({
               wallet={active}
               walletRail={walletRail}
               areBalancesHidden={areBalancesHidden}
-              loading={walletsLoading}
             />
 
             {moneyOverviewQuery.isPending ? (

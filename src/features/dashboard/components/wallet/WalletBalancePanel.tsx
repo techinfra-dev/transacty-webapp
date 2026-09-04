@@ -21,7 +21,6 @@ type WalletBalancePanelProps = {
   wallet: BalanceWalletItem
   walletRail: TransactionRailApi | undefined
   areBalancesHidden: boolean
-  loading?: boolean
 }
 
 function formatChangePercent(value: number | null) {
@@ -56,7 +55,6 @@ export function WalletBalancePanel({
   wallet,
   walletRail,
   areBalancesHidden,
-  loading = false,
 }: WalletBalancePanelProps) {
   const fillId = useId().replace(/:/g, '')
   const sparkRef = useRef<HTMLDivElement>(null)
@@ -122,16 +120,6 @@ export function WalletBalancePanel({
 
   function clearHover() {
     setHover(null)
-  }
-
-  if (loading) {
-    return (
-      <article className="wallet-balance-panel">
-        <div className="flex min-h-[160px] items-center justify-center">
-          <LoadingSpinner label="Loading balance…" />
-        </div>
-      </article>
-    )
   }
 
   const tooltipLeftPct = hover ? (hover.x / SPARK_W) * 100 : 0

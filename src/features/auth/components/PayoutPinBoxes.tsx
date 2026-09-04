@@ -32,7 +32,7 @@ export function PayoutPinBoxes({
         mask
         size="lg"
         hasError={hasError}
-        align="start"
+        align="stretch"
         aria-label={label}
       />
       {hint ? <p className="payout-pin-hint">{hint}</p> : null}
