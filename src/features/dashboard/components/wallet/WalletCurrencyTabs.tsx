@@ -44,6 +44,7 @@ export function WalletCurrencyTabs({
               aria-selected={isActive}
               to="/dashboard/wallets/$walletId"
               params={{ walletId: wallet.id }}
+              search={{}}
               className={`dashboard-wallet-tab ${isActive ? 'dashboard-wallet-tab--active' : ''} ${isPaused ? 'dashboard-wallet-tab--paused' : ''}`}
             >
               <div className="dashboard-wallet-tab-shell">

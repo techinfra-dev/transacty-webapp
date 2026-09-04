@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
 import { useBalanceQuery } from './useBalanceQuery.ts'
 import { useMarketsQuery } from './useMarketsQuery.ts'
@@ -50,7 +51,9 @@ import {
 import {
   NIGERIA_LIVE_ONLY_COPY,
   NIGERIA_LIVE_ONLY_ENVIRONMENT,
+  isNigeriaWallet,
 } from '../utils/nigeriaMarket.ts'
+import { NgnBvnRequiredError } from '../utils/ngnBvnErrors.ts'
 import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
@@ -80,6 +83,7 @@ import {
 } from '../utils/bangladeshRailPause.ts'
 
 export function usePayoutFlow() {
+  const navigate = useNavigate()
   const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
   const [step, setStep] = useState(1)
   const [clientError, setClientError] = useState<string | null>(null)
@@ -692,8 +696,23 @@ export function usePayoutFlow() {
         const response = await createNgnPayoutMutation.mutateAsync(parsedPayload.data)
         setCreatedNgnPayout(response)
         setStep(5)
-      } catch {
-        // API error is surfaced via mutation state.
+      } catch (error) {
+        if (error instanceof NgnBvnRequiredError) {
+          const ngnWallet =
+            selectedWallet && isNigeriaWallet(selectedWallet)
+              ? selectedWallet
+              : wallets.find((wallet) => isNigeriaWallet(wallet))
+          if (ngnWallet) {
+            createNgnPayoutMutation.reset()
+            void navigate({
+              to: '/dashboard/wallets/$walletId',
+              params: { walletId: ngnWallet.id },
+              search: { va: 'bvn' },
+            })
+            return
+          }
+          setClientError(error.message)
+        }
       }
       return
     }

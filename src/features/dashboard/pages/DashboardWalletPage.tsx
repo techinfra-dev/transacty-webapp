@@ -1,5 +1,5 @@
-import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { usePortalRole } from '../../../hooks/usePortalRole.ts'
@@ -59,6 +59,7 @@ function isNigeriaNgnWallet(wallet: {
 
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
+  const { va } = useSearch({ from: '/dashboard/wallets/$walletId' })
   const navigate = useNavigate()
   const { canWriteMoney } = usePortalRole()
   const areBalancesHidden = useUiPreferencesStore(
@@ -83,6 +84,12 @@ export function DashboardWalletPage() {
     : false
   const isBrazilWallet = activeWallet ? isBrazilBrlWallet(activeWallet) : false
   const isNigeriaWallet = activeWallet ? isNigeriaNgnWallet(activeWallet) : false
+
+  useEffect(() => {
+    if (va === 'bvn' && isNigeriaWallet) {
+      setIsNgnVirtualAccountOpen(true)
+    }
+  }, [va, isNigeriaWallet])
 
   const pageSubtitle = useMemo(() => {
     if (!activeWallet) {
@@ -233,7 +240,17 @@ export function DashboardWalletPage() {
 
       <NgnVirtualAccountDialog
         isOpen={isNgnVirtualAccountOpen}
-        onClose={() => setIsNgnVirtualAccountOpen(false)}
+        onClose={() => {
+          setIsNgnVirtualAccountOpen(false)
+          if (va === 'bvn') {
+            void navigate({
+              to: '/dashboard/wallets/$walletId',
+              params: { walletId },
+              search: {},
+              replace: true,
+            })
+          }
+        }}
       />
     </section>
   )

@@ -127,12 +127,13 @@ export function NgnVirtualAccountDialog({
   const status = account ? getNgnVirtualAccountStatus(account) : null
   // A failed BVN check keeps the form open so the merchant can correct and resubmit.
   const isProvisioning = status === 'pending' && !isNgnBvnRequired(account)
+  const needsBvn = isNgnBvnRequired(account)
   const bvnFailed = account?.bvnStatus?.trim().toLowerCase() === 'failed'
   const showForm =
     !isTestMode &&
     !accountQuery.isPending &&
     !accountQuery.isError &&
-    !isReady &&
+    needsBvn &&
     !isProvisioning
 
   function updateField(field: keyof NgnBvnFormPayload, value: string) {
@@ -218,7 +219,7 @@ export function NgnVirtualAccountDialog({
             disabled={provisionMutation.isPending}
             onClick={handleClose}
           >
-            {isReady ? 'Done' : 'Close'}
+            {isReady && !showForm ? 'Done' : 'Close'}
           </Button>
           {showForm ? (
             <Button
@@ -259,17 +260,7 @@ export function NgnVirtualAccountDialog({
             Try again
           </Button>
         </div>
-      ) : isReady && account ? (
-        <AccountDetailsPanel account={account} />
-      ) : isProvisioning ? (
-        <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 text-center">
-          <LoadingSpinner label="Provisioning…" />
-          <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
-            Your BVN check and account creation are still processing. This
-            refreshes automatically.
-          </p>
-        </div>
-      ) : (
+      ) : showForm ? (
         <form
           id={BVN_FORM_ID}
           className="space-y-3"
@@ -399,7 +390,17 @@ export function NgnVirtualAccountDialog({
             </p>
           ) : null}
         </form>
-      )}
+      ) : isProvisioning ? (
+        <div className="flex min-h-[160px] flex-col items-center justify-center gap-3 text-center">
+          <LoadingSpinner label="Provisioning…" />
+          <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
+            Your BVN check and account creation are still processing. This
+            refreshes automatically.
+          </p>
+        </div>
+      ) : account ? (
+        <AccountDetailsPanel account={account} />
+      ) : null}
     </Dialog>
   )
 }

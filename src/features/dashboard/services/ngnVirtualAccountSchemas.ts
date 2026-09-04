@@ -66,8 +66,20 @@ export function isNgnBvnRequired(account: NgnVirtualAccount | undefined) {
   if (!account) {
     return true
   }
-  return (
-    getNgnVirtualAccountStatus(account) === 'bvn_required' ||
-    account.bvnStatus?.trim().toLowerCase() === 'failed'
-  )
+  if (getNgnVirtualAccountStatus(account) === 'bvn_required') {
+    return true
+  }
+  const bvn = account.bvnStatus?.trim().toLowerCase()
+  if (bvn === 'verified') {
+    return false
+  }
+  // Pending BVN check / account creation — keep the spinner, not the form.
+  if (getNgnVirtualAccountStatus(account) === 'pending' && bvn !== 'failed') {
+    return false
+  }
+  // Ready details with no bvnStatus (older payloads) should still show the account.
+  if (isNgnVirtualAccountReady(account) && !bvn) {
+    return false
+  }
+  return true
 }

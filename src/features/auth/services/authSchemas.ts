@@ -232,6 +232,7 @@ export const apiErrorSchema = z.object({
   lockedUntil: z.string().optional(),
   action: z.string().optional(),
   reason: z.string().optional(),
+  code: z.string().optional(),
 })
 
 export type SignupRequest = z.infer<typeof signupRequestSchema>

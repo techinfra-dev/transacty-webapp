@@ -9,6 +9,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
+import { parseNgnBvnRequiredError } from '../utils/ngnBvnErrors.ts'
 import {
   ngnVirtualAccountSchema,
   provisionNgnVirtualAccountPayloadSchema,
@@ -58,6 +59,12 @@ export async function getNgnVirtualAccount(): Promise<NgnVirtualAccount> {
     })
     return ngnVirtualAccountSchema.parse(response.data)
   } catch (error) {
+    if (
+      error instanceof AxiosError &&
+      (error.response?.status === 404 || parseNgnBvnRequiredError(error))
+    ) {
+      return { status: 'bvn_required' }
+    }
     throw new Error(getNgnApiErrorMessage(error))
   }
 }
