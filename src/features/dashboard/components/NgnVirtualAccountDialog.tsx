@@ -266,12 +266,6 @@ export function NgnVirtualAccountDialog({
           className="space-y-3"
           onSubmit={(event) => void handleSubmit(event)}
         >
-          <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
-            We verify your Bank Verification Number once to open a permanent NGN
-            account. Your BVN is sent for verification only — it is never stored
-            or shown again in the portal.
-          </p>
-
           {bvnFailed ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 [font-family:var(--font-body)] text-sm text-amber-900">
               The last BVN check did not pass. Confirm the number and that the
