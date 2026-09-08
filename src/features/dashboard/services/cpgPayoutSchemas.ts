@@ -4,8 +4,7 @@ import { payoutEnvironmentSchema } from './payoutsSchemas.ts'
 
 const amountPattern = /^\d+(\.\d{1,2})?$/
 
-export const cpgPayoutDestinationDetailsSchema = z.object({
-  address: z.string().min(1, 'Wallet address is required.'),
+export const cpgPayoutBeneficiaryDetailsSchema = z.object({
   beneficiaryName: z.string().min(1, 'Beneficiary name is required.'),
 })
 
@@ -19,7 +18,8 @@ export const createCpgPayoutPayloadSchema = z.object({
   // Collected at submit time by the PIN prompt — never persisted client-side.
   pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
   networkSymbol: z.string().min(1, 'Network is required.'),
-  destinationDetails: cpgPayoutDestinationDetailsSchema,
+  address: z.string().min(1, 'Wallet address is required.'),
+  beneficiaryDetails: cpgPayoutBeneficiaryDetailsSchema,
 })
 
 export const cpgPayoutInstanceSchema = z
@@ -41,8 +41,8 @@ export const cpgPayoutInstanceSchema = z
   })
   .passthrough()
 
-export type CpgPayoutDestinationDetails = z.infer<
-  typeof cpgPayoutDestinationDetailsSchema
+export type CpgPayoutBeneficiaryDetails = z.infer<
+  typeof cpgPayoutBeneficiaryDetailsSchema
 >
 export type CreateCpgPayoutPayload = z.infer<typeof createCpgPayoutPayloadSchema>
 export type CpgPayoutInstance = z.infer<typeof cpgPayoutInstanceSchema>

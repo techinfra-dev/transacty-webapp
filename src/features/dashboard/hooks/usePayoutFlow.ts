@@ -685,8 +685,8 @@ export function usePayoutFlow() {
         amount: cpgPayload.amount.trim(),
         settledCurrency: 'USDT' as const,
         networkSymbol: cpgPayload.networkSymbol.trim(),
-        destinationDetails: {
-          address: cpgPayload.destinationAddress.trim(),
+        address: cpgPayload.destinationAddress.trim(),
+        beneficiaryDetails: {
           beneficiaryName: cpgPayload.beneficiaryName.trim(),
         },
       }
