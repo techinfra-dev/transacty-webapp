@@ -11,6 +11,8 @@ import {
 } from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
+import { parsePayoutCreateResponse } from './payoutCreateResult.ts'
+import type { PayoutCreateResult } from './payoutCreateResult.ts'
 import {
   createEurPayoutPayloadSchema,
   eurPayoutApproveResponseSchema,
@@ -68,7 +70,7 @@ function getEurPayoutApiErrorMessage(error: unknown) {
 export async function createEurPayout(
   payload: CreateEurPayoutPayload,
   options: PortalRequestHeaderOptions = {},
-): Promise<EurPayoutInstance> {
+): Promise<PayoutCreateResult<EurPayoutInstance>> {
   try {
     const body = createEurPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/eur/payout-instances', body, {
@@ -77,7 +79,11 @@ export async function createEurPayout(
         idempotencyKey: getStableIdempotencyKey('me/eur/payout-instances', body),
       }),
     })
-    const created = eurPayoutInstanceSchema.parse(response.data)
+    const created = parsePayoutCreateResponse(
+      response.data,
+      eurPayoutInstanceSchema,
+      response.status,
+    )
     releaseIdempotencyKey('me/eur/payout-instances', body)
     return created
   } catch (error) {

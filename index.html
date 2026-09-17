@@ -3,23 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link
+      rel="preload"
+      href="/fonts/satoshi-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Transacty</title>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
-    <script>
-      (function () {
-        try {
-          var raw = localStorage.getItem('transcaty-ui-preferences');
-          if (!raw) return;
-          var parsed = JSON.parse(raw);
-          if (parsed && parsed.state && parsed.state.colorScheme === 'dark') {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            document.documentElement.style.colorScheme = 'dark';
-          }
-        } catch (e) {}
-      })();
-    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

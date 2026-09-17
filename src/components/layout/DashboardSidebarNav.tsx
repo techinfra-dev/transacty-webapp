@@ -13,6 +13,7 @@ export interface DashboardNavItem {
     | '/dashboard/transactions'
     | '/dashboard/customers'
     | '/dashboard/payouts'
+    | '/dashboard/payout-approvals'
     | '/dashboard/settings'
 }
 
@@ -34,6 +35,7 @@ export const dashboardMenuSections: DashboardNavSection[] = [
     items: [
       { label: 'Transactions', to: '/dashboard/transactions' },
       { label: 'Payouts', to: '/dashboard/payouts' },
+      { label: 'Pending approvals', to: '/dashboard/payout-approvals' },
     ],
   },
   {
@@ -52,6 +54,12 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
   }
   if (to === '/dashboard/wallets') {
     return pathname.startsWith('/dashboard/wallets')
+  }
+  if (to === '/dashboard/payouts') {
+    return pathname === to || pathname.startsWith(`${to}/`)
+  }
+  if (to === '/dashboard/payout-approvals') {
+    return pathname.startsWith('/dashboard/payout-approvals')
   }
   return pathname === to || pathname.startsWith(`${to}/`)
 }
@@ -160,7 +168,10 @@ export function DashboardSidebarNav({
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => canWriteMoney || item.to !== '/dashboard/payouts',
+        (item) =>
+          canWriteMoney ||
+          (item.to !== '/dashboard/payouts' &&
+            item.to !== '/dashboard/payout-approvals'),
       ),
     }))
     .filter((section) => section.items.length > 0)

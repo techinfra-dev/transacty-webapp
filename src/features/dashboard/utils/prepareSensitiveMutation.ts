@@ -26,15 +26,22 @@ export async function prepareMoneyWriteHeaders() {
  * header and the merchant payout PIN in the body. Step-up runs first so the
  * PIN is the last thing on screen before the money moves. A rejected PIN
  * re-opens the same prompt rather than failing the whole form.
+ *
+ * Step-up tokens are single-use. Every attempt — including a PIN retry —
+ * mints a fresh TOTP token.
  */
 export async function runPayoutWrite<T>(
   run: (input: { stepUpToken: string | undefined; pin: string }) => Promise<T>,
   options?: { description?: string },
 ): Promise<T> {
-  const { stepUpToken } = await prepareMoneyWriteHeaders()
-  let pin = await ensurePayoutPin({ description: options?.description })
-
+  let pinError: { message: string; lockedUntil?: string | null } | null = null
   for (;;) {
+    const { stepUpToken } = await prepareMoneyWriteHeaders()
+    const pin = await ensurePayoutPin({
+      description: options?.description,
+      errorMessage: pinError?.message,
+      lockedUntil: pinError?.lockedUntil ?? null,
+    })
     try {
       return await run({ stepUpToken, pin })
     } catch (error) {
@@ -46,12 +53,66 @@ export async function runPayoutWrite<T>(
       if (!error.info.invalid && !error.info.locked) {
         throw new Error(error.info.message)
       }
-      pin = await ensurePayoutPin({
-        errorMessage: error.info.message,
+      pinError = {
+        message: error.info.message,
         lockedUntil: error.info.lockedUntil ?? null,
-      })
+      }
     }
   }
+}
+
+/**
+ * Approve a queued payout: fresh step-up (`payout_approval.review`) then PIN.
+ * Tokens cannot be reused across attempts.
+ */
+export async function runPayoutApprovalApprove<T>(
+  run: (input: { stepUpToken: string | undefined; pin: string }) => Promise<T>,
+): Promise<T> {
+  assertCanWriteMoney()
+  const user = getAuthUser()
+  let pinError: { message: string; lockedUntil?: string | null } | null = null
+  for (;;) {
+    const stepUpToken = await ensurePortalStepUp({
+      action: 'payout_approval.review',
+      mfaEnabled: Boolean(user?.mfaEnabled),
+      description:
+        'Enter your authenticator code to review this payout approval.',
+    })
+    const pin = await ensurePayoutPin({
+      description: 'Enter your payout PIN to approve this payout.',
+      errorMessage: pinError?.message,
+      lockedUntil: pinError?.lockedUntil ?? null,
+    })
+    try {
+      return await run({ stepUpToken, pin })
+    } catch (error) {
+      if (!(error instanceof PayoutPinError)) {
+        throw error
+      }
+      if (!error.info.invalid && !error.info.locked) {
+        throw new Error(error.info.message)
+      }
+      pinError = {
+        message: error.info.message,
+        lockedUntil: error.info.lockedUntil ?? null,
+      }
+    }
+  }
+}
+
+/** Reject a queued payout: fresh step-up, no PIN. */
+export async function runPayoutApprovalReject<T>(
+  run: (input: { stepUpToken: string | undefined }) => Promise<T>,
+): Promise<T> {
+  assertCanWriteMoney()
+  const user = getAuthUser()
+  const stepUpToken = await ensurePortalStepUp({
+    action: 'payout_approval.review',
+    mfaEnabled: Boolean(user?.mfaEnabled),
+    description:
+      'Enter your authenticator code to reject this payout approval.',
+  })
+  return run({ stepUpToken })
 }
 
 export async function prepareAdminStepUp(

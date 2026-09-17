@@ -9,6 +9,7 @@ type SidebarRoute =
   | '/dashboard/transactions'
   | '/dashboard/customers'
   | '/dashboard/payouts'
+  | '/dashboard/payout-approvals'
   | '/dashboard/settings'
 
 type SidebarItemIconProps = {
@@ -57,6 +58,13 @@ const ICONS: Record<
       'M24 104h24v64H32a8 8 0 0 0 0 16h192a8 8 0 0 0 0-16h-16v-64h24a8 8 0 0 0 4.19-14.81l-104-64a8 8 0 0 0-8.38 0l-104 64A8 8 0 0 0 24 104m40 0h32v64H64Zm80 0v64h-32v-64Zm48 64h-32v-64h32ZM128 41.39L203.74 88H52.26ZM248 208a8 8 0 0 1-8 8H16a8 8 0 0 1 0-16h224a8 8 0 0 1 8 8',
     solid:
       'M248 208a8 8 0 0 1-8 8H16a8 8 0 0 1 0-16h224a8 8 0 0 1 8 8M16.3 98.18a8 8 0 0 1 3.51-9l104-64a8 8 0 0 1 8.38 0l104 64A8 8 0 0 1 232 104h-24v64h16a8 8 0 0 1 0 16H32a8 8 0 0 1 0-16h16v-64H24a8 8 0 0 1-7.7-5.82M144 160a8 8 0 0 0 16 0v-48a8 8 0 0 0-16 0Zm-48 0a8 8 0 0 0 16 0v-48a8 8 0 0 0-16 0Z',
+  },
+  '/dashboard/payout-approvals': {
+    // ph:clipboard-text / ph:clipboard-text-fill
+    outline:
+      'M200 32h-36.26a47.84 47.84 0 0 0-87.48 0H56a16 16 0 0 0-16 16v168a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16M120 24a32 32 0 0 1 32 32H88a32 32 0 0 1 32-32m80 192H56V48h36.12A47.87 47.87 0 0 0 88 64v8a8 8 0 0 0 8 8h64a8 8 0 0 0 8-8V64a47.87 47.87 0 0 0-4.12-16H200Zm-40-88H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16m0 32H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16m0 32H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16',
+    solid:
+      'M200 32h-36.26a47.84 47.84 0 0 0-87.48 0H56a16 16 0 0 0-16 16v168a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16M120 56a32 32 0 0 1 31.72-24h16.56A32 32 0 0 1 120 56m40 136H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16m0-32H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16m0-32H96a8 8 0 0 1 0-16h64a8 8 0 0 1 0 16',
   },
   '/dashboard/customers': {
     // ph:users / ph:users-fill

@@ -9,6 +9,7 @@ import {
   releaseIdempotencyKey,
 } from '../../../utils/idempotency.ts'
 import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
+import { parsePayoutCreateResponse } from './payoutCreateResult.ts'
 import {
   createBrPayoutPayloadSchema,
   createBrPayoutResponseSchema,
@@ -62,7 +63,11 @@ export async function createBrPayout(
         ),
       }),
     })
-    const created = createBrPayoutResponseSchema.parse(response.data)
+    const created = parsePayoutCreateResponse(
+      response.data,
+      createBrPayoutResponseSchema,
+      response.status,
+    )
     releaseIdempotencyKey('me/br/payouts', validatedPayload)
     return created
   } catch (error) {

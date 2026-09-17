@@ -1,4 +1,5 @@
 import { Button } from '../../../../components/ui/Button.tsx'
+import { getSafeHttpsUrl } from '../../../../utils/safeUrl.ts'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useTransactionDetailModalStore } from '../../../../store/transactionDetailModalStore.ts'
 import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
@@ -48,7 +49,8 @@ export function EurPayoutSuccessView({
   const payout = polledPayout ?? createdPayout
   const statusLabel = payout.status?.trim() || 'created'
   const needsApproval = requiresMerchantApproval(payout)
-  const checkoutUrl = payout.checkoutUrl?.trim()
+  // API-supplied URL: enforce https so a `javascript:` payload cannot execute.
+  const safeCheckoutUrl = getSafeHttpsUrl(payout.checkoutUrl)
   const beneficiaryName =
     `${eurPayload.userDetails.firstName} ${eurPayload.userDetails.lastName}`.trim() ||
     '—'
@@ -67,7 +69,7 @@ export function EurPayoutSuccessView({
       <p className="payout-success-desc">
         {needsApproval
           ? 'Approve this payout, then send the beneficiary to Open Banking checkout.'
-          : checkoutUrl
+          : safeCheckoutUrl
             ? 'Continue to Open Banking checkout so the beneficiary can authorize the EUR transfer.'
             : 'Your payout request was created. Track status below while checkout becomes available.'}
       </p>
@@ -156,12 +158,12 @@ export function EurPayoutSuccessView({
           </Button>
         ) : null}
 
-        {checkoutUrl ? (
+        {safeCheckoutUrl ? (
           <Button
             type="button"
             className="payout-btn-primary"
             onClick={() => {
-              window.open(checkoutUrl, '_blank', 'noopener,noreferrer')
+              window.open(safeCheckoutUrl, '_blank', 'noopener,noreferrer')
             }}
           >
             Open checkout

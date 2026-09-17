@@ -14,6 +14,19 @@ interface UseInactivityLogoutOptions {
   warningSeconds?: number
 }
 
+/**
+ * Idle logout.
+ *
+ * Timers alone are not a session deadline: browsers throttle (and in some cases
+ * fully freeze) `setTimeout`/`setInterval` in background tabs, so a tab left in
+ * the background can outlive its own idle deadline and still be authenticated
+ * when the user returns.
+ *
+ * So the deadline is kept as a wall-clock timestamp. Timers are only an
+ * optimisation for the foreground case; whenever the tab becomes visible again
+ * the elapsed real time is re-checked and an expired session is terminated
+ * immediately.
+ */
 export function useInactivityLogout({
   enabled,
   onLogout,
@@ -25,8 +38,15 @@ export function useInactivityLogout({
 
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastActivityThrottleRef = useRef(0)
+  /** Wall-clock time the idle period expires (warning opens). */
+  const idleDeadlineRef = useRef<number>(Number.POSITIVE_INFINITY)
+  const hasLoggedOutRef = useRef(false)
   const onLogoutRef = useRef(onLogout)
-  onLogoutRef.current = onLogout
+  useEffect(() => {
+    onLogoutRef.current = onLogout
+  }, [onLogout])
+
+  const warningMs = warningSeconds * 1000
 
   const clearIdleTimer = useCallback(() => {
     if (idleTimerRef.current != null) {
@@ -35,11 +55,23 @@ export function useInactivityLogout({
     }
   }, [])
 
+  const triggerLogout = useCallback(() => {
+    if (hasLoggedOutRef.current) {
+      return
+    }
+    hasLoggedOutRef.current = true
+    clearIdleTimer()
+    void onLogoutRef.current()
+  }, [clearIdleTimer])
+
   const scheduleIdleTimer = useCallback(() => {
     clearIdleTimer()
     if (!enabled) {
+      idleDeadlineRef.current = Number.POSITIVE_INFINITY
       return
     }
+    // Wall-clock deadline is the source of truth; the timer is best-effort.
+    idleDeadlineRef.current = Date.now() + idleMs
     idleTimerRef.current = setTimeout(() => {
       idleTimerRef.current = null
       setPhase('warning')
@@ -66,9 +98,12 @@ export function useInactivityLogout({
   useEffect(() => {
     if (!enabled) {
       clearIdleTimer()
+      idleDeadlineRef.current = Number.POSITIVE_INFINITY
+      hasLoggedOutRef.current = false
       setPhase('active')
       return
     }
+    hasLoggedOutRef.current = false
     scheduleIdleTimer()
     return () => {
       clearIdleTimer()
@@ -101,22 +136,67 @@ export function useInactivityLogout({
     }
   }, [enabled, recordActivity])
 
+  /**
+   * Re-check the real elapsed time whenever the tab comes back to the
+   * foreground. This is what catches a throttled or frozen background tab.
+   */
+  useEffect(() => {
+    if (!enabled) {
+      return
+    }
+    const reconcile = () => {
+      if (document.visibilityState !== 'visible') {
+        return
+      }
+      const now = Date.now()
+      const idleDeadline = idleDeadlineRef.current
+      if (now >= idleDeadline + warningMs) {
+        // The whole idle period AND the warning window elapsed while hidden.
+        triggerLogout()
+        return
+      }
+      if (now >= idleDeadline) {
+        // Idle expired while hidden; show the warning with the time actually left.
+        setPhase('warning')
+        setSecondsLeft(Math.ceil((idleDeadline + warningMs - now) / 1000))
+      }
+    }
+    document.addEventListener('visibilitychange', reconcile)
+    window.addEventListener('focus', reconcile)
+    // Also reconcile on mount, in case the tab was restored from bfcache.
+    window.addEventListener('pageshow', reconcile)
+    return () => {
+      document.removeEventListener('visibilitychange', reconcile)
+      window.removeEventListener('focus', reconcile)
+      window.removeEventListener('pageshow', reconcile)
+    }
+  }, [enabled, warningMs, triggerLogout])
+
+  /**
+   * Warning countdown. Driven off a wall-clock deadline rather than by
+   * decrementing a counter, so a throttled interval cannot stretch it.
+   */
   useEffect(() => {
     if (!enabled || phase !== 'warning') {
       return
     }
-    setSecondsLeft(warningSeconds)
-    let remaining = warningSeconds
-    const id = window.setInterval(() => {
-      remaining -= 1
-      setSecondsLeft(remaining)
+    const logoutDeadline = Math.max(
+      idleDeadlineRef.current + warningMs,
+      Date.now(),
+    )
+    const tick = () => {
+      const remaining = logoutDeadline - Date.now()
       if (remaining <= 0) {
         window.clearInterval(id)
-        void onLogoutRef.current()
+        triggerLogout()
+        return
       }
-    }, 1000)
+      setSecondsLeft(Math.ceil(remaining / 1000))
+    }
+    tick()
+    const id = window.setInterval(tick, 250)
     return () => window.clearInterval(id)
-  }, [enabled, phase, warningSeconds])
+  }, [enabled, phase, warningMs, triggerLogout])
 
   useEffect(() => {
     if (phase === 'warning') {

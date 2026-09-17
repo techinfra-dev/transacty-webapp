@@ -11,6 +11,8 @@ import {
 } from '../../../utils/idempotency.ts'
 import type { PortalEnvironment } from '../../../types/portalEnvironment.ts'
 import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
+import { parsePayoutCreateResponse } from './payoutCreateResult.ts'
+import type { PayoutCreateResult } from './payoutCreateResult.ts'
 import {
   createCpgPayoutPayloadSchema,
   cpgPayoutInstanceSchema,
@@ -70,7 +72,7 @@ function getCpgPayoutApiErrorMessage(error: unknown) {
 export async function createCpgPayout(
   payload: CreateCpgPayoutPayload,
   options: PortalRequestHeaderOptions = {},
-): Promise<CpgPayoutInstance> {
+): Promise<PayoutCreateResult<CpgPayoutInstance>> {
   try {
     const body = createCpgPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post('me/cpg/payout-requests', body, {
@@ -79,7 +81,11 @@ export async function createCpgPayout(
         idempotencyKey: getStableIdempotencyKey('me/cpg/payout-requests', body),
       }),
     })
-    const created = cpgPayoutInstanceSchema.parse(response.data)
+    const created = parsePayoutCreateResponse(
+      response.data,
+      cpgPayoutInstanceSchema,
+      response.status,
+    )
     releaseIdempotencyKey('me/cpg/payout-requests', body)
     return created
   } catch (error) {

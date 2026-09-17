@@ -21,6 +21,10 @@ import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import { useKycDocumentsQuery, useKycPersonsQuery, useKycBusinessQuery } from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
 import {
+  DOCUMENT_UPLOAD_POLICY,
+  validateUpload,
+} from '../../../utils/fileUploadPolicy.ts'
+import {
   getPersonFormErrorMessage,
   getPersonFormFieldErrors,
   isDuplicatePerson,
@@ -575,11 +579,23 @@ export function KycActivationModal({
       return
     }
 
+    // Validate the file's actual bytes before anything is uploaded, and send
+    // the verified type rather than the browser-reported file.type.
+    const validation = await validateUpload(
+      selectedDocumentFile,
+      DOCUMENT_UPLOAD_POLICY,
+    )
+    if (!validation.ok) {
+      setDocumentError(validation.error)
+      setDocumentFieldErrors((previous) => ({ ...previous, selectedFile: true }))
+      return
+    }
+
     try {
       const uploadUrlData = await createDocumentUploadUrlMutation.mutateAsync({
         documentType: documentForm.documentType,
         filename: selectedDocumentFile.name,
-        contentType: selectedDocumentFile.type || undefined,
+        contentType: validation.mimeType,
         merchantPersonId: documentForm.merchantPersonId.trim() || undefined,
       })
 
@@ -1445,9 +1461,9 @@ export function KycActivationModal({
                             }))
                           }
                         }}
-                        accept=".pdf,.png,.jpg,.jpeg,.webp"
+                        accept={DOCUMENT_UPLOAD_POLICY.accept}
                         error={Boolean(documentFieldErrors.selectedFile)}
-                        helperText="Accepted formats: PDF, PNG, JPG, JPEG, WEBP"
+                        helperText={`Accepted formats: ${DOCUMENT_UPLOAD_POLICY.label}`}
                       />
                     </label>
                     <label className="kyb-field kyb-field--full">

@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
+import DOMPurify from 'dompurify'
+import { getSafeHttpsUrl } from '../../../utils/safeUrl.ts'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
@@ -41,10 +44,19 @@ function PaymentInfoPanel({ created }: { created: BrPixPayinResponse }) {
   const content = info?.content?.trim() ?? ''
   const type = (info?.type ?? 'code').toString().toLowerCase()
   const transactionId = created.transactionId ?? created.id
-  const qrSrc =
-    content && (type === 'code' || type === 'json')
-      ? `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(content)}`
-      : null
+  const qrValue =
+    content && (type === 'code' || type === 'json') ? content : null
+
+  // `content` is API-supplied. Enforce https on links so a `javascript:` URL
+  // cannot execute, and sanitize HTML before it reaches innerHTML.
+  const safeCheckoutUrl = type === 'url' ? getSafeHttpsUrl(content) : null
+  const sanitizedHtml = useMemo(
+    () =>
+      type === 'html' && content
+        ? DOMPurify.sanitize(content, { USE_PROFILES: { html: true } })
+        : '',
+    [type, content],
+  )
 
   const expiresLabel = useMemo(() => {
     if (!created.expiresAt) return null
@@ -65,31 +77,31 @@ function PaymentInfoPanel({ created }: { created: BrPixPayinResponse }) {
         . Money credits after the customer pays — do not treat this as settled yet.
       </p>
 
-      {qrSrc ? (
-        <img
-          src={qrSrc}
-          alt="PIX payment QR code"
-          width={168}
-          height={168}
+      {qrValue ? (
+        <div
+          role="img"
+          aria-label="PIX payment QR code"
           className="rounded-lg border border-(--dash-border) bg-white p-2"
-        />
+        >
+          <QRCodeSVG value={qrValue} size={168} level="M" />
+        </div>
       ) : null}
 
-      {type === 'url' && content ? (
+      {type === 'url' && safeCheckoutUrl ? (
         <a
-          href={content}
+          href={safeCheckoutUrl}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="dashboard-caption-link break-all text-sm"
         >
           Open PIX checkout
         </a>
       ) : null}
 
-      {type === 'html' && content ? (
+      {type === 'html' && sanitizedHtml ? (
         <div
           className="overflow-auto rounded-lg border border-(--dash-border) bg-(--dash-surface-2) p-3 text-sm"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       ) : null}
 

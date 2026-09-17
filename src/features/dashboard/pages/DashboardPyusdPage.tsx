@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from '@tanstack/react-router'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Input } from '../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
@@ -54,9 +55,7 @@ function DepositPanel({ intent }: { intent: PyusdPaymentIntent }) {
   const network = intent.network?.trim() || 'ethereum'
   const status = intent.status?.trim() || 'pending'
   const intentId = getPyusdPaymentIntentId(intent)
-  const qrSrc = depositAddress
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=168x168&data=${encodeURIComponent(depositAddress)}`
-    : null
+  const qrValue = depositAddress || null
   const expiresLabel = useMemo(() => {
     if (!intent.expiresAt) {
       return null
@@ -87,14 +86,14 @@ function DepositPanel({ intent }: { intent: PyusdPaymentIntent }) {
       </div>
 
       <div className="flex flex-wrap items-start gap-4">
-        {qrSrc ? (
-          <img
-            src={qrSrc}
-            alt="PYUSD deposit address QR code"
-            width={168}
-            height={168}
+        {qrValue ? (
+          <div
+            role="img"
+            aria-label="PYUSD deposit address QR code"
             className="rounded-lg border border-(--dash-border) bg-white p-2"
-          />
+          >
+            <QRCodeSVG value={qrValue} size={168} level="M" />
+          </div>
         ) : null}
         <div className="min-w-0 flex-1 space-y-3">
           <div>

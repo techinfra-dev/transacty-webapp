@@ -90,6 +90,7 @@ import {
   BANGLADESH_RAIL_PAUSE_COPY,
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
+import type { PayoutQueuedApproval } from '../services/payoutCreateResult.ts'
 
 export function usePayoutFlow() {
   const navigate = useNavigate()
@@ -105,6 +106,8 @@ export function usePayoutFlow() {
   const [createdBrPayout, setCreatedBrPayout] = useState<BrPayoutResponse | null>(null)
   const [createdNgnPayout, setCreatedNgnPayout] =
     useState<NgnPayoutInstance | null>(null)
+  const [queuedApproval, setQueuedApproval] =
+    useState<PayoutQueuedApproval | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [selectedWalletId, setSelectedWalletId] = useState<string | null>(null)
   const [payload, setPayload] = useState<PayoutFormPayload>(initialPayoutPayload)
@@ -671,7 +674,11 @@ export function usePayoutFlow() {
 
       try {
         const response = await createEurPayoutMutation.mutateAsync(parsedPayload.data)
-        setCreatedEurPayout(response)
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedEurPayout(response.payout)
+        }
         setStep(5)
       } catch {
         // API error is surfaced via mutation state.
@@ -701,7 +708,11 @@ export function usePayoutFlow() {
 
       try {
         const response = await createCpgPayoutMutation.mutateAsync(parsedPayload.data)
-        setCreatedCpgPayout(response)
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedCpgPayout(response.payout)
+        }
         setStep(5)
       } catch {
         // API error is surfaced via mutation state.
@@ -734,7 +745,11 @@ export function usePayoutFlow() {
 
       try {
         const response = await createNgnPayoutMutation.mutateAsync(parsedPayload.data)
-        setCreatedNgnPayout(response)
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedNgnPayout(response.payout)
+        }
         setStep(5)
       } catch (error) {
         if (error instanceof PayoutPinError) {
@@ -798,7 +813,11 @@ export function usePayoutFlow() {
 
       try {
         const response = await createBrPayoutMutation.mutateAsync(parsedPayload.data)
-        setCreatedBrPayout(response)
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedBrPayout(response.payout)
+        }
         setStep(5)
       } catch {
         // API error is surfaced via mutation state.
@@ -833,7 +852,11 @@ export function usePayoutFlow() {
 
     try {
       const response = await createPayoutMutation.mutateAsync(parsedPayload.data)
-      setCreatedPayout(response)
+      if (response.kind === 'queued') {
+        setQueuedApproval(response.approval)
+      } else {
+        setCreatedPayout(response.payout)
+      }
       setStep(5)
     } catch {
       // API error is surfaced via mutation state.
@@ -929,6 +952,7 @@ export function usePayoutFlow() {
     setCreatedCpgPayout(null)
     setCreatedBrPayout(null)
     setCreatedNgnPayout(null)
+    setQueuedApproval(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
     setBrPayload(initialBrPayoutPayload)
@@ -954,6 +978,7 @@ export function usePayoutFlow() {
     createdCpgPayout,
     createdBrPayout,
     createdNgnPayout,
+    queuedApproval,
     payload,
     setPayload,
     brPayload,

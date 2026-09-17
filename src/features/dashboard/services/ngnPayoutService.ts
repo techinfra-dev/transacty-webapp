@@ -10,6 +10,8 @@ import {
 } from '../../../utils/idempotency.ts'
 import { NIGERIA_LIVE_ONLY_ENVIRONMENT } from '../utils/nigeriaMarket.ts'
 import { assertNotPayoutPinError } from '../utils/payoutPinErrors.ts'
+import { parsePayoutCreateResponse } from './payoutCreateResult.ts'
+import type { PayoutCreateResult } from './payoutCreateResult.ts'
 import {
   NGN_INSUFFICIENT_BALANCE_CODE,
   NGN_INSUFFICIENT_BALANCE_COPY,
@@ -121,7 +123,7 @@ export async function verifyNgnAccount(
 export async function createNgnPayout(
   payload: CreateNgnPayoutPayload,
   options: PortalRequestHeaderOptions = {},
-): Promise<NgnPayoutInstance> {
+): Promise<PayoutCreateResult<NgnPayoutInstance>> {
   try {
     const body = createNgnPayoutPayloadSchema.parse(payload)
     const response = await axiosInstance.post(PAYOUTS_PATH, body, {
@@ -130,7 +132,11 @@ export async function createNgnPayout(
         idempotencyKey: getStableIdempotencyKey(PAYOUTS_PATH, body),
       }),
     })
-    const created = ngnPayoutInstanceSchema.parse(response.data)
+    const created = parsePayoutCreateResponse(
+      response.data,
+      ngnPayoutInstanceSchema,
+      response.status,
+    )
     releaseIdempotencyKey(PAYOUTS_PATH, body)
     return created
   } catch (error) {

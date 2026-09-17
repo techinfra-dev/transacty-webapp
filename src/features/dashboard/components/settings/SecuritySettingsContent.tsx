@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ComponentProps } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { QRCodeSVG } from 'qrcode.react'
 import { Button } from '../../../../components/ui/Button.tsx'
 import { Dialog } from '../../../../components/ui/Dialog.tsx'
 import { Input } from '../../../../components/ui/Input.tsx'
@@ -88,12 +89,6 @@ function SetupCard({
     parsedOtpauth.issuerFromQuery ?? setupData.issuer
   const displayAccount = setupData.accountEmail
 
-  const qrCodeUrl = useMemo(
-    () =>
-      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.otpauthUrl)}`,
-    [setupData.otpauthUrl],
-  )
-
   const setupKeyPlain = parsedOtpauth.secret ?? ''
   const setupKeyFormatted = setupKeyPlain
     ? formatSetupKeyForDisplay(setupKeyPlain)
@@ -135,11 +130,13 @@ function SetupCard({
       </div>
 
       <div className="flex flex-wrap items-start gap-4">
-        <img
-          src={qrCodeUrl}
-          alt="MFA setup QR code"
-          className="h-[200px] w-[200px] rounded-lg border border-(--color-accent)/35 bg-white p-2"
-        />
+        <div
+          role="img"
+          aria-label="MFA setup QR code"
+          className="rounded-lg border border-(--color-accent)/35 bg-white p-2"
+        >
+          <QRCodeSVG value={setupData.otpauthUrl} size={200} level="M" />
+        </div>
         <div className="min-w-[220px] flex-1 space-y-3">
           <p className="[font-family:var(--font-body)] text-xs text-(--color-secondary)">
             Issuer:{' '}

@@ -8,6 +8,7 @@ import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
 import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
 import { PayoutPinnedSummary } from '../components/payouts/PayoutPinnedSummary.tsx'
 import { PayoutStepper } from '../components/payouts/PayoutStepper.tsx'
+import { PayoutQueuedApprovalView } from '../components/payouts/PayoutQueuedApprovalView.tsx'
 import { PayoutSuccessView } from '../components/payouts/PayoutSuccessView.tsx'
 import { PayoutWalletStep } from '../components/payouts/PayoutWalletStep.tsx'
 import { usePayoutFlow } from '../hooks/usePayoutFlow.ts'
@@ -39,7 +40,14 @@ export function DashboardPayoutsPage() {
   return (
     <section className="payout-page app-page-enter">
       {flow.step === 5 ? (
-        flow.payoutRail === 'pix' && flow.createdBrPayout ? (
+        flow.queuedApproval ? (
+          <PayoutQueuedApprovalView
+            approval={flow.queuedApproval}
+            formattedPreviewAmount={flow.formattedPreviewAmount}
+            environment={flow.portalEnvironment}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.payoutRail === 'pix' && flow.createdBrPayout ? (
           <BrPixPayoutSuccessView
             environment={flow.portalEnvironment}
             brPayload={flow.brPayload}

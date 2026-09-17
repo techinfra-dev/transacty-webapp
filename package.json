@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run audit:ci && tsc -b && vite build",
+    "audit:ci": "npm audit --omit=dev --audit-level=high",
+    "install:ci": "npm ci --ignore-scripts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -15,6 +17,8 @@
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-router": "^1.166.7",
     "axios": "^1.13.6",
+    "dompurify": "^3.4.15",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.2.1",
@@ -26,6 +30,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@vercel/edge": "^1.3.3",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",

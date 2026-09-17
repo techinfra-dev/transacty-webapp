@@ -105,6 +105,7 @@ export const portalRoleSchema = z.enum(['admin', 'finance', 'viewer'])
 export type PortalStepUpAction =
   | 'money.write'
   | 'payout_pin.write'
+  | 'payout_approval.review'
   | 'api_keys.write'
   | 'webhook.write'
   | 'audit.export'
@@ -113,6 +114,7 @@ export type PortalStepUpAction =
 export const portalStepUpActionSchema = z.enum([
   'money.write',
   'payout_pin.write',
+  'payout_approval.review',
   'api_keys.write',
   'webhook.write',
   'audit.export',
@@ -167,7 +169,7 @@ export const stepUpRequestSchema = z.object({
 export const stepUpResponseSchema = z.object({
   token: z.string().min(1),
   tokenType: z.string().min(1).optional(),
-  expiresIn: z.string().min(1).optional(),
+  expiresIn: z.union([z.string(), z.number()]).optional(),
   action: portalStepUpActionSchema.or(z.string().min(1)),
 })
 

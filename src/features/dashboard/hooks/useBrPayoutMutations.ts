@@ -18,6 +18,7 @@ export function useCreateBrPayoutMutation() {
         queryClient.invalidateQueries({ queryKey: ['transactions-list'] }),
         queryClient.invalidateQueries({ queryKey: ['me-balance'] }),
         queryClient.invalidateQueries({ queryKey: ['merchant-wallets'] }),
+        queryClient.invalidateQueries({ queryKey: ['payout-approvals'] }),
       ])
     },
   })

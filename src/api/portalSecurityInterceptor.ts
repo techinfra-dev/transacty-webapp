@@ -17,6 +17,7 @@ type RetriableConfig = InternalAxiosRequestConfig & {
 const STEP_UP_ACTIONS: PortalStepUpAction[] = [
   'money.write',
   'payout_pin.write',
+  'payout_approval.review',
   'api_keys.write',
   'webhook.write',
   'audit.export',

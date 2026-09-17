@@ -18,6 +18,8 @@ import { Route as dashboardTransactionsRoute } from './routes/dashboard.transact
 import { Route as dashboardCustomersRoute } from './routes/dashboard.customers.tsx'
 import { Route as dashboardCustomersCustomerIdRoute } from './routes/dashboard.customers.$customerId.tsx'
 import { Route as dashboardPayoutsRoute } from './routes/dashboard.payouts.tsx'
+import { Route as dashboardPayoutApprovalsRoute } from './routes/dashboard.payout-approvals.tsx'
+import { Route as dashboardPayoutApprovalDetailRoute } from './routes/dashboard.payout-approvals.$approvalId.tsx'
 import { Route as dashboardPyusdRoute } from './routes/dashboard.pyusd.tsx'
 import { Route as dashboardSettingsRoute } from './routes/dashboard.settings.tsx'
 import { Route as dashboardWalletsIndexRoute } from './routes/dashboard.wallets.index.tsx'
@@ -31,6 +33,8 @@ const dashboardRouteTree = dashboardRoute.addChildren([
   dashboardCustomersRoute,
   dashboardCustomersCustomerIdRoute,
   dashboardPayoutsRoute,
+  dashboardPayoutApprovalsRoute,
+  dashboardPayoutApprovalDetailRoute,
   dashboardPyusdRoute,
   dashboardSettingsRoute,
   dashboardOnboardingPayoutPinRoute,
