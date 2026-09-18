@@ -3,15 +3,16 @@ function normalizeBaseUrl(url: string) {
 }
 
 /**
- * Portal API base.
- *
- * Deliberately relative: requests go to this app's own origin and are proxied
- * to the upstream API by the edge function in `api/[...path].ts` (and by the
- * Vite dev proxy in development). The upstream origin is therefore a
- * server-side secret and never ships in the client bundle.
+ * Portal API base: `{VITE_BASE_URL}/portal/` (e.g. auth/login, me/payouts).
  */
 export function getPortalApiBaseUrl() {
-  return '/api/portal/'
+  const viteBaseUrl = import.meta.env.VITE_BASE_URL as string | undefined
+
+  if (!viteBaseUrl) {
+    throw new Error('Missing VITE_BASE_URL environment variable')
+  }
+
+  return `${normalizeBaseUrl(viteBaseUrl)}/portal/`
 }
 
 export function getSupabaseProjectUrl() {

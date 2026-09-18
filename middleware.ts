@@ -9,12 +9,28 @@ export const config = {
 /**
  * Supabase Storage is called directly by the browser for KYC document uploads
  * (see src/features/kyc/services/kycService.ts), so it must be in connect-src.
- * Everything else goes through the same-origin /api proxy.
+ * Portal API calls go to VITE_BASE_URL (see getPortalApiBaseUrl).
  */
 const SUPABASE_ORIGIN = process.env.SUPABASE_ORIGIN ?? ''
 
+function originFromEnvUrl(raw: string | undefined) {
+  if (!raw?.trim()) {
+    return ''
+  }
+  try {
+    return new URL(raw).origin
+  } catch {
+    return ''
+  }
+}
+
 function buildCsp(): string {
-  const connectSrc = ["'self'", SUPABASE_ORIGIN].filter(Boolean).join(' ')
+  const apiOrigin = originFromEnvUrl(
+    process.env.API_UPSTREAM_ORIGIN ?? process.env.VITE_BASE_URL,
+  )
+  const connectSrc = ["'self'", SUPABASE_ORIGIN, apiOrigin]
+    .filter(Boolean)
+    .join(' ')
 
   return [
     "default-src 'self'",
