@@ -42,7 +42,7 @@ function buildCsp(): string {
     "style-src 'self' 'unsafe-inline'",
     // Fonts are self-hosted under /fonts.
     "font-src 'self'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://assets.coingecko.com https://flagcdn.com",
     `connect-src ${connectSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
