@@ -133,20 +133,73 @@ export async function createKycDocumentUploadUrl(
   }
 }
 
-export async function uploadDocumentToSignedUrl(params: {
-  bucket: string
-  path: string
-  uploadToken: string
-  file: File
-}) {
-  const { bucket, path, uploadToken, file } = params
-  const result = await supabaseClient.storage
-    .from(bucket)
-    .uploadToSignedUrl(path, uploadToken, file)
-
-  if (result.error) {
-    throw new Error(result.error.message || 'Unable to upload file right now.')
+function isSignedStorageUrl(url: string) {
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.protocol === 'https:' &&
+      (parsed.pathname.includes('/storage/v1/') ||
+        parsed.searchParams.has('token'))
+    )
+  } catch {
+    return false
   }
+}
+
+async function putFileToSignedUrl(
+  url: string,
+  file: File,
+  contentType?: string,
+) {
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type':
+          contentType?.trim() || file.type || 'application/octet-stream',
+        'x-upsert': 'false',
+      },
+      body: file,
+    })
+  } catch {
+    throw new Error(
+      'Unable to reach file storage. Confirm this site can connect to Supabase.',
+    )
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to upload file right now.')
+  }
+}
+
+export async function uploadDocumentToSignedUrl(params: {
+  uploadUrl: string
+  bucket?: string
+  path?: string
+  uploadToken?: string
+  file: File
+  contentType?: string
+}) {
+  const { uploadUrl, bucket, path, uploadToken, file, contentType } = params
+
+  if (isSignedStorageUrl(uploadUrl)) {
+    await putFileToSignedUrl(uploadUrl, file, contentType)
+    return
+  }
+
+  if (bucket && path && uploadToken) {
+    const result = await supabaseClient.storage
+      .from(bucket)
+      .uploadToSignedUrl(path, uploadToken, file)
+
+    if (result.error) {
+      throw new Error(result.error.message || 'Unable to upload file right now.')
+    }
+    return
+  }
+
+  throw new Error('Upload URL from the server is incomplete.')
 }
 
 export async function listKycDocuments() {

@@ -601,10 +601,12 @@ export function KycActivationModal({
 
       setIsUploadingDocument(true)
       await uploadDocumentToSignedUrl({
+        uploadUrl: uploadUrlData.uploadUrl,
         bucket: uploadUrlData.bucket,
         path: uploadUrlData.path,
         uploadToken: uploadUrlData.uploadToken,
         file: selectedDocumentFile,
+        contentType: validation.mimeType,
       })
       setIsUploadingDocument(false)
 

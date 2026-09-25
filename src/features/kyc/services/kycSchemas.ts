@@ -106,14 +106,16 @@ export const kycDocumentUploadUrlPayloadSchema = z.object({
   merchantPersonId: z.string().optional(),
 })
 
-export const kycDocumentUploadUrlResponseSchema = z.object({
-  uploadUrl: z.string().min(1),
-  uploadToken: z.string().min(1),
-  path: z.string().min(1),
-  bucket: z.string().min(1),
-  fileReference: z.string().min(1),
-  expiresIn: z.number(),
-})
+export const kycDocumentUploadUrlResponseSchema = z
+  .object({
+    uploadUrl: z.string().min(1),
+    uploadToken: z.string().min(1).optional(),
+    path: z.string().min(1).optional(),
+    bucket: z.string().min(1).optional(),
+    fileReference: z.string().min(1),
+    expiresIn: z.union([z.string(), z.number()]).optional(),
+  })
+  .passthrough()
 
 export const kycDocumentListItemSchema = z
   .object({

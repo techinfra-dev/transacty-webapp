@@ -28,7 +28,10 @@ function buildCsp(): string {
   const apiOrigin = originFromEnvUrl(
     process.env.API_UPSTREAM_ORIGIN ?? process.env.VITE_BASE_URL,
   )
-  const connectSrc = ["'self'", SUPABASE_ORIGIN, apiOrigin]
+  const supabaseOrigin =
+    originFromEnvUrl(SUPABASE_ORIGIN) ||
+    originFromEnvUrl(process.env.VITE_SUPABASE_URL)
+  const connectSrc = ["'self'", supabaseOrigin, apiOrigin]
     .filter(Boolean)
     .join(' ')
 
@@ -42,7 +45,9 @@ function buildCsp(): string {
     "style-src 'self' 'unsafe-inline'",
     // Fonts are self-hosted under /fonts.
     "font-src 'self'",
-    "img-src 'self' data: blob: https://assets.coingecko.com https://flagcdn.com",
+    `img-src 'self' data: blob: https://assets.coingecko.com https://flagcdn.com${
+      supabaseOrigin ? ` ${supabaseOrigin}` : ''
+    }`,
     `connect-src ${connectSrc}`,
     "object-src 'none'",
     "base-uri 'self'",
