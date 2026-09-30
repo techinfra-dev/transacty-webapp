@@ -33,8 +33,22 @@ export const signupRequestSchema = z.object({
   password: creationPasswordSchema,
 })
 
+export const signupFormSchema = signupRequestSchema
+  .extend({
+    confirmPassword: z.string().min(1, 'Please confirm your password.'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  })
+
 export function getSignupFormErrorMessage(
-  input: { businessName: string; email: string; password: string },
+  input: {
+    businessName: string
+    email: string
+    password: string
+    confirmPassword?: string
+  },
   error: z.ZodError,
 ): string {
   if (!input.businessName.trim()) return 'Please enter your business name.'
@@ -43,8 +57,18 @@ export function getSignupFormErrorMessage(
     return 'Please enter a valid email address.'
   }
   if (!input.password) return 'Please enter a password.'
+  const passwordIssue = error.issues.find((issue) => issue.path[0] === 'password')
+  if (passwordIssue) {
+    return passwordIssue.message
+  }
+  if (input.confirmPassword !== undefined) {
+    if (!input.confirmPassword) return 'Please confirm your password.'
+    if (input.password !== input.confirmPassword) {
+      return 'Passwords do not match.'
+    }
+  }
   return (
-    error.issues.find((issue) => issue.path[0] === 'password')?.message ??
+    error.issues.find((issue) => issue.path[0] === 'confirmPassword')?.message ??
     'Please check your details and try again.'
   )
 }
@@ -238,6 +262,7 @@ export const apiErrorSchema = z.object({
 })
 
 export type SignupRequest = z.infer<typeof signupRequestSchema>
+export type SignupForm = z.infer<typeof signupFormSchema>
 export type LoginRequest = z.infer<typeof loginRequestSchema>
 /** @deprecated Use AuthSessionResponse */
 export type AuthResponse = z.infer<typeof authSessionResponseSchema>

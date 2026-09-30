@@ -7,7 +7,7 @@ import { Toast } from '../../../components/ui/Toast.tsx'
 import { useSignupMutation } from '../hooks/useAuthMutations.ts'
 import {
   getSignupFormErrorMessage,
-  signupRequestSchema,
+  signupFormSchema,
 } from '../services/authSchemas.ts'
 import { getPostAuthNavigateOptions } from '../utils/postAuthNavigation.ts'
 
@@ -30,15 +30,20 @@ export function SignUpPage() {
       businessName: String(formData.get('businessName') ?? ''),
       email: String(formData.get('email') ?? ''),
       password: String(formData.get('password') ?? ''),
+      confirmPassword: String(formData.get('confirmPassword') ?? ''),
     }
-    const parsed = signupRequestSchema.safeParse(payload)
+    const parsed = signupFormSchema.safeParse(payload)
     if (!parsed.success) {
       setErrorMessage(getSignupFormErrorMessage(payload, parsed.error))
       return
     }
 
     try {
-      await signupMutation.mutateAsync(parsed.data)
+      await signupMutation.mutateAsync({
+        businessName: parsed.data.businessName,
+        email: parsed.data.email,
+        password: parsed.data.password,
+      })
       await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(
@@ -96,6 +101,8 @@ export function SignUpPage() {
             name="password"
             type="password"
             autoComplete="new-password"
+            minLength={10}
+            maxLength={128}
             placeholder="Create password"
             aria-describedby="password-requirements"
           />
@@ -106,6 +113,24 @@ export function SignUpPage() {
             At least 10 characters, including a letter and a number. Avoid common
             passwords.
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label
+            htmlFor="confirmPassword"
+            className="[font-family:var(--font-body)] text-sm font-semibold text-[#2d3237]"
+          >
+            Confirm Password
+          </label>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={10}
+            maxLength={128}
+            placeholder="Repeat your password"
+          />
         </div>
 
         <Button type="submit" className="w-full" disabled={signupMutation.isPending}>

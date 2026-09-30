@@ -126,6 +126,13 @@ export const kycDocumentListItemSchema = z
     documentNumber: z.string().nullable().optional(),
     merchantPersonId: z.string().nullable().optional(),
     fileReference: z.string().optional(),
+    fileName: z.string().optional(),
+    filename: z.string().optional(),
+    downloadUrl: z.string().optional(),
+    viewUrl: z.string().optional(),
+    signedUrl: z.string().optional(),
+    fileUrl: z.string().optional(),
+    url: z.string().optional(),
   })
   .passthrough()
 

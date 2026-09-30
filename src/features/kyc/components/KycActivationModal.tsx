@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ComponentType } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '../../../components/ui/Button.tsx'
 import { Dialog } from '../../../components/ui/Dialog.tsx'
 import { DropdownSelect } from '../../../components/ui/DropdownSelect.tsx'
@@ -20,10 +21,8 @@ import { useProfileQuery } from '../../dashboard/hooks/useProfileQuery.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import { useKycDocumentsQuery, useKycPersonsQuery, useKycBusinessQuery } from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
-import {
-  DOCUMENT_UPLOAD_POLICY,
-  validateUpload,
-} from '../../../utils/fileUploadPolicy.ts'
+import type { KycDocumentListItem } from '../services/kycSchemas.ts'
+import { DOCUMENT_UPLOAD_POLICY, validateUpload } from '../../../utils/fileUploadPolicy.ts'
 import {
   getPersonFormErrorMessage,
   getPersonFormFieldErrors,
@@ -156,6 +155,32 @@ function toTitleCaseFromSnake(value: string) {
     .join(' ')
 }
 
+const documentListGrid = 'minmax(0,1.2fr) minmax(0,0.8fr) minmax(0,1fr) auto'
+
+function resolveDocumentPreviewKind(
+  fileName?: string | null,
+  url?: string | null,
+): 'image' | 'pdf' | 'other' {
+  const value = `${fileName ?? ''} ${url ?? ''}`.toLowerCase()
+  if (/\.(png|jpe?g|webp|gif)(\?|#|$)/.test(value)) {
+    return 'image'
+  }
+  if (/\.pdf(\?|#|$)/.test(value)) {
+    return 'pdf'
+  }
+  return 'other'
+}
+
+function isPreviewableDocumentUrl(url: string) {
+  return url.startsWith('blob:') || url.startsWith('https://')
+}
+
+type DocumentViewerState = {
+  url: string
+  title: string
+  kind: 'image' | 'pdf' | 'other'
+}
+
 const requiredInputErrorClassName =
   'border-rose-400 focus:border-rose-500 focus:ring-rose-300/40'
 
@@ -224,6 +249,19 @@ export function KycActivationModal({
   const [selectedDocumentFile, setSelectedDocumentFile] = useState<File | null>(null)
   const [isUploadingDocument, setIsUploadingDocument] = useState(false)
   const [reviewDocumentNames, setReviewDocumentNames] = useState<string[]>([])
+  const [documentPreviews, setDocumentPreviews] = useState<
+    Record<string, { url: string; fileName: string }>
+  >({})
+  const documentPreviewsRef = useRef(documentPreviews)
+  documentPreviewsRef.current = documentPreviews
+  const pendingDocumentPreviewRef = useRef<{
+    url: string
+    fileName: string
+  } | null>(null)
+  const knownDocumentIdsRef = useRef<Set<string>>(new Set())
+  const [documentViewer, setDocumentViewer] = useState<DocumentViewerState | null>(
+    null,
+  )
 
   const [businessForm, setBusinessForm] = useState(emptyKycBusinessForm)
   const [hasHydratedBusiness, setHasHydratedBusiness] = useState(false)
@@ -276,6 +314,39 @@ export function KycActivationModal({
   }, [isOpen, merchantId])
 
   useEffect(() => {
+    if (isOpen) {
+      return
+    }
+    setDocumentPreviews((previews) => {
+      const seen = new Set<string>()
+      for (const preview of Object.values(previews)) {
+        if (!seen.has(preview.url)) {
+          URL.revokeObjectURL(preview.url)
+          seen.add(preview.url)
+        }
+      }
+      return {}
+    })
+    pendingDocumentPreviewRef.current = null
+    knownDocumentIdsRef.current = new Set()
+    setDocumentViewer(null)
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!documentViewer) {
+      return
+    }
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopImmediatePropagation()
+        setDocumentViewer(null)
+      }
+    }
+    window.addEventListener('keydown', onEscape, true)
+    return () => window.removeEventListener('keydown', onEscape, true)
+  }, [documentViewer])
+
+  useEffect(() => {
     if (!isOpen || isKycOrKybRejected) {
       return
     }
@@ -312,6 +383,27 @@ export function KycActivationModal({
     profileQuery.data?.documentsCount,
     profileQuery.data?.personsCount,
   ])
+
+  useEffect(() => {
+    const items = documentsQuery.data?.items ?? []
+    const pending = pendingDocumentPreviewRef.current
+    const previousIds = knownDocumentIdsRef.current
+    const newItem = items.find((item) => !previousIds.has(item.id))
+    knownDocumentIdsRef.current = new Set(items.map((item) => item.id))
+    if (!pending || !newItem) {
+      return
+    }
+    pendingDocumentPreviewRef.current = null
+    const nextPreviews = {
+      ...documentPreviewsRef.current,
+      [newItem.id]: pending,
+    }
+    if (newItem.fileReference) {
+      nextPreviews[newItem.fileReference] = pending
+    }
+    documentPreviewsRef.current = nextPreviews
+    setDocumentPreviews(nextPreviews)
+  }, [documentsQuery.data])
 
   useEffect(() => {
     if (!isOpen) {
@@ -610,12 +702,36 @@ export function KycActivationModal({
       })
       setIsUploadingDocument(false)
 
-      await addDocumentMutation.mutateAsync({
-        documentType: documentForm.documentType,
-        fileReference: uploadUrlData.fileReference,
-        documentNumber: documentForm.documentNumber.trim() || undefined,
-        merchantPersonId: documentForm.merchantPersonId.trim() || undefined,
-      })
+      const preview = {
+        url: URL.createObjectURL(selectedDocumentFile),
+        fileName: selectedDocumentFile.name,
+      }
+      pendingDocumentPreviewRef.current = preview
+
+      try {
+        const created = await addDocumentMutation.mutateAsync({
+          documentType: documentForm.documentType,
+          fileReference: uploadUrlData.fileReference,
+          documentNumber: documentForm.documentNumber.trim() || undefined,
+          merchantPersonId: documentForm.merchantPersonId.trim() || undefined,
+        })
+        const previewKeys = [
+          created.id,
+          uploadUrlData.fileReference,
+          uploadUrlData.path,
+          selectedDocumentFile.name,
+        ].filter((key): key is string => Boolean(key?.trim()))
+        const nextPreviews = { ...documentPreviewsRef.current }
+        for (const key of previewKeys) {
+          nextPreviews[key] = preview
+        }
+        documentPreviewsRef.current = nextPreviews
+        setDocumentPreviews(nextPreviews)
+      } catch (error) {
+        URL.revokeObjectURL(preview.url)
+        pendingDocumentPreviewRef.current = null
+        throw error
+      }
       setReviewDocumentNames((previous) => [...previous, selectedDocumentFile.name])
       markStepSuccessful(merchantId, 'documents')
       setDocumentForm((previous) => ({
@@ -630,6 +746,48 @@ export function KycActivationModal({
         error instanceof Error ? error.message : 'Unable to add document right now.',
       )
     }
+  }
+
+  function findLocalDocumentPreview(document: KycDocumentListItem) {
+    const keys = [
+      document.id,
+      document.fileReference,
+      document.fileName,
+      document.filename,
+    ].filter((key): key is string => Boolean(key?.trim()))
+    for (const key of keys) {
+      const preview = documentPreviewsRef.current[key] ?? documentPreviews[key]
+      if (preview) {
+        return preview
+      }
+    }
+    return pendingDocumentPreviewRef.current
+  }
+
+  function openDocumentViewer(url: string, title: string, fileName?: string) {
+    if (!isPreviewableDocumentUrl(url)) {
+      setDocumentError('Unable to open this document right now.')
+      return false
+    }
+    setDocumentViewer({
+      url,
+      title,
+      kind: resolveDocumentPreviewKind(fileName, url),
+    })
+    return true
+  }
+
+  function handleViewDocument(document: KycDocumentListItem) {
+    setDocumentError(null)
+    const title = toTitleCaseFromSnake(document.documentType)
+    const preview = findLocalDocumentPreview(document)
+    if (!preview) {
+      setDocumentError(
+        'Preview is only available for files you uploaded in this session.',
+      )
+      return
+    }
+    openDocumentViewer(preview.url, preview.fileName || title, preview.fileName)
   }
 
   async function handleSubmitKyc() {
@@ -732,9 +890,16 @@ export function KycActivationModal({
   }
 
   return (
+    <>
     <Dialog
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        if (documentViewer) {
+          setDocumentViewer(null)
+          return
+        }
+        onClose()
+      }}
       showCloseButton={false}
       bodyVariant="plain"
       maxWidthClassName="max-w-6xl"
@@ -1512,22 +1677,33 @@ export function KycActivationModal({
                 <div className="kyb-list-card">
                   <div
                     className="kyb-list-card-head"
-                    style={{ gridTemplateColumns: '1.2fr 1fr 1fr' }}
+                    style={{ gridTemplateColumns: documentListGrid }}
                   >
                     <p>Type</p>
                     <p>Status</p>
                     <p>Submitted at</p>
+                    <p>File</p>
                   </div>
                   <div className="max-h-48 overflow-y-auto">
                     {(documentsQuery.data?.items ?? []).map((document) => (
                       <div
                         key={document.id}
-                        className="kyb-list-card-row"
-                        style={{ gridTemplateColumns: '1.2fr 1fr 1fr' }}
+                        className="kyb-list-card-row items-center"
+                        style={{ gridTemplateColumns: documentListGrid }}
                       >
-                        <p>{document.documentType}</p>
+                        <p className="truncate">
+                          {toTitleCaseFromSnake(document.documentType)}
+                        </p>
                         <p>{document.status}</p>
                         <p>{document.submittedAt ? document.submittedAt : '-'}</p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="dash-btn-outline h-8! px-3"
+                          onClick={() => handleViewDocument(document)}
+                        >
+                          View
+                        </Button>
                       </div>
                     ))}
                     {!documentsQuery.isPending && documentCount === 0 ? (
@@ -1615,5 +1791,61 @@ export function KycActivationModal({
         </div>
       </div>
     </Dialog>
+    {documentViewer
+      ? createPortal(
+          <div className="kyc-document-viewer" role="presentation">
+            <button
+              type="button"
+              className="kyc-document-viewer-scrim"
+              aria-label="Close document preview"
+              onClick={() => setDocumentViewer(null)}
+            />
+            <article
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="kyc-document-viewer-title"
+              className="kyc-document-viewer-panel"
+            >
+              <header className="kyc-document-viewer-head">
+                <h2 id="kyc-document-viewer-title" className="kyc-document-viewer-title">
+                  {documentViewer.title}
+                </h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="dialog-surface-close"
+                  onClick={() => setDocumentViewer(null)}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg
+                    viewBox="0 0 20 20"
+                    className="block h-4 w-4 shrink-0 fill-current"
+                    aria-hidden="true"
+                  >
+                    <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+                  </svg>
+                </Button>
+              </header>
+              <div className="kyc-document-viewer-body">
+                {documentViewer.kind === 'image' ? (
+                  <img
+                    src={documentViewer.url}
+                    alt={documentViewer.title}
+                    className="kyc-document-viewer-image"
+                  />
+                ) : (
+                  <iframe
+                    src={documentViewer.url}
+                    title={documentViewer.title}
+                    className="kyc-document-viewer-frame"
+                  />
+                )}
+              </div>
+            </article>
+          </div>,
+          document.body,
+        )
+      : null}
+    </>
   )
 }
