@@ -502,6 +502,9 @@ export function usePayoutFlow() {
       if (!/^\d{10}$/.test(ngnPayload.accountNumber.trim())) {
         return 'Enter the 10-digit beneficiary account number.'
       }
+      if (ngnPayload.confirmAccountNumber.trim() !== ngnPayload.accountNumber.trim()) {
+        return 'Account number and confirmation do not match'
+      }
       if (!ngnPayload.accountName.trim()) {
         return 'Verify the account to confirm the recipient name before continuing.'
       }
@@ -519,6 +522,9 @@ export function usePayoutFlow() {
       ) {
         return 'Complete all PIX recipient and institution fields to continue.'
       }
+      if (brPayload.confirmAccountNumber.trim() !== beneficiary.number.trim()) {
+        return 'Account number and confirmation do not match'
+      }
       return null
     }
 
@@ -531,6 +537,9 @@ export function usePayoutFlow() {
       beneficiary.orgId.trim().length === 0
     ) {
       return 'Complete all beneficiary account fields to continue.'
+    }
+    if (payload.confirmAccountNumber.trim() !== beneficiary.number.trim()) {
+      return 'Account number and confirmation do not match'
     }
     return null
   }
@@ -733,6 +742,7 @@ export function usePayoutFlow() {
           accountName: ngnPayload.accountName.trim(),
           bankName: ngnPayload.bankName.trim(),
         },
+        confirmAccountNumber: ngnPayload.confirmAccountNumber.trim(),
       }
 
       const parsedPayload = createNgnPayoutPayloadSchema.safeParse(normalizedPayload)
@@ -795,6 +805,7 @@ export function usePayoutFlow() {
           orgCode: brPayload.benificiaryAccountInfo.orgCode.trim(),
           orgId: brPayload.benificiaryAccountInfo.orgId.trim(),
         },
+        confirmAccountNumber: brPayload.confirmAccountNumber.trim(),
         cardHolderInfo: {
           firstName: brPayload.cardHolderInfo.firstName.trim(),
           lastName: brPayload.cardHolderInfo.lastName.trim(),
@@ -836,6 +847,7 @@ export function usePayoutFlow() {
         orgCode: payload.benificiaryAccountInfo.orgCode.trim(),
         orgId: payload.benificiaryAccountInfo.orgId.trim(),
       },
+      confirmAccountNumber: payload.confirmAccountNumber.trim(),
       cardHolderInfo: {
         firstName: payload.cardHolderInfo.firstName.trim(),
         lastName: payload.cardHolderInfo.lastName.trim(),
@@ -911,6 +923,21 @@ export function usePayoutFlow() {
         (isNigeriaMarketApproved &&
           portalEnvironment === NIGERIA_LIVE_ONLY_ENVIRONMENT))
     : false
+
+  const isAccountConfirmationMatched =
+    payoutRail === 'ngn'
+      ? ngnPayload.confirmAccountNumber.trim().length > 0 &&
+        ngnPayload.confirmAccountNumber.trim() ===
+          ngnPayload.accountNumber.trim()
+      : payoutRail === 'pix'
+        ? brPayload.confirmAccountNumber.trim().length > 0 &&
+          brPayload.confirmAccountNumber.trim() ===
+            brPayload.benificiaryAccountInfo.number.trim()
+        : payoutRail === 'bdt'
+          ? payload.confirmAccountNumber.trim().length > 0 &&
+            payload.confirmAccountNumber.trim() ===
+              payload.benificiaryAccountInfo.number.trim()
+          : true
 
   const isSubmitting =
     createPayoutMutation.isPending ||
@@ -1032,6 +1059,7 @@ export function usePayoutFlow() {
     handleResetFlow,
     portalEnvironment,
     isSelectedWalletPayoutSupported,
+    isAccountConfirmationMatched,
     isSubmitting,
     mutationErrorMessage,
   }

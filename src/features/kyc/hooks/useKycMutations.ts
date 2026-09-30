@@ -3,6 +3,7 @@ import {
   addKycDocument,
   addKycPerson,
   createKycDocumentUploadUrl,
+  deleteKycDocument,
   submitKyc,
   upsertKycBusiness,
 } from '../services/kycService.ts'
@@ -43,6 +44,16 @@ export function useAddKycDocumentMutation() {
 export function useCreateKycDocumentUploadUrlMutation() {
   return useMutation({
     mutationFn: createKycDocumentUploadUrl,
+  })
+}
+
+export function useDeleteKycDocumentMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteKycDocument,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['kyc-documents'] })
+    },
   })
 }
 

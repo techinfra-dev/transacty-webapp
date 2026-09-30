@@ -135,6 +135,7 @@ const initialEurUserDetails: EurPayoutUserDetails = {
 export const initialPayoutPayload: PayoutFormPayload = {
   amount: '',
   benificiaryAccountInfo: initialBeneficiaryAccountInfo,
+  confirmAccountNumber: '',
   cardHolderInfo: initialCardHolderInfo,
 }
 
@@ -155,6 +156,7 @@ export const initialCpgPayoutPayload: CpgPayoutFormPayload = {
 export const initialBrPayoutPayload: BrPayoutFormPayload = {
   amount: '',
   benificiaryAccountInfo: initialBeneficiaryAccountInfo,
+  confirmAccountNumber: '',
   cardHolderInfo: initialCardHolderInfo,
 }
 
@@ -163,6 +165,7 @@ export const initialNgnPayoutPayload: NgnPayoutFormPayload = {
   bankCode: '',
   bankName: '',
   accountNumber: '',
+  confirmAccountNumber: '',
   accountName: '',
   merchantReference: '',
   description: '',

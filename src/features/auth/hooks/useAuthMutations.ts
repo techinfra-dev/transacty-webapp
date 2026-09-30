@@ -3,18 +3,26 @@ import {
   forgotPassword,
   forgotPayoutPin,
   login,
+  resendVerification,
   resetPassword,
   revokeSessions,
   signup,
   stepUp,
+  verifyEmail,
   verifyMfaLogin,
 } from '../services/authService.ts'
 import { storeAuthSession } from '../services/authSession.ts'
-import type { LoginResponse } from '../services/authSchemas.ts'
+import type { LoginResponse, SignupResponse } from '../services/authSchemas.ts'
 
 function isSessionLoginResponse(
   data: LoginResponse,
 ): data is Extract<LoginResponse, { token: string }> {
+  return 'token' in data && Boolean(data.token)
+}
+
+function isSignupSessionResponse(
+  data: SignupResponse,
+): data is Extract<SignupResponse, { token: string }> {
   return 'token' in data && Boolean(data.token)
 }
 
@@ -42,8 +50,25 @@ export function useSignupMutation() {
   return useMutation({
     mutationFn: signup,
     onSuccess: (data) => {
+      if (isSignupSessionResponse(data)) {
+        storeAuthSession(data)
+      }
+    },
+  })
+}
+
+export function useVerifyEmailMutation() {
+  return useMutation({
+    mutationFn: verifyEmail,
+    onSuccess: (data) => {
       storeAuthSession(data)
     },
+  })
+}
+
+export function useResendVerificationMutation() {
+  return useMutation({
+    mutationFn: resendVerification,
   })
 }
 

@@ -8,6 +8,7 @@ import {
   useLoginMutation,
   useMfaVerifyMutation,
 } from '../hooks/useAuthMutations.ts'
+import { EmailNotVerifiedError } from '../services/authService.ts'
 import {
   getLoginFormErrorMessage,
   loginRequestSchema,
@@ -64,6 +65,13 @@ export function LoginPage() {
 
       await navigate(getPostAuthNavigateOptions(nextPath))
     } catch (error) {
+      if (error instanceof EmailNotVerifiedError) {
+        await navigate({
+          to: '/resend-verification',
+          search: { email: error.email },
+        })
+        return
+      }
       setErrorMessage(
         error instanceof Error
           ? error.message

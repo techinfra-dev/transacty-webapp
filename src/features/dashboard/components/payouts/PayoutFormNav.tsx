@@ -53,7 +53,7 @@ export function PayoutFormNav({
           type="button"
           className="payout-btn-primary"
           onClick={onSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || continueDisabled}
         >
           {isSubmitting ? (
             <span className="inline-flex items-center gap-2">

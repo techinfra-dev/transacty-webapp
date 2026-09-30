@@ -311,6 +311,22 @@ export function PayoutFormSteps({
               </label>
 
               <label className="payout-field sm:col-span-2">
+                <span className="payout-field-label">Confirm PIX key</span>
+                <Input
+                  placeholder="Re-enter the PIX key"
+                  value={brPayload.confirmAccountNumber}
+                  autoComplete="off"
+                  onChange={(event) =>
+                    setBrPayload((previousPayload) => ({
+                      ...previousPayload,
+                      confirmAccountNumber: event.target.value,
+                    }))
+                  }
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field sm:col-span-2">
                 <span className="payout-field-label">Account holder name</span>
                 <Input
                   placeholder="Recipient legal name"
@@ -371,6 +387,22 @@ export function PayoutFormSteps({
                   placeholder="Account number"
                   value={payload.benificiaryAccountInfo.number}
                   onChange={(event) => updateBeneficiaryField('number', event.target.value)}
+                  className="payout-field-input"
+                />
+              </label>
+
+              <label className="payout-field">
+                <span className="payout-field-label">Confirm account number</span>
+                <Input
+                  placeholder="Re-enter account number"
+                  value={payload.confirmAccountNumber}
+                  autoComplete="off"
+                  onChange={(event) =>
+                    setPayload((previousPayload) => ({
+                      ...previousPayload,
+                      confirmAccountNumber: event.target.value,
+                    }))
+                  }
                   className="payout-field-input"
                 />
               </label>

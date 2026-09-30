@@ -175,7 +175,9 @@ export function DashboardPayoutsPage() {
                 step={flow.step}
                 isSubmitting={flow.isSubmitting}
                 continueDisabled={
-                  flow.step === 1 && !flow.isSelectedWalletPayoutSupported
+                  (flow.step === 1 && !flow.isSelectedWalletPayoutSupported) ||
+                  (flow.step === 3 && !flow.isAccountConfirmationMatched) ||
+                  (flow.step === 4 && !flow.isAccountConfirmationMatched)
                 }
                 onPrevious={() => {
                   flow.setClientError(null)

@@ -9,9 +9,11 @@ import {
   kycCreatedItemResponseSchema,
   kycDocumentPayloadSchema,
   kycDocumentUploadUrlPayloadSchema,
+  kycDeleteDocumentResponseSchema,
   kycDocumentUploadUrlResponseSchema,
   kycDocumentsListResponseSchema,
   kycPersonPayloadSchema,
+  kycRequirementsResponseSchema,
   kycPersonsListResponseSchema,
   kycSubmitResponseSchema,
   type KycBusinessDetail,
@@ -208,6 +210,32 @@ export async function listKycDocuments() {
       headers: getAuthHeader(),
     })
     return kycDocumentsListResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getKycApiErrorMessage(error))
+  }
+}
+
+export async function getKycRequirements(market?: string) {
+  try {
+    const response = await axiosInstance.get('me/kyc/requirements', {
+      headers: getAuthHeader(),
+      params: market?.trim() ? { market: market.trim() } : undefined,
+    })
+    return kycRequirementsResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getKycApiErrorMessage(error))
+  }
+}
+
+export async function deleteKycDocument(documentId: string) {
+  try {
+    const response = await axiosInstance.delete(
+      `me/kyc/documents/${encodeURIComponent(documentId)}`,
+      {
+        headers: getAuthHeader(),
+      },
+    )
+    return kycDeleteDocumentResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getKycApiErrorMessage(error))
   }

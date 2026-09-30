@@ -156,6 +156,24 @@ export function NgnBeneficiaryFields({
         </span>
       </label>
 
+      <label className="payout-field sm:col-span-2">
+        <span className="payout-field-label">Confirm account number</span>
+        <Input
+          placeholder="Re-enter 0123456789"
+          value={ngnPayload.confirmAccountNumber}
+          inputMode="numeric"
+          maxLength={10}
+          autoComplete="off"
+          onChange={(event) =>
+            setNgnPayload((previous) => ({
+              ...previous,
+              confirmAccountNumber: event.target.value.replace(/\D/g, '').slice(0, 10),
+            }))
+          }
+          className="payout-field-input max-w-sm font-[ui-monospace,monospace]"
+        />
+      </label>
+
       {verifyMutation.isPending ? (
         <div className="payout-field sm:col-span-2">
           <LoadingSpinner label="Confirming account name…" />

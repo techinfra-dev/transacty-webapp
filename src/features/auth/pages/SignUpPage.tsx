@@ -39,11 +39,18 @@ export function SignUpPage() {
     }
 
     try {
-      await signupMutation.mutateAsync({
+      const result = await signupMutation.mutateAsync({
         businessName: parsed.data.businessName,
         email: parsed.data.email,
         password: parsed.data.password,
       })
+      if (result.emailVerificationRequired) {
+        await navigate({
+          to: '/resend-verification',
+          search: { email: result.email, sent: '1' },
+        })
+        return
+      }
       await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(

@@ -14,12 +14,20 @@ import {
   useAddKycDocumentMutation,
   useAddKycPersonMutation,
   useCreateKycDocumentUploadUrlMutation,
+  useDeleteKycDocumentMutation,
   useSubmitKycMutation,
   useUpsertKycBusinessMutation,
 } from '../hooks/useKycMutations.ts'
 import { useProfileQuery } from '../../dashboard/hooks/useProfileQuery.ts'
+import { useMarketsQuery } from '../../dashboard/hooks/useMarketsQuery.ts'
+import { getMarketDisplayName } from '../../dashboard/utils/marketDisplayUtils.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
-import { useKycDocumentsQuery, useKycPersonsQuery, useKycBusinessQuery } from '../hooks/useKycQueries.ts'
+import {
+  useKycDocumentsQuery,
+  useKycPersonsQuery,
+  useKycBusinessQuery,
+  useKycRequirementsQuery,
+} from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
 import type { KycDocumentListItem } from '../services/kycSchemas.ts'
 import { DOCUMENT_UPLOAD_POLICY, validateUpload } from '../../../utils/fileUploadPolicy.ts'
@@ -287,7 +295,10 @@ export function KycActivationModal({
   const addPersonMutation = useAddKycPersonMutation()
   const addDocumentMutation = useAddKycDocumentMutation()
   const createDocumentUploadUrlMutation = useCreateKycDocumentUploadUrlMutation()
+  const deleteDocumentMutation = useDeleteKycDocumentMutation()
   const submitKycMutation = useSubmitKycMutation()
+  const [selectedKycMarket, setSelectedKycMarket] = useState<string | null>(null)
+  const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null)
   const profileQuery = useProfileQuery(isOpen)
   const resolvedKycStatus = kycStatus ?? profileQuery.data?.kycStatus
   const resolvedBusinessProfileStatus =
@@ -297,6 +308,8 @@ export function KycActivationModal({
   const personsQuery = useKycPersonsQuery(isOpen)
   const documentsQuery = useKycDocumentsQuery(isOpen)
   const businessQuery = useKycBusinessQuery(isOpen)
+  const requirementsQuery = useKycRequirementsQuery(isOpen)
+  const marketsQuery = useMarketsQuery(isOpen)
   const ipCountryCodeQuery = useIpCountryCodeQuery(isOpen)
 
   useEffect(() => {
@@ -404,6 +417,86 @@ export function KycActivationModal({
     documentPreviewsRef.current = nextPreviews
     setDocumentPreviews(nextPreviews)
   }, [documentsQuery.data])
+
+  const requirementItems = requirementsQuery.data?.items ?? []
+  const selectedRequirement =
+    requirementItems.find((item) => item.market === selectedKycMarket) ??
+    requirementItems[0] ??
+    null
+
+  const marketDocumentTypeOptions = useMemo(() => {
+    const requiredTypes = selectedRequirement?.requiredDocumentTypes ?? []
+    if (requiredTypes.length === 0) {
+      return documentTypeOptions
+    }
+    return requiredTypes.map((value) => ({
+      label:
+        documentTypeOptions.find((option) => option.value === value)?.label ??
+        toTitleCaseFromSnake(value),
+      value,
+    }))
+  }, [selectedRequirement])
+
+  const marketPersonRoleOptions = useMemo(() => {
+    const requiredRoles = selectedRequirement?.requiredPersonRoles ?? []
+    if (requiredRoles.length === 0) {
+      return personRoleOptions
+    }
+    return requiredRoles.map((value) => ({
+      label:
+        personRoleOptions.find((option) => option.value === value)?.label ??
+        toTitleCaseFromSnake(value),
+      value,
+    }))
+  }, [selectedRequirement])
+
+  useEffect(() => {
+    if (requirementItems.length === 0) {
+      return
+    }
+    if (
+      selectedKycMarket &&
+      requirementItems.some((item) => item.market === selectedKycMarket)
+    ) {
+      return
+    }
+    const approvedMarket = (marketsQuery.data ?? []).find(
+      (market) =>
+        market.entitlementStatus === 'approved' &&
+        requirementItems.some((item) => item.market === market.market),
+    )?.market
+    setSelectedKycMarket(approvedMarket ?? requirementItems[0]!.market)
+  }, [marketsQuery.data, requirementItems, selectedKycMarket])
+
+  useEffect(() => {
+    if (marketDocumentTypeOptions.length === 0) {
+      return
+    }
+    if (
+      !marketDocumentTypeOptions.some(
+        (option) => option.value === documentForm.documentType,
+      )
+    ) {
+      setDocumentForm((previous) => ({
+        ...previous,
+        documentType: marketDocumentTypeOptions[0]!.value,
+      }))
+    }
+  }, [documentForm.documentType, marketDocumentTypeOptions])
+
+  useEffect(() => {
+    if (marketPersonRoleOptions.length === 0) {
+      return
+    }
+    if (
+      !marketPersonRoleOptions.some((option) => option.value === personForm.role)
+    ) {
+      setPersonForm((previous) => ({
+        ...previous,
+        role: marketPersonRoleOptions[0]!.value,
+      }))
+    }
+  }, [marketPersonRoleOptions, personForm.role])
 
   useEffect(() => {
     if (!isOpen) {
@@ -790,6 +883,28 @@ export function KycActivationModal({
     openDocumentViewer(preview.url, preview.fileName || title, preview.fileName)
   }
 
+  async function handleDeleteDocument(document: KycDocumentListItem) {
+    if (document.status !== 'pending' || deleteDocumentMutation.isPending) {
+      return
+    }
+    setDocumentError(null)
+    setDeletingDocumentId(document.id)
+    try {
+      await deleteDocumentMutation.mutateAsync(document.id)
+      if (documentViewer) {
+        setDocumentViewer(null)
+      }
+    } catch (error) {
+      setDocumentError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to delete this document right now.',
+      )
+    } finally {
+      setDeletingDocumentId(null)
+    }
+  }
+
   async function handleSubmitKyc() {
     setSubmitError(null)
     if (!merchantProgress?.lastSuccessfulStep) {
@@ -1017,6 +1132,65 @@ export function KycActivationModal({
                 )
               })}
             </div>
+
+            {requirementItems.length > 0 ? (
+              <section className="kyb-market-guide" aria-label="KYC market requirements">
+                <div className="kyb-market-tabs" role="tablist">
+                  {requirementItems.map((item) => (
+                    <button
+                      key={item.market}
+                      type="button"
+                      role="tab"
+                      aria-selected={item.market === selectedRequirement?.market}
+                      className={`kyb-market-tab${
+                        item.market === selectedRequirement?.market
+                          ? ' kyb-market-tab--active'
+                          : ''
+                      }`}
+                      onClick={() => setSelectedKycMarket(item.market)}
+                    >
+                      {getMarketDisplayName(item.market)}
+                    </button>
+                  ))}
+                </div>
+                {selectedRequirement ? (
+                  <div className="kyb-market-guide-body">
+                    <p className="kyb-market-guide-title">
+                      {getMarketDisplayName(selectedRequirement.market)} checklist
+                    </p>
+                    <ul className="kyb-market-guide-list">
+                      <li>
+                        Business profile:{' '}
+                        {selectedRequirement.requiresBusinessProfile
+                          ? 'required'
+                          : 'not required'}
+                      </li>
+                      {selectedRequirement.requiredPersonRoles.length > 0 ? (
+                        <li>
+                          People:{' '}
+                          {selectedRequirement.requiredPersonRoles
+                            .map((role) => toTitleCaseFromSnake(role))
+                            .join(', ')}
+                        </li>
+                      ) : null}
+                      {selectedRequirement.requiredDocumentTypes.length > 0 ? (
+                        <li>
+                          Documents:{' '}
+                          {selectedRequirement.requiredDocumentTypes
+                            .map((type) => toTitleCaseFromSnake(type))
+                            .join(', ')}
+                        </li>
+                      ) : null}
+                    </ul>
+                    {selectedRequirement.notes ? (
+                      <p className="kyb-market-guide-notes">
+                        {selectedRequirement.notes}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             {activeStep === 'business' ? (
               <>
@@ -1334,7 +1508,7 @@ export function KycActivationModal({
                         <span className="kyb-req">*</span>
                       </span>
                       <DropdownSelect
-                        options={personRoleOptions}
+                        options={marketPersonRoleOptions}
                         value={personForm.role}
                         onChange={(nextValue) =>
                           setPersonForm((previous) => ({
@@ -1586,7 +1760,7 @@ export function KycActivationModal({
                         <span className="kyb-req">*</span>
                       </span>
                       <DropdownSelect
-                        options={documentTypeOptions}
+                        options={marketDocumentTypeOptions}
                         value={documentForm.documentType}
                         onChange={(nextValue) =>
                           setDocumentForm((previous) => ({
@@ -1696,14 +1870,29 @@ export function KycActivationModal({
                         </p>
                         <p>{document.status}</p>
                         <p>{document.submittedAt ? document.submittedAt : '-'}</p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="dash-btn-outline h-8! px-3"
-                          onClick={() => handleViewDocument(document)}
-                        >
-                          View
-                        </Button>
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="dash-btn-outline h-8! px-3"
+                            onClick={() => handleViewDocument(document)}
+                          >
+                            View
+                          </Button>
+                          {document.status === 'pending' ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="dash-btn-outline h-8! px-3"
+                              disabled={deletingDocumentId === document.id}
+                              onClick={() => void handleDeleteDocument(document)}
+                            >
+                              {deletingDocumentId === document.id
+                                ? 'Deleting…'
+                                : 'Delete'}
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     ))}
                     {!documentsQuery.isPending && documentCount === 0 ? (

@@ -20,18 +20,28 @@ export const cardHolderInfoSchema = z.object({
   phone: z.string().min(1, 'Phone number is required.'),
 })
 
-export const createPayoutPayloadSchema = z.object({
-  environment: payoutEnvironmentSchema.default('test'),
-  amount: z
-    .string()
-    .min(1, 'Amount is required.')
-    .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
-  // Collected at submit time by the PIN prompt — never persisted client-side.
-  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
-  // API contract currently expects this misspelled key.
-  benificiaryAccountInfo: beneficiaryAccountInfoSchema,
-  cardHolderInfo: cardHolderInfoSchema,
-})
+export const createPayoutPayloadSchema = z
+  .object({
+    environment: payoutEnvironmentSchema.default('test'),
+    amount: z
+      .string()
+      .min(1, 'Amount is required.')
+      .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
+    // Collected at submit time by the PIN prompt — never persisted client-side.
+    pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
+    // API contract currently expects this misspelled key.
+    benificiaryAccountInfo: beneficiaryAccountInfoSchema,
+    confirmAccountNumber: z.string().min(1, 'Confirm the account number.'),
+    cardHolderInfo: cardHolderInfoSchema,
+  })
+  .refine(
+    (data) =>
+      data.confirmAccountNumber.trim() === data.benificiaryAccountInfo.number.trim(),
+    {
+      message: 'Account number and confirmation do not match',
+      path: ['confirmAccountNumber'],
+    },
+  )
 
 export const createPayoutResponseSchema = z
   .object({

@@ -10,6 +10,18 @@ function resolveAuthHeading(pathname: string) {
       subtitle: 'Set up your account',
     }
   }
+  if (pathname === '/verify-email') {
+    return {
+      title: 'Verify email',
+      subtitle: 'Confirm your address to finish setting up your account',
+    }
+  }
+  if (pathname === '/resend-verification') {
+    return {
+      title: 'Check your email',
+      subtitle: 'Verify your address before signing in',
+    }
+  }
   if (pathname === '/forgot-password') {
     return {
       title: 'Forgot password',

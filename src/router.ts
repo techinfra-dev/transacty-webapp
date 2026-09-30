@@ -6,6 +6,8 @@ import { Route as indexRoute } from './routes/index.tsx'
 import { Route as authRoute } from './routes/auth.tsx'
 import { Route as loginRoute } from './routes/login.tsx'
 import { Route as signupRoute } from './routes/signup.tsx'
+import { Route as verifyEmailRoute } from './routes/verify-email.tsx'
+import { Route as resendVerificationRoute } from './routes/resend-verification.tsx'
 import { Route as forgotPasswordRoute } from './routes/forgot-password.tsx'
 import { Route as resetPasswordRoute } from './routes/reset-password.tsx'
 import { Route as forgotPayoutPinRoute } from './routes/forgot-payout-pin.tsx'
@@ -44,6 +46,8 @@ const dashboardRouteTree = dashboardRoute.addChildren([
 const authRouteTree = authRoute.addChildren([
   loginRoute,
   signupRoute,
+  verifyEmailRoute,
+  resendVerificationRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
   forgotPayoutPinRoute,

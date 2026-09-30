@@ -144,6 +144,25 @@ export const kycSubmitResponseSchema = z.object({
   status: z.string().min(1),
 })
 
+export const kycRequirementItemSchema = z
+  .object({
+    market: z.string().min(1),
+    requiresBusinessProfile: z.boolean(),
+    requiredDocumentTypes: z.array(z.string()),
+    requiredPersonRoles: z.array(z.string()),
+    marketSpecific: z.record(z.string(), z.unknown()).optional(),
+    notes: z.string().optional(),
+  })
+  .passthrough()
+
+export const kycRequirementsResponseSchema = z.object({
+  items: z.array(kycRequirementItemSchema),
+})
+
+export const kycDeleteDocumentResponseSchema = z.object({
+  ok: z.boolean(),
+})
+
 export type KycBusinessPayload = z.infer<typeof kycBusinessPayloadSchema>
 export type KycBusinessResponse = z.infer<typeof kycBusinessResponseSchema>
 export type KycBusinessDetail = z.infer<typeof kycBusinessDetailSchema>
@@ -157,3 +176,4 @@ export type KycDocumentUploadUrlResponse = z.infer<
   typeof kycDocumentUploadUrlResponseSchema
 >
 export type KycDocumentListItem = z.infer<typeof kycDocumentListItemSchema>
+export type KycRequirementItem = z.infer<typeof kycRequirementItemSchema>

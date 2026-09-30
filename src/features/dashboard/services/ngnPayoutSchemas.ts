@@ -41,18 +41,28 @@ export const ngnPayoutBeneficiarySchema = z.object({
   bankName: z.string().min(1),
 })
 
-export const createNgnPayoutPayloadSchema = z.object({
-  environment: payoutEnvironmentSchema,
-  amount: z
-    .string()
-    .min(1, 'Amount is required.')
-    .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
-  merchantReference: z.string().trim().min(1).optional(),
-  description: z.string().trim().min(1).optional(),
-  // Collected at submit time by the PIN prompt — never persisted client-side.
-  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
-  beneficiary: ngnPayoutBeneficiarySchema,
-})
+export const createNgnPayoutPayloadSchema = z
+  .object({
+    environment: payoutEnvironmentSchema,
+    amount: z
+      .string()
+      .min(1, 'Amount is required.')
+      .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
+    merchantReference: z.string().trim().min(1).optional(),
+    description: z.string().trim().min(1).optional(),
+    // Collected at submit time by the PIN prompt — never persisted client-side.
+    pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
+    beneficiary: ngnPayoutBeneficiarySchema,
+    confirmAccountNumber: z.string().min(1, 'Confirm the account number.'),
+  })
+  .refine(
+    (data) =>
+      data.confirmAccountNumber.trim() === data.beneficiary.accountNumber.trim(),
+    {
+      message: 'Account number and confirmation do not match',
+      path: ['confirmAccountNumber'],
+    },
+  )
 
 export const ngnPayoutInstanceSchema = z
   .object({
@@ -87,6 +97,7 @@ export type NgnPayoutFormPayload = {
   bankCode: string
   bankName: string
   accountNumber: string
+  confirmAccountNumber: string
   /** Resolved by name enquiry; empty until the account is verified. */
   accountName: string
   merchantReference: string

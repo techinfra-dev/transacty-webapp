@@ -16,22 +16,29 @@ import {
   loginResponseSchema,
   logoutResponseSchema,
   mfaVerifyRequestSchema,
+  resendVerificationRequestSchema,
+  resendVerificationResponseSchema,
   resetPasswordRequestSchema,
   resetPasswordResponseSchema,
   revokeSessionsRequestSchema,
   revokeSessionsResponseSchema,
   signupRequestSchema,
+  signupVerificationRequiredResponseSchema,
   stepUpRequestSchema,
   stepUpResponseSchema,
+  verifyEmailRequestSchema,
   type ForgotPasswordRequest,
   type ForgotPayoutPinRequest,
   type LoginRequest,
   type LoginResponse,
   type MfaVerifyRequest,
+  type ResendVerificationRequest,
   type ResetPasswordRequest,
   type RevokeSessionsRequest,
   type SignupRequest,
+  type SignupResponse,
   type StepUpRequest,
+  type VerifyEmailRequest,
 } from './authSchemas.ts'
 import { getAuthToken } from './authSession.ts'
 
@@ -45,6 +52,30 @@ function getApiErrorMessage(error: unknown) {
   return 'Something went wrong. Please try again.'
 }
 
+export class EmailNotVerifiedError extends Error {
+  readonly code = 'email_not_verified'
+  readonly email: string
+
+  constructor(message: string, email: string) {
+    super(message)
+    this.name = 'EmailNotVerifiedError'
+    this.email = email
+  }
+}
+
+function parseSignupResponse(data: unknown): SignupResponse {
+  if (
+    data &&
+    typeof data === 'object' &&
+    'emailVerificationRequired' in data &&
+    (data as { emailVerificationRequired?: unknown }).emailVerificationRequired ===
+      true
+  ) {
+    return signupVerificationRequiredResponseSchema.parse(data)
+  }
+  return authSessionResponseSchema.parse(data)
+}
+
 export async function login(payload: LoginRequest): Promise<LoginResponse> {
   const parsed = loginRequestSchema.safeParse(payload)
   if (!parsed.success) {
@@ -54,6 +85,12 @@ export async function login(payload: LoginRequest): Promise<LoginResponse> {
     const response = await axiosInstance.post('auth/login', parsed.data)
     return loginResponseSchema.parse(response.data)
   } catch (error) {
+    if (error instanceof AxiosError && error.response?.status === 403) {
+      const parsed = apiErrorSchema.safeParse(error.response.data)
+      if (parsed.success && parsed.data.code === 'email_not_verified') {
+        throw new EmailNotVerifiedError(parsed.data.message, payload.email)
+      }
+    }
     throw new Error(getApiErrorMessage(error))
   }
 }
@@ -113,14 +150,45 @@ export async function revokeSessions(payload: RevokeSessionsRequest) {
   }
 }
 
-export async function signup(payload: SignupRequest) {
+export async function signup(payload: SignupRequest): Promise<SignupResponse> {
   const parsed = signupRequestSchema.safeParse(payload)
   if (!parsed.success) {
     throw new Error(getSignupFormErrorMessage(payload, parsed.error))
   }
   try {
     const response = await axiosInstance.post('auth/signup', parsed.data)
+    return parseSignupResponse(response.data)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error))
+  }
+}
+
+export async function verifyEmail(payload: VerifyEmailRequest) {
+  const parsed = verifyEmailRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(
+      parsed.error.issues[0]?.message ?? 'This verification link is invalid.',
+    )
+  }
+  try {
+    const response = await axiosInstance.post('auth/verify-email', parsed.data)
     return authSessionResponseSchema.parse(response.data)
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error))
+  }
+}
+
+export async function resendVerification(payload: ResendVerificationRequest) {
+  const parsed = resendVerificationRequestSchema.safeParse(payload)
+  if (!parsed.success) {
+    throw new Error(getForgotPasswordFormErrorMessage(payload.email))
+  }
+  try {
+    const response = await axiosInstance.post(
+      'auth/resend-verification',
+      parsed.data,
+    )
+    return resendVerificationResponseSchema.parse(response.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error))
   }

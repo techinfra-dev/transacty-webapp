@@ -8,17 +8,27 @@ import {
 
 const amountPattern = /^\d+(\.\d{1,2})?$/
 
-export const createBrPayoutPayloadSchema = z.object({
-  environment: payoutEnvironmentSchema.default('test'),
-  amount: z
-    .string()
-    .min(1, 'Amount is required.')
-    .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
-  // Collected at submit time by the PIN prompt — never persisted client-side.
-  pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
-  benificiaryAccountInfo: beneficiaryAccountInfoSchema,
-  cardHolderInfo: cardHolderInfoSchema,
-})
+export const createBrPayoutPayloadSchema = z
+  .object({
+    environment: payoutEnvironmentSchema.default('test'),
+    amount: z
+      .string()
+      .min(1, 'Amount is required.')
+      .regex(amountPattern, 'Amount must be a valid number with up to 2 decimals.'),
+    // Collected at submit time by the PIN prompt — never persisted client-side.
+    pin: z.string().regex(PAYOUT_PIN_PATTERN).optional(),
+    benificiaryAccountInfo: beneficiaryAccountInfoSchema,
+    confirmAccountNumber: z.string().min(1, 'Confirm the PIX key.'),
+    cardHolderInfo: cardHolderInfoSchema,
+  })
+  .refine(
+    (data) =>
+      data.confirmAccountNumber.trim() === data.benificiaryAccountInfo.number.trim(),
+    {
+      message: 'Account number and confirmation do not match',
+      path: ['confirmAccountNumber'],
+    },
+  )
 
 export const brPayoutRecipientSchema = z
   .object({

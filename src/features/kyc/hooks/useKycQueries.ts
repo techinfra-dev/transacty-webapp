@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import {
   getKycBusiness,
+  getKycRequirements,
   listKycDocuments,
   listKycPersons,
 } from '../services/kycService.ts'
@@ -29,5 +30,15 @@ export function useKycDocumentsQuery(enabled = true) {
     queryFn: listKycDocuments,
     enabled,
     staleTime: 15_000,
+  })
+}
+
+export function useKycRequirementsQuery(enabled = true, market?: string) {
+  const normalizedMarket = market?.trim() || undefined
+  return useQuery({
+    queryKey: ['kyc-requirements', normalizedMarket ?? 'all'],
+    queryFn: () => getKycRequirements(normalizedMarket),
+    enabled,
+    staleTime: 60_000,
   })
 }

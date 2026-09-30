@@ -158,6 +158,39 @@ export const authSessionResponseSchema = z.object({
   payoutPinConfigured: z.boolean().optional().default(false),
   payoutPinSetupRequired: z.boolean().optional().default(false),
   merchant: merchantSchema,
+  emailVerificationRequired: z.literal(false).optional(),
+})
+
+/** Signup when the server queues a verification email and does not log the user in. */
+export const signupVerificationRequiredResponseSchema = z.object({
+  emailVerificationRequired: z.literal(true),
+  merchantId: z.string().min(1),
+  merchantSlug: z.string().min(1).optional(),
+  email: z.email(),
+  role: z.string().min(1),
+  needsActivation: z.boolean().optional(),
+  mfaSetupRequired: z.boolean().optional(),
+  payoutPinConfigured: z.boolean().optional(),
+  payoutPinSetupRequired: z.boolean().optional(),
+  merchant: z.unknown().optional(),
+})
+
+export const signupResponseSchema = z.union([
+  signupVerificationRequiredResponseSchema,
+  authSessionResponseSchema,
+])
+
+export const verifyEmailRequestSchema = z.object({
+  token: z.string().min(1, 'This verification link is missing a token.'),
+})
+
+export const resendVerificationRequestSchema = z.object({
+  email: z.string().trim().pipe(z.email()),
+})
+
+export const resendVerificationResponseSchema = z.object({
+  ok: z.boolean(),
+  message: z.string(),
 })
 
 /** When MFA is enabled — no session token until TOTP step completes. */
@@ -263,6 +296,14 @@ export const apiErrorSchema = z.object({
 
 export type SignupRequest = z.infer<typeof signupRequestSchema>
 export type SignupForm = z.infer<typeof signupFormSchema>
+export type SignupResponse = z.infer<typeof signupResponseSchema>
+export type SignupVerificationRequiredResponse = z.infer<
+  typeof signupVerificationRequiredResponseSchema
+>
+export type VerifyEmailRequest = z.infer<typeof verifyEmailRequestSchema>
+export type ResendVerificationRequest = z.infer<
+  typeof resendVerificationRequestSchema
+>
 export type LoginRequest = z.infer<typeof loginRequestSchema>
 /** @deprecated Use AuthSessionResponse */
 export type AuthResponse = z.infer<typeof authSessionResponseSchema>
