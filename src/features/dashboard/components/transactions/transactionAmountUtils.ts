@@ -23,7 +23,7 @@ export type TransactionAmountDisplay = {
 
 type TransactionLike = Pick<
   TransactionItem,
-  'amount' | 'paidAmount' | 'rail' | 'status'
+  'amount' | 'paidAmount' | 'rail' | 'status' | 'netAmount'
 > & {
   currency?: TransactionItem['currency']
 } & Record<string, unknown>
@@ -176,6 +176,10 @@ function parseConversionRate(
     asRecord(paymentDetails?.accounts) ?? asRecord(metadata?.accounts)
 
   return readNumber(nestedAccounts?.conversionRate) ?? readNumber(metadata?.conversionRate)
+}
+
+function isNigeriaTransaction(rail: string | undefined) {
+  return rail?.trim().toLowerCase() === 'nigeria'
 }
 
 function isIndiaUsdtTransaction(
@@ -474,9 +478,12 @@ export function getTransactionPaidColumnDisplay(transaction: TransactionLike) {
   }
 
   const amounts = getTransactionAmountDisplay(transaction)
+  const nigeriaNetAmount = isNigeriaTransaction(transaction.rail)
+    ? readString(transaction.netAmount)
+    : null
   return {
     hasValue: true,
-    value: amounts.settlementAmount,
+    value: nigeriaNetAmount ?? amounts.settlementAmount,
     currency: amounts.settlementCurrency,
   }
 }
