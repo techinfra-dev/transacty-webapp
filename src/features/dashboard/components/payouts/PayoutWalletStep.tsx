@@ -9,6 +9,7 @@ import {
   EUR_PAYOUT_FIAT_CURRENCY,
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
+  CANADA_PAYOUT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   getPayoutRailForWallet,
   isPayoutSupportedWallet,
@@ -118,7 +119,9 @@ export function PayoutWalletStep({
                         ? `${BRAZIL_PAYOUT_CURRENCY} wallet · PIX payout`
                         : payoutRail === 'ngn'
                           ? `${NIGERIA_PAYOUT_CURRENCY} wallet · bank transfer payout`
-                          : walletSubtitle(wallet)
+                          : payoutRail === 'cad'
+                            ? `${CANADA_PAYOUT_CURRENCY} wallet · bank / Interac / bill payout`
+                            : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>
             </span>

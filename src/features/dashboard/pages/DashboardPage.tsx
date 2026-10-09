@@ -159,7 +159,10 @@ export function DashboardPage() {
               </p>
             </section>
           ) : (
-            <DashboardWalletsRow currencyCount={wallets.length}>
+            <DashboardWalletsRow
+              currencyCount={wallets.length}
+              hasAddWallet={hasRequestableMarkets}
+            >
               {wallets.map((wallet) => {
                 const amount = Number(wallet.availableBalance ?? wallet.balance)
                 const safeAmount = Number.isFinite(amount) ? amount : 0

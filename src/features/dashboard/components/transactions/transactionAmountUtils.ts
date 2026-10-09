@@ -178,8 +178,9 @@ function parseConversionRate(
   return readNumber(nestedAccounts?.conversionRate) ?? readNumber(metadata?.conversionRate)
 }
 
-function isNigeriaTransaction(rail: string | undefined) {
-  return rail?.trim().toLowerCase() === 'nigeria'
+function usesNetAmountSettlement(rail: string | undefined) {
+  const key = rail?.trim().toLowerCase()
+  return key === 'nigeria' || key === 'canada'
 }
 
 function isIndiaUsdtTransaction(
@@ -478,12 +479,12 @@ export function getTransactionPaidColumnDisplay(transaction: TransactionLike) {
   }
 
   const amounts = getTransactionAmountDisplay(transaction)
-  const nigeriaNetAmount = isNigeriaTransaction(transaction.rail)
+  const netAmount = usesNetAmountSettlement(transaction.rail)
     ? readString(transaction.netAmount)
     : null
   return {
     hasValue: true,
-    value: nigeriaNetAmount ?? amounts.settlementAmount,
+    value: netAmount ?? amounts.settlementAmount,
     currency: amounts.settlementCurrency,
   }
 }

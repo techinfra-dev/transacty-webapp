@@ -12,6 +12,7 @@ export const MARKET_ORDER: MerchantMarket[] = [
   'europe',
   'brazil',
   'nigeria',
+  'canada',
   'pyusd',
 ]
 
@@ -21,6 +22,7 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
   europe: 'Europe',
   brazil: 'Brazil',
   nigeria: 'Nigeria',
+  canada: 'Canada',
   pyusd: 'PYUSD',
 }
 
@@ -31,6 +33,7 @@ export const MARKET_AVATAR_CODES: Record<MerchantMarket, string> = {
   europe: 'EU',
   brazil: 'BR',
   nigeria: 'NG',
+  canada: 'CA',
   pyusd: 'PY',
 }
 
@@ -41,6 +44,7 @@ export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
   europe: 'SEPA · Instant',
   brazil: 'Pix',
   nigeria: 'Virtual account · Bank payout',
+  canada: 'Bank / Interac / bill payout',
   pyusd: 'Stablecoin settlement · PYUSD → PYUSD USDC',
 }
 
@@ -49,7 +53,7 @@ export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
  * inactive pocket in the test catalog — that means "switch to live", not
  * "not approved".
  */
-export const LIVE_ONLY_MARKETS = new Set<MerchantMarket>(['nigeria'])
+export const LIVE_ONLY_MARKETS = new Set<MerchantMarket>(['nigeria', 'canada'])
 
 export const LIVE_ONLY_MARKET_COPY =
   'Approved — switch the portal to Live to use this market.'

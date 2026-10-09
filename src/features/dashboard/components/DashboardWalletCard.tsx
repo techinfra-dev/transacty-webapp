@@ -74,6 +74,9 @@ function activationFooterNote(
   if (code === 'NGN' || marketKey === 'nigeria') {
     return 'Virtual account · bank payouts'
   }
+  if (code === 'CAD' || marketKey === 'canada') {
+    return 'CAD bank / Interac / bill payouts'
+  }
   return 'Merchant pocket'
 }
 

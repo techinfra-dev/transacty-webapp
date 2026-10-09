@@ -14,6 +14,7 @@ export const transactionRailFilterOptions: {
   { value: 'europe', label: 'Europe' },
   { value: 'brazil', label: 'Brazil' },
   { value: 'nigeria', label: 'Nigeria' },
+  { value: 'canada', label: 'Canada' },
   { value: 'pyusd', label: 'PYUSD' },
 ]
 
@@ -40,6 +41,7 @@ export function resolveWalletTransactionRail(
     region === 'europe' ||
     region === 'brazil' ||
     region === 'nigeria' ||
+    region === 'canada' ||
     region === 'pyusd'
   ) {
     return region
@@ -54,6 +56,9 @@ export function resolveWalletTransactionRail(
   }
   if (currency === 'NGN') {
     return 'nigeria'
+  }
+  if (currency === 'CAD') {
+    return 'canada'
   }
   if (currency === 'INR') {
     return 'india'

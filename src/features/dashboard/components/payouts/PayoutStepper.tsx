@@ -11,7 +11,10 @@ function getStepLabel(
   item: (typeof payoutStepItems)[number],
   payoutRail: PayoutRail | null | undefined,
 ) {
-  if (item.id === 4 && (payoutRail === 'ngn' || payoutRail === 'cpg')) {
+  if (
+    item.id === 4 &&
+    (payoutRail === 'ngn' || payoutRail === 'cpg' || payoutRail === 'cad')
+  ) {
     return 'Review'
   }
   return item.label

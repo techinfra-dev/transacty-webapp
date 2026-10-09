@@ -3,6 +3,7 @@ import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
+import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
@@ -10,6 +11,7 @@ import {
   EUR_PAYOUT_FIAT_CURRENCY,
   BRAZIL_PAYOUT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
+  CANADA_PAYOUT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   type PayoutRail,
 } from './payoutConstants.ts'
@@ -25,6 +27,7 @@ interface PayoutPinnedSummaryProps {
   cpgPayload: CpgPayoutFormPayload
   brPayload: BrPayoutFormPayload
   ngnPayload: NgnPayoutFormPayload
+  cadPayload: CadPayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -40,6 +43,7 @@ export function PayoutPinnedSummary({
   cpgPayload,
   brPayload,
   ngnPayload,
+  cadPayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
@@ -55,8 +59,14 @@ export function PayoutPinnedSummary({
             '—'
           : payoutRail === 'ngn'
             ? ngnPayload.accountName.trim() || '—'
-            : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
-              '—'
+            : payoutRail === 'cad'
+              ? cadPayload.rail === 'bank'
+                ? cadPayload.bank.accountName.trim() || '—'
+                : cadPayload.rail === 'interac_email'
+                  ? cadPayload.interac.name.trim() || cadPayload.interac.email.trim() || '—'
+                  : cadPayload.bill.billerName.trim() || '—'
+              : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
+                '—'
 
   const walletLabel = selectedWallet
     ? getCurrencyFullName(selectedWallet.currency.trim().toUpperCase())
@@ -71,7 +81,9 @@ export function PayoutPinnedSummary({
           ? brPayload.amount
           : payoutRail === 'ngn'
             ? ngnPayload.amount
-            : payload.amount
+            : payoutRail === 'cad'
+              ? cadPayload.amount
+              : payload.amount
 
   return (
     <aside data-payout-pinned className="payout-summary">
@@ -106,7 +118,9 @@ export function PayoutPinnedSummary({
                 ? `Payout amount (${BRAZIL_PAYOUT_CURRENCY})`
                 : payoutRail === 'ngn'
                   ? `Payout amount (${NIGERIA_PAYOUT_CURRENCY})`
-                  : 'Amount'}
+                  : payoutRail === 'cad'
+                    ? `Payout amount (${CANADA_PAYOUT_CURRENCY})`
+                    : 'Amount'}
         </p>
         <p
           className={
@@ -132,6 +146,14 @@ export function PayoutPinnedSummary({
         ) : payoutRail === 'ngn' ? (
           <p className="payout-summary-value payout-summary-value--muted">
             Nigeria bank transfer
+          </p>
+        ) : payoutRail === 'cad' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            {cadPayload.rail === 'bank'
+              ? 'Canada bank transfer'
+              : cadPayload.rail === 'interac_email'
+                ? 'Canada Interac email'
+                : 'Canada bill pay'}
           </p>
         ) : null}
       </div>
@@ -166,6 +188,30 @@ export function PayoutPinnedSummary({
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
                 {ngnPayload.bankName || ngnPayload.bankCode || '—'}
+              </p>
+            </div>
+          ) : payoutRail === 'cad' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">
+                {cadPayload.rail === 'bank'
+                  ? cadPayload.bank.accountName || '—'
+                  : cadPayload.rail === 'interac_email'
+                    ? cadPayload.interac.name || cadPayload.interac.email || '—'
+                    : cadPayload.bill.billerName || cadPayload.bill.billerId || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs">
+                {cadPayload.rail === 'bank'
+                  ? cadPayload.bank.accountNumber || '—'
+                  : cadPayload.rail === 'interac_email'
+                    ? cadPayload.interac.email || '—'
+                    : cadPayload.bill.accountNumber || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {cadPayload.rail === 'bank'
+                  ? `${cadPayload.bank.institutionNumber || '—'} / ${cadPayload.bank.transitNumber || '—'}`
+                  : cadPayload.rail === 'interac_email'
+                    ? 'Interac email'
+                    : 'Bill pay'}
               </p>
             </div>
           ) : payoutRail === 'pix' ? (
@@ -208,7 +254,9 @@ export function PayoutPinnedSummary({
                 ? 'Originator'
                 : payoutRail === 'ngn'
                   ? 'Verified recipient'
-                  : 'Sender'}
+                  : payoutRail === 'cad'
+                    ? 'Recipient'
+                    : 'Sender'}
         </p>
         {hasSenderDetails ? (
           payoutRail === 'eur' ? (
@@ -233,6 +281,17 @@ export function PayoutPinnedSummary({
               <p className="payout-summary-value">{senderName}</p>
               <p className="payout-summary-value payout-summary-value--muted">
                 Name confirmed by the beneficiary bank
+              </p>
+            </div>
+          ) : payoutRail === 'cad' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {cadPayload.rail === 'bank'
+                  ? 'Canadian bank recipient'
+                  : cadPayload.rail === 'interac_email'
+                    ? 'Interac email recipient'
+                    : 'Canadian biller'}
               </p>
             </div>
           ) : payoutRail === 'pix' ? (

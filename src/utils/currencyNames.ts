@@ -3,6 +3,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   BRL: 'R$',
   INR: '₹',
   NGN: '₦',
+  CAD: 'CA$',
   USD: '$',
   USDT: '₮',
   USDC: '$',

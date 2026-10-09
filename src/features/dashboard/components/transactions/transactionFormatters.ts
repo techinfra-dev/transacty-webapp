@@ -9,6 +9,7 @@ const RAIL_CURRENCY: Record<string, string> = {
   bangladesh: 'BDT',
   europe: 'EUR',
   nigeria: 'NGN',
+  canada: 'CAD',
 }
 
 /** Prefer API currency; fall back to rail default when currency is omitted. */
@@ -87,6 +88,8 @@ const TYLT_PRODUCT_LABELS: Record<string, string> = {
   tekko_ngn_payout: 'Nigeria NGN payout',
   'tekko-ngn-collect': 'Nigeria NGN collect (legacy)',
   tekko_ngn_collect: 'Nigeria NGN collect (legacy)',
+  'tekko-cad-payout': 'Canada CAD payout',
+  tekko_cad_payout: 'Canada CAD payout',
 }
 
 function readTyltProduct(metadata: Record<string, unknown> | null | undefined) {

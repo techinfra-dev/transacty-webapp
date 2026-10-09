@@ -187,6 +187,7 @@ export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | nul
     raw === 'europe' ||
     raw === 'brazil' ||
     raw === 'nigeria' ||
+    raw === 'canada' ||
     raw === 'pyusd'
   ) {
     return raw

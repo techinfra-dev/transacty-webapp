@@ -5,6 +5,7 @@ import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
+import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import type { PayoutFormPayload } from '../../services/payoutFormTypes.ts'
 import {
@@ -15,11 +16,13 @@ import {
 import {
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
+  CANADA_PAYOUT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   cpgNetworkDropdownOptions,
   payoutMethodOptions,
   type PayoutRail,
 } from './payoutConstants.ts'
+import { CadBeneficiaryFields } from './CadBeneficiaryFields.tsx'
 import { NgnBeneficiaryFields } from './NgnBeneficiaryFields.tsx'
 import { PayoutAmountField } from './PayoutAmountField.tsx'
 import { eurPayoutCountryOptionsWithPlaceholder } from '../../utils/eurPayoutCountryOptions.ts'
@@ -37,6 +40,8 @@ interface PayoutFormStepsProps {
   setBrPayload: React.Dispatch<React.SetStateAction<BrPayoutFormPayload>>
   ngnPayload: NgnPayoutFormPayload
   setNgnPayload: React.Dispatch<React.SetStateAction<NgnPayoutFormPayload>>
+  cadPayload: CadPayoutFormPayload
+  setCadPayload: React.Dispatch<React.SetStateAction<CadPayoutFormPayload>>
   displayCurrency: string
   settlementCurrency: string
   effectiveMinimumAmount: number
@@ -65,6 +70,8 @@ export function PayoutFormSteps({
   setBrPayload,
   ngnPayload,
   setNgnPayload,
+  cadPayload,
+  setCadPayload,
   displayCurrency,
   settlementCurrency,
   effectiveMinimumAmount,
@@ -97,7 +104,9 @@ export function PayoutFormSteps({
           ? brPayload.amount
           : payoutRail === 'ngn'
             ? ngnPayload.amount
-            : payload.amount
+            : payoutRail === 'cad'
+              ? cadPayload.amount
+              : payload.amount
 
   function setAmountValue(nextAmount: string) {
     if (payoutRail === 'eur') {
@@ -128,6 +137,13 @@ export function PayoutFormSteps({
       }))
       return
     }
+    if (payoutRail === 'cad') {
+      setCadPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
     setPayload((previousPayload) => ({
       ...previousPayload,
       amount: nextAmount,
@@ -143,7 +159,9 @@ export function PayoutFormSteps({
           ? 'Brazil (PIX) settlement pocket'
           : payoutRail === 'ngn'
             ? 'Nigeria settlement pocket · bank transfer payout'
-            : undefined
+            : payoutRail === 'cad'
+              ? 'Canada settlement pocket · bank / Interac / bill payout'
+              : undefined
 
   // Limits and balance live in the amount card — this only carries what the
   // card cannot show.
@@ -156,6 +174,9 @@ export function PayoutFormSteps({
     }
     if (payoutRail === 'ngn') {
       return 'Bank transfers cannot be reversed once submitted.'
+    }
+    if (payoutRail === 'cad') {
+      return 'CAD payouts cannot be reversed once submitted.'
     }
     return null
   })()
@@ -179,7 +200,9 @@ export function PayoutFormSteps({
                     ? 'Enter how much BRL to send via PIX from your Brazil wallet.'
                     : payoutRail === 'ngn'
                       ? 'Enter how much NGN to send from your Nigeria wallet to a bank account.'
-                      : 'Enter how much to send from the selected wallet.'}
+                      : payoutRail === 'cad'
+                        ? 'Enter how much CAD to send from your Canada wallet to a bank account, Interac email, or biller.'
+                        : 'Enter how much to send from the selected wallet.'}
             </p>
 
             <div className="sm:col-span-2">
@@ -204,6 +227,11 @@ export function PayoutFormSteps({
             <NgnBeneficiaryFields
               ngnPayload={ngnPayload}
               setNgnPayload={setNgnPayload}
+            />
+          ) : payoutRail === 'cad' ? (
+            <CadBeneficiaryFields
+              cadPayload={cadPayload}
+              setCadPayload={setCadPayload}
             />
           ) : payoutRail === 'eur' ? (
             <div className="payout-field-grid">
@@ -472,6 +500,74 @@ export function PayoutFormSteps({
                   <span className="text-(--color-secondary)">Bank:</span>{' '}
                   {ngnPayload.bankName || ngnPayload.bankCode || '—'}
                 </p>
+              </div>
+            </div>
+          ) : payoutRail === 'cad' ? (
+            <div className="payout-field-grid">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                Review payout
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Confirm the CAD recipient before submitting. Transfers cannot be
+                reversed once sent.
+              </p>
+              <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                <p>
+                  <span className="text-(--color-secondary)">Amount:</span>{' '}
+                  {cadPayload.amount || '—'} {CANADA_PAYOUT_CURRENCY}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Method:</span>{' '}
+                  {cadPayload.rail === 'bank'
+                    ? 'Canadian bank account'
+                    : cadPayload.rail === 'interac_email'
+                      ? 'Interac email'
+                      : 'Bill pay'}
+                </p>
+                {cadPayload.rail === 'bank' ? (
+                  <>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">
+                        Account name:
+                      </span>{' '}
+                      {cadPayload.bank.accountName || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">
+                        Account:
+                      </span>{' '}
+                      {cadPayload.bank.institutionNumber}/
+                      {cadPayload.bank.transitNumber}/
+                      {cadPayload.bank.accountNumber || '—'}
+                    </p>
+                  </>
+                ) : cadPayload.rail === 'interac_email' ? (
+                  <>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">
+                        Recipient:
+                      </span>{' '}
+                      {cadPayload.interac.name || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Email:</span>{' '}
+                      {cadPayload.interac.email || '—'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Biller:</span>{' '}
+                      {cadPayload.bill.billerName || cadPayload.bill.billerId || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">
+                        Account number:
+                      </span>{' '}
+                      {cadPayload.bill.accountNumber || '—'}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           ) : payoutRail === 'cpg' ? (

@@ -11,6 +11,8 @@ const CAROUSEL_THRESHOLD = 4
 type DashboardWalletsRowProps = {
   /** Activated currency/wallet count (exclude Add wallet). */
   currencyCount: number
+  /** When true, Add wallet is a slide and counts toward the carousel threshold. */
+  hasAddWallet?: boolean
   children: ReactNode
 }
 
@@ -50,9 +52,11 @@ function ChevronRightIcon() {
 
 export function DashboardWalletsRow({
   currencyCount,
+  hasAddWallet = false,
   children,
 }: DashboardWalletsRowProps) {
-  const useCarousel = currencyCount > CAROUSEL_THRESHOLD
+  const slideCount = currencyCount + (hasAddWallet ? 1 : 0)
+  const useCarousel = slideCount > CAROUSEL_THRESHOLD
   const trackRef = useRef<HTMLDivElement>(null)
   const [canPrev, setCanPrev] = useState(false)
   const [canNext, setCanNext] = useState(false)
@@ -78,7 +82,7 @@ export function DashboardWalletsRow({
       track.removeEventListener('scroll', syncScrollState)
       resizeObserver.disconnect()
     }
-  }, [useCarousel, currencyCount])
+  }, [useCarousel, slideCount])
 
   const scrollByPage = (direction: -1 | 1) => {
     const track = trackRef.current

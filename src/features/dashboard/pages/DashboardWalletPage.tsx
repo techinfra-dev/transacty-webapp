@@ -57,6 +57,16 @@ function isNigeriaNgnWallet(wallet: {
   return market === 'nigeria' || code === 'NGN'
 }
 
+function isCanadaCadWallet(wallet: {
+  currency: string
+  market?: string | null
+  region?: string | null
+}) {
+  const code = wallet.currency.trim().toUpperCase()
+  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
+  return market === 'canada' || code === 'CAD'
+}
+
 export function DashboardWalletPage() {
   const { walletId } = useParams({ from: '/dashboard/wallets/$walletId' })
   const { va } = useSearch({ from: '/dashboard/wallets/$walletId' })
@@ -84,6 +94,7 @@ export function DashboardWalletPage() {
     : false
   const isBrazilWallet = activeWallet ? isBrazilBrlWallet(activeWallet) : false
   const isNigeriaWallet = activeWallet ? isNigeriaNgnWallet(activeWallet) : false
+  const isCanadaWallet = activeWallet ? isCanadaCadWallet(activeWallet) : false
 
   useEffect(() => {
     if (va === 'bvn' && isNigeriaWallet) {
@@ -114,10 +125,14 @@ export function DashboardWalletPage() {
     if (isNigeriaWallet) {
       return `${getWalletDisplayLabel(activeWallet)} · permanent virtual account · NGN bank payouts`
     }
+    if (isCanadaWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · CAD bank / Interac / bill payouts`
+    }
     return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
   }, [
     activeWallet,
     isBrazilWallet,
+    isCanadaWallet,
     isIndiaUsdtWallet,
     isNigeriaWallet,
     isPyusdWallet,
@@ -258,6 +273,7 @@ export function DashboardWalletPage() {
           }
         }}
       />
+
     </section>
   )
 }
