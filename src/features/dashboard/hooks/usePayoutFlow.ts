@@ -506,14 +506,22 @@ export function usePayoutFlow() {
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
       return 'Amount must be greater than 0.'
     }
+    if (walletBalance !== null && walletBalance <= 0) {
+      return `Your ${displayCurrency} wallet has no available balance.`
+    }
     if (amountNumber < effectiveMinimumAmount) {
       return `Amount must be at least ${formatPayoutMoney(
         displayCurrency,
         String(effectiveMinimumAmount),
       )}.`
     }
+    if (walletBalance !== null && amountNumber > walletBalance) {
+      return `Amount cannot exceed your available balance of ${formatPayoutMoney(
+        displayCurrency,
+        String(walletBalance),
+      )}.`
+    }
     if (
-      payoutRail !== 'eur' &&
       effectiveMaximumAmount !== undefined &&
       amountNumber > effectiveMaximumAmount
     ) {
@@ -521,24 +529,6 @@ export function usePayoutFlow() {
         displayCurrency,
         String(effectiveMaximumAmount),
       )}.`
-    }
-    if (
-      payoutRail === 'eur' &&
-      effectiveMaximumAmount !== undefined &&
-      amountNumber > effectiveMaximumAmount
-    ) {
-      return `Amount cannot exceed ${formatPayoutMoney(
-        displayCurrency,
-        String(effectiveMaximumAmount),
-      )}.`
-    }
-    if (
-      payoutRail === 'eur' &&
-      portalEnvironment === 'live' &&
-      walletBalance !== null &&
-      walletBalance <= 0
-    ) {
-      return 'Your USDC balance is insufficient.'
     }
     return null
   }
