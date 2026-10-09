@@ -13,7 +13,7 @@ import {
   BANGLADESH_RAIL_PAUSE_COPY,
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
-import type { WalletActivationStatus } from '../services/marketSchemas.ts'
+import { getMarketRailSummary } from '../utils/marketDisplayUtils.ts'
 
 interface DashboardWalletCardProps {
   walletId: string
@@ -25,7 +25,7 @@ interface DashboardWalletCardProps {
   isSelected?: boolean
   market?: string | null
   region?: string | null
-  activationStatus?: WalletActivationStatus | null
+  activationStatus?: string | null
 }
 
 function formatAmountOnly(value: number) {
@@ -37,7 +37,7 @@ function formatAmountOnly(value: number) {
 }
 
 function activationFooterNote(
-  activationStatus: WalletActivationStatus | null | undefined,
+  activationStatus: string | null | undefined,
   market: string | null | undefined,
   currency: string,
 ) {
@@ -76,6 +76,9 @@ function activationFooterNote(
   }
   if (code === 'CAD' || marketKey === 'canada') {
     return 'CAD bank / Interac / bill payouts'
+  }
+  if (marketKey) {
+    return getMarketRailSummary(marketKey)
   }
   return 'Merchant pocket'
 }

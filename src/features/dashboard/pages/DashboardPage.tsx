@@ -15,6 +15,7 @@ import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 import {
   getActivatedWallets,
   getCatalogWallets,
+  mergeCatalogMarkets,
 } from '../utils/balanceWalletUtils.ts'
 import { getMarketBrowserFilter, canRequestMarketAccess } from '../utils/marketDisplayUtils.ts'
 
@@ -57,7 +58,10 @@ export function DashboardPage() {
     ? getActivatedWallets(walletsQuery.data)
     : null
   const catalog = getCatalogWallets(walletsQuery.data)
-  const markets = marketsQuery.data ?? []
+  const markets = useMemo(
+    () => mergeCatalogMarkets(marketsQuery.data ?? [], catalog),
+    [marketsQuery.data, catalog],
+  )
   // Only markets that can still be requested (Available > 0), not already enabled/down.
   const hasRequestableMarkets = useMemo(
     () =>

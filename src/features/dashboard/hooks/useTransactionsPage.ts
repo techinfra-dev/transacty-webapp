@@ -10,7 +10,13 @@ import type {
   TransactionType,
 } from '../services/transactionsSchemas.ts'
 import { customerWalletIdFilterSchema } from '../services/transactionsSchemas.ts'
-import { transactionRailFilterToApiParam } from '../utils/transactionRailUtils.ts'
+import {
+  getTransactionRailFilterOptions,
+  transactionRailFilterToApiParam,
+} from '../utils/transactionRailUtils.ts'
+import { getWalletMarket } from '../utils/balanceWalletUtils.ts'
+import { useBalanceQuery } from './useBalanceQuery.ts'
+import { useMarketsQuery } from './useMarketsQuery.ts'
 
 export function useTransactionsPage() {
   const [query, setQuery] = useState('')
@@ -61,6 +67,18 @@ export function useTransactionsPage() {
       ? debouncedCustomerId
       : undefined
   const listRail = transactionRailFilterToApiParam(selectedRail)
+  const marketsQuery = useMarketsQuery()
+  const balanceQuery = useBalanceQuery()
+  const railOptions = useMemo(() => {
+    const extras = [
+      ...(marketsQuery.data ?? []).map((row) => row.market),
+      ...(balanceQuery.data?.items ?? []).flatMap((wallet) => [
+        getWalletMarket(wallet) ?? '',
+        wallet.region ?? '',
+      ]),
+    ]
+    return getTransactionRailFilterOptions(extras)
+  }, [marketsQuery.data, balanceQuery.data?.items])
 
   const statusCountsQuery = useTransactionStatusCounts({
     type: listType,
@@ -155,6 +173,7 @@ export function useTransactionsPage() {
     setQuery,
     selectedRail,
     setSelectedRail,
+    railOptions,
     selectedMethod,
     setSelectedMethod,
     selectedStatus,

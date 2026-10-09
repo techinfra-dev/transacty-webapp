@@ -4,7 +4,8 @@ import {
   portalUnlockReasonSchema,
 } from './portalDepthSchemas.ts'
 
-export const merchantMarketSchema = z.enum([
+/** Preferred display order for markets the portal already special-cases. */
+export const KNOWN_MERCHANT_MARKETS = [
   'bangladesh',
   'india',
   'europe',
@@ -12,7 +13,16 @@ export const merchantMarketSchema = z.enum([
   'nigeria',
   'canada',
   'pyusd',
-])
+] as const
+
+export type KnownMerchantMarket = (typeof KNOWN_MERCHANT_MARKETS)[number]
+
+/** Any market key the API returns — new rails must not fail parse. */
+export const merchantMarketSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => value.toLowerCase())
 
 export const marketEntitlementStatusSchema = z.enum([
   'disabled',
@@ -51,7 +61,7 @@ export const marketActivationStatusSchema = z.enum([
 
 export const portalMarketWalletSchema = z.object({
   currency: z.string().min(1).optional(),
-  activationStatus: walletActivationStatusSchema.optional(),
+    activationStatus: walletActivationStatusSchema.or(z.string().min(1)).optional(),
   unlockReason: portalUnlockReasonSchema.nullable().optional(),
   blockers: z.array(portalUnlockBlockerSchema).optional(),
 }).passthrough()
@@ -60,18 +70,18 @@ export const portalMarketRowSchema = z
   .object({
     market: merchantMarketSchema,
     displayName: z.string().min(1).optional(),
-    entitlementStatus: marketEntitlementStatusSchema,
-    kybStatus: marketKybStatusSchema,
-    activationStatus: marketActivationStatusSchema.optional(),
+    entitlementStatus: marketEntitlementStatusSchema.or(z.string().min(1)),
+    kybStatus: marketKybStatusSchema.or(z.string().min(1)),
+    activationStatus: marketActivationStatusSchema.or(z.string().min(1)).optional(),
     canRequest: z.boolean().optional(),
     ready: z.boolean().optional(),
     unlockReason: portalUnlockReasonSchema.nullable().optional(),
     blockers: z.array(portalUnlockBlockerSchema).optional(),
     walletsProvisioned: z.boolean().optional(),
     wallets: z.array(portalMarketWalletSchema).optional(),
-    requestedAt: z.string().nullable(),
-    approvedAt: z.string().nullable(),
-    settlementCurrencies: z.array(z.string().min(1)),
+    requestedAt: z.string().nullable().optional(),
+    approvedAt: z.string().nullable().optional(),
+    settlementCurrencies: z.array(z.string().min(1)).optional().default([]),
   })
   .passthrough()
 

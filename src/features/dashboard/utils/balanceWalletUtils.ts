@@ -1,8 +1,13 @@
 import type { BalanceResponse, BalanceWalletItem } from '../services/balanceSchemas.ts'
-import type { MerchantMarket, PortalMarketRow } from '../services/marketSchemas.ts'
+import type { PortalMarketRow } from '../services/marketSchemas.ts'
 import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { isBangladeshRailPausedForWallet } from './bangladeshRailPause.ts'
-import { MARKET_ORDER, isLiveOnlyMarket } from './marketDisplayUtils.ts'
+import {
+  MARKET_ORDER,
+  isLiveOnlyMarket,
+  sortMarkets,
+  uniqueInPreferredOrder,
+} from './marketDisplayUtils.ts'
 
 /** INR pockets are never shown as standalone merchant balance cards. */
 export const HIDDEN_WALLET_CURRENCIES = new Set(['INR'])
@@ -21,7 +26,7 @@ export function filterVisibleWallets(items: BalanceWalletItem[]) {
 }
 
 export function getVisibleSettlementCurrencies(
-  market: MerchantMarket | null | undefined,
+  market: string | null | undefined,
   currencies: string[],
 ) {
   const visible = currencies
@@ -173,26 +178,24 @@ export function groupWalletsByMarket(items: BalanceWalletItem[]) {
     list.push(item)
     grouped.set(market, list)
   }
-  return MARKET_ORDER.filter((market) => grouped.has(market)).map((market) => ({
+  const ordered = uniqueInPreferredOrder(grouped.keys())
+  if (grouped.has('other')) {
+    ordered.push('other')
+  }
+  return ordered.map((market) => ({
     market,
     items: grouped.get(market) ?? [],
   }))
 }
 
-export function getWalletMarket(wallet: BalanceWalletItem): MerchantMarket | null {
+export function getWalletMarket(
+  wallet: Pick<BalanceWalletItem, 'market' | 'region'>,
+): string | null {
   const raw = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
-  if (
-    raw === 'bangladesh' ||
-    raw === 'india' ||
-    raw === 'europe' ||
-    raw === 'brazil' ||
-    raw === 'nigeria' ||
-    raw === 'canada' ||
-    raw === 'pyusd'
-  ) {
-    return raw
+  if (!raw || raw === 'other') {
+    return null
   }
-  return null
+  return raw
 }
 
 export type CatalogWalletAction =
@@ -271,7 +274,7 @@ export function getInactiveCatalogWallets(catalog: BalanceWalletItem[]) {
 }
 
 export type AddWalletCatalogGroup = {
-  market: MerchantMarket | null
+  market: string | null
   marketRow: PortalMarketRow | undefined
   wallets: BalanceWalletItem[]
   action: CatalogWalletAction
@@ -283,7 +286,7 @@ export function getAddWalletCatalogGroups(
 ): AddWalletCatalogGroup[] {
   const marketById = new Map(markets.map((row) => [row.market, row]))
   const inactive = getInactiveCatalogWallets(catalog)
-  const byMarket = new Map<MerchantMarket, BalanceWalletItem[]>()
+  const byMarket = new Map<string, BalanceWalletItem[]>()
   const withoutMarket: BalanceWalletItem[] = []
 
   for (const wallet of inactive) {
@@ -298,8 +301,13 @@ export function getAddWalletCatalogGroups(
   }
 
   const groups: AddWalletCatalogGroup[] = []
+  const catalogOrder = uniqueInPreferredOrder([
+    ...MARKET_ORDER,
+    ...markets.map((row) => row.market),
+    ...byMarket.keys(),
+  ])
 
-  for (const marketKey of MARKET_ORDER) {
+  for (const marketKey of catalogOrder) {
     const wallets = byMarket.get(marketKey) ?? []
     const marketRow = marketById.get(marketKey)
 
@@ -429,4 +437,36 @@ export function getMarketsWithWalletActions(
   catalog: BalanceWalletItem[],
 ) {
   return getAddWalletCatalogRows(markets, catalog)
+}
+
+/** Include balance-only rails (e.g. Kenya) even if `/me/markets` has not caught up. */
+export function mergeCatalogMarkets(
+  markets: PortalMarketRow[],
+  catalog: BalanceWalletItem[],
+): PortalMarketRow[] {
+  const byId = new Map(markets.map((row) => [row.market, row]))
+
+  for (const wallet of catalog) {
+    const key = getWalletMarket(wallet)
+    if (!key || byId.has(key)) {
+      continue
+    }
+    byId.set(key, {
+      market: key,
+      displayName:
+        wallet.displayLabel?.trim() ||
+        wallet.regionLabel?.trim() ||
+        undefined,
+      entitlementStatus: wallet.entitlementStatus ?? 'disabled',
+      kybStatus: wallet.kybStatus ?? 'not_started',
+      activationStatus: wallet.activationStatus ?? undefined,
+      settlementCurrencies: [wallet.currency],
+      requestedAt: null,
+      approvedAt: null,
+      unlockReason: wallet.unlockReason,
+      blockers: wallet.blockers,
+    })
+  }
+
+  return sortMarkets([...byId.values()])
 }

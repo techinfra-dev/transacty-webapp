@@ -26,7 +26,7 @@ export function getTransactionCurrency(
     return RAIL_CURRENCY[rail]
   }
 
-  return 'BDT'
+  return ''
 }
 
 export function getStatusClassName(status: TransactionStatus) {

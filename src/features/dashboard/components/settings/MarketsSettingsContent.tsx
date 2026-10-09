@@ -7,6 +7,7 @@ import {
   getMarketWalletAction,
   getCatalogWallets,
   getVisibleSettlementCurrencies,
+  mergeCatalogMarkets,
 } from '../../utils/balanceWalletUtils.ts'
 import {
   formatEntitlementStatusLabel,
@@ -152,6 +153,7 @@ export function MarketsSettingsContent() {
   const marketsQuery = useMarketsQuery(true)
   const balanceQuery = useBalanceQuery(true)
   const catalog = getCatalogWallets(balanceQuery.data)
+  const markets = mergeCatalogMarkets(marketsQuery.data ?? [], catalog)
 
   if (marketsQuery.isPending) {
     return (
@@ -175,7 +177,7 @@ export function MarketsSettingsContent() {
 
   return (
     <div className="space-y-3">
-      {marketsQuery.data.map((market) => (
+      {markets.map((market) => (
         <MarketSettingsRow
           key={market.market}
           market={market}

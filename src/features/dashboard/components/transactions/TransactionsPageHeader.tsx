@@ -48,6 +48,7 @@ type TransactionsPageHeaderProps = {
   customerIdFilterError: string | null
   onCustomerIdFilterChange: (value: string) => void
   selectedRail: TransactionRailFilter
+  railOptions?: { value: TransactionRailFilter; label: string }[]
   onSelectedRailChange: (value: TransactionRailFilter) => void
   selectedMethod: string
   onSelectedMethodChange: (value: string) => void
@@ -71,6 +72,7 @@ export function TransactionsPageHeader({
   customerIdFilterError,
   onCustomerIdFilterChange,
   selectedRail,
+  railOptions = transactionRailFilterOptions,
   onSelectedRailChange,
   selectedMethod,
   onSelectedMethodChange,
@@ -159,7 +161,7 @@ export function TransactionsPageHeader({
           ) : null}
         </div>
         <DropdownSelect
-          options={transactionRailFilterOptions}
+          options={railOptions}
           value={selectedRail}
           onChange={(value) => onSelectedRailChange(value as TransactionRailFilter)}
           ariaLabel="Filter transactions by rail"

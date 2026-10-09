@@ -8,6 +8,7 @@ import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import {
   getCatalogWallets,
   getWalletDisplayLabel,
+  mergeCatalogMarkets,
 } from '../../utils/balanceWalletUtils.ts'
 import { findRailForWallet } from '../../utils/moneyRailWalletUtils.ts'
 import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
@@ -42,8 +43,11 @@ export function WalletOverviewCard({
       ? findRailForWallet(moneyOverviewQuery.data.rails, active)
       : undefined
 
-  const markets = marketsQuery.data ?? []
   const catalog = getCatalogWallets(balanceQuery.data)
+  const markets = useMemo(
+    () => mergeCatalogMarkets(marketsQuery.data ?? [], catalog),
+    [marketsQuery.data, catalog],
+  )
 
   const hasRequestableMarkets = useMemo(
     () =>

@@ -227,7 +227,7 @@ export function usePayoutFlow() {
     return Number.isFinite(amount) ? amount : 0
   }, [selectedWallet])
 
-  const payoutLimits = selectedWallet?.limits.payout
+  const payoutLimits = selectedWallet?.limits?.payout
 
   const effectiveMinimumAmount =
     payoutRail === 'eur'

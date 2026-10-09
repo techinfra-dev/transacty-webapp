@@ -57,11 +57,29 @@ function intlCurrencyName(code: string): string | undefined {
   return undefined
 }
 
-/** Currency symbol when defined (e.g. BDT → ৳). */
+function intlCurrencySymbol(code: string): string | undefined {
+  try {
+    const symbol = new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: code,
+      currencyDisplay: 'narrowSymbol',
+    })
+      .formatToParts(0)
+      .find((part) => part.type === 'currency')?.value
+    if (symbol && symbol !== code) {
+      return symbol
+    }
+  } catch {
+    /* Intl not available or invalid code */
+  }
+  return undefined
+}
+
+/** Currency symbol when defined (e.g. BDT → ৳). Unknown ISO codes use Intl. */
 export function getCurrencySymbol(code: string): string | undefined {
   const normalized = code.trim().toUpperCase()
   if (!normalized) return undefined
-  return CURRENCY_SYMBOLS[normalized]
+  return CURRENCY_SYMBOLS[normalized] ?? intlCurrencySymbol(normalized)
 }
 
 /** Settlement list for market cards (e.g. INR, USDT → ₹, $). */

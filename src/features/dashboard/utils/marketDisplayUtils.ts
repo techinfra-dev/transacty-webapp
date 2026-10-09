@@ -1,22 +1,10 @@
-import type {
-  MarketEntitlementStatus,
-  MarketKybStatus,
-  MerchantMarket,
-  PortalMarketRow,
-} from '../services/marketSchemas.ts'
+import type { PortalMarketRow } from '../services/marketSchemas.ts'
+import { KNOWN_MERCHANT_MARKETS } from '../services/marketSchemas.ts'
 import { isBangladeshRailPausedForMarket } from './bangladeshRailPause.ts'
 
-export const MARKET_ORDER: MerchantMarket[] = [
-  'bangladesh',
-  'india',
-  'europe',
-  'brazil',
-  'nigeria',
-  'canada',
-  'pyusd',
-]
+export const MARKET_ORDER: readonly string[] = KNOWN_MERCHANT_MARKETS
 
-export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
+export const MARKET_DISPLAY_NAMES: Record<string, string> = {
   bangladesh: 'Bangladesh',
   india: 'India',
   europe: 'Europe',
@@ -27,7 +15,7 @@ export const MARKET_DISPLAY_NAMES: Record<MerchantMarket, string> = {
 }
 
 /** Short codes for market avatars in the add-wallet browser. */
-export const MARKET_AVATAR_CODES: Record<MerchantMarket, string> = {
+export const MARKET_AVATAR_CODES: Record<string, string> = {
   bangladesh: 'BD',
   india: 'IN',
   europe: 'EU',
@@ -38,7 +26,7 @@ export const MARKET_AVATAR_CODES: Record<MerchantMarket, string> = {
 }
 
 /** Human-readable rail hints shown under currency badges. */
-export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
+export const MARKET_RAIL_SUMMARIES: Record<string, string> = {
   bangladesh: 'Bank transfer · Local rails',
   india: 'UPI · Bank transfer',
   europe: 'SEPA · Instant',
@@ -53,25 +41,63 @@ export const MARKET_RAIL_SUMMARIES: Record<MerchantMarket, string> = {
  * inactive pocket in the test catalog — that means "switch to live", not
  * "not approved".
  */
-export const LIVE_ONLY_MARKETS = new Set<MerchantMarket>(['nigeria', 'canada'])
+export const LIVE_ONLY_MARKETS = new Set<string>(['nigeria', 'canada'])
+
+export function normalizeMarketKey(market: string | null | undefined) {
+  return (market ?? '').trim().toLowerCase()
+}
+
+/** Title-case unknown API keys (`kenya` → `Kenya`) without a frontend enum. */
+export function humanizeMarketKey(market: string) {
+  return market
+    .trim()
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+/** Known markets first, then any new API keys alphabetically. */
+export function uniqueInPreferredOrder(keys: Iterable<string>) {
+  const seen = new Set<string>()
+  const result: string[] = []
+  const normalized = [...keys]
+    .map((key) => normalizeMarketKey(key))
+    .filter((key) => key.length > 0 && key !== 'other')
+
+  for (const preferred of MARKET_ORDER) {
+    if (normalized.includes(preferred) && !seen.has(preferred)) {
+      seen.add(preferred)
+      result.push(preferred)
+    }
+  }
+
+  for (const key of normalized.sort()) {
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(key)
+    }
+  }
+
+  return result
+}
 
 export const LIVE_ONLY_MARKET_COPY =
   'Approved — switch the portal to Live to use this market.'
 
 export function isLiveOnlyMarket(market: string | null | undefined) {
-  const key = (market ?? '').trim().toLowerCase() as MerchantMarket
-  return LIVE_ONLY_MARKETS.has(key)
+  return LIVE_ONLY_MARKETS.has(normalizeMarketKey(market))
 }
 
 export type MarketBrowserFilter = 'all' | 'enabled' | 'available' | 'unavailable'
 
 export function getMarketAvatarCode(market: string) {
-  const key = market.trim().toLowerCase() as MerchantMarket
-  return MARKET_AVATAR_CODES[key] ?? market.trim().slice(0, 2).toUpperCase()
+  const key = normalizeMarketKey(market)
+  return MARKET_AVATAR_CODES[key] ?? key.slice(0, 2).toUpperCase()
 }
 
 export function getMarketRailSummary(market: string) {
-  const key = market.trim().toLowerCase() as MerchantMarket
+  const key = normalizeMarketKey(market)
   return MARKET_RAIL_SUMMARIES[key] ?? 'Local settlement rails'
 }
 
@@ -98,12 +124,12 @@ export function getMarketDisplayName(
   if (displayName && displayName.trim().length > 0) {
     return displayName.trim()
   }
-  const key = market.trim().toLowerCase() as MerchantMarket
-  return MARKET_DISPLAY_NAMES[key] ?? market
+  const key = normalizeMarketKey(market)
+  return MARKET_DISPLAY_NAMES[key] ?? (humanizeMarketKey(market) || market)
 }
 
-export function formatEntitlementStatusLabel(status: MarketEntitlementStatus) {
-  const labels: Record<MarketEntitlementStatus, string> = {
+export function formatEntitlementStatusLabel(status: string) {
+  const labels: Record<string, string> = {
     disabled: 'Not enabled',
     not_requested: 'Not requested',
     requested: 'Requested',
@@ -112,17 +138,17 @@ export function formatEntitlementStatusLabel(status: MarketEntitlementStatus) {
     rejected: 'Rejected',
     suspended: 'Suspended',
   }
-  return labels[status]
+  return labels[status] ?? humanizeMarketKey(status)
 }
 
-export function formatKybStatusLabel(status: MarketKybStatus) {
-  const labels: Record<MarketKybStatus, string> = {
+export function formatKybStatusLabel(status: string) {
+  const labels: Record<string, string> = {
     not_started: 'KYB not started',
     pending: 'KYB pending',
     verified: 'KYB verified',
     rejected: 'KYB rejected',
   }
-  return labels[status]
+  return labels[status] ?? humanizeMarketKey(status)
 }
 
 export function canRequestMarketAccess(market: PortalMarketRow) {
@@ -188,9 +214,10 @@ export function marketNeedsKycAction(market: PortalMarketRow) {
 }
 
 export function sortMarkets<T extends { market: string }>(items: T[]) {
+  const order = uniqueInPreferredOrder(items.map((item) => item.market))
   return [...items].sort(
     (a, b) =>
-      MARKET_ORDER.indexOf(a.market as MerchantMarket) -
-      MARKET_ORDER.indexOf(b.market as MerchantMarket),
+      order.indexOf(normalizeMarketKey(a.market)) -
+      order.indexOf(normalizeMarketKey(b.market)),
   )
 }

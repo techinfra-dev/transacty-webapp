@@ -22,6 +22,7 @@ export function DashboardTransactionsPage() {
           tx.setCurrentPage(1)
         }}
         selectedRail={tx.selectedRail}
+        railOptions={tx.railOptions}
         onSelectedRailChange={(value) => {
           tx.setSelectedRail(value)
           tx.setCurrentPage(1)

@@ -76,6 +76,20 @@ export function getFlagCdnUrl(flagCode: string, width = 80) {
   return `https://flagcdn.com/w${width}/${code}.png`
 }
 
+const NON_GEO_MARKETS = new Set(['pyusd', 'other', 'global', 'crypto'])
+
+/** ISO 4217 country guess: first two letters (`KES` → `ke`). Skip crypto/specials. */
+function isoCurrencyCountryGuess(currency: string): string | null {
+  const code = currency.trim().toUpperCase()
+  if (code.length < 3 || code.includes('-') || code.startsWith('X')) {
+    return null
+  }
+  if (CRYPTO_CODES.has(code) || isPyusdCurrencyOrMarket(code, null)) {
+    return null
+  }
+  return code.slice(0, 2).toLowerCase()
+}
+
 export function resolveMarketFlagCode(
   market?: string | null,
   currency?: string | null,
@@ -87,6 +101,13 @@ export function resolveMarketFlagCode(
   const currencyKey = (currency ?? '').trim().toUpperCase()
   if (currencyKey && FIAT_CURRENCY_FLAG_CODES[currencyKey]) {
     return FIAT_CURRENCY_FLAG_CODES[currencyKey]!
+  }
+  const currencyGuess = isoCurrencyCountryGuess(currencyKey)
+  if (currencyGuess) {
+    return currencyGuess
+  }
+  if (marketKey && !NON_GEO_MARKETS.has(marketKey) && marketKey.length >= 2) {
+    return marketKey.slice(0, 2)
   }
   return null
 }

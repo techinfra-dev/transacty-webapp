@@ -25,26 +25,17 @@ export const transactionFeesSchema = z.object({
   feeStatus: transactionFeeStatusSchema.optional(),
 })
 
-export const transactionRailApiSchema = z.enum([
-  'bangladesh',
-  'india',
-  'europe',
-  'brazil',
-  'nigeria',
-  'canada',
-  'pyusd',
-])
+export const transactionRailApiSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => value.toLowerCase())
 
-export const transactionRailFilterSchema = z.enum([
-  'all',
-  'bangladesh',
-  'india',
-  'europe',
-  'brazil',
-  'nigeria',
-  'canada',
-  'pyusd',
-])
+export const transactionRailFilterSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => value.toLowerCase())
 
 export const customerWalletIdFilterSchema = z.uuid()
 
