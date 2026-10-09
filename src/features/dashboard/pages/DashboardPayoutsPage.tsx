@@ -110,10 +110,7 @@ export function DashboardPayoutsPage() {
           <header className="payout-page-head">
             <h1 className="payout-page-title">New payout</h1>
             <p className="payout-page-subtitle">
-              Send Brazil PIX payouts, Nigeria NGN bank transfers, Canada CAD
-              payouts, India USDT on-chain payouts, or Europe USDC → EUR bank
-              transfers from your activated merchant wallets. Bangladesh BDT
-              payouts are temporarily unavailable.
+              Send money from wallet.
             </p>
           </header>
 
