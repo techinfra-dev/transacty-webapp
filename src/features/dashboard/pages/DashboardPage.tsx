@@ -16,6 +16,7 @@ import {
   getActivatedWallets,
   getCatalogWallets,
   mergeCatalogMarkets,
+  sortWalletsNewestFirst,
 } from '../utils/balanceWalletUtils.ts'
 import { getMarketBrowserFilter, canRequestMarketAccess } from '../utils/marketDisplayUtils.ts'
 
@@ -55,7 +56,7 @@ export function DashboardPage() {
   const [isAddWalletOpen, setIsAddWalletOpen] = useState(false)
 
   const wallets = walletsQuery.data
-    ? getActivatedWallets(walletsQuery.data)
+    ? sortWalletsNewestFirst(getActivatedWallets(walletsQuery.data))
     : null
   const catalog = getCatalogWallets(walletsQuery.data)
   const markets = useMemo(
@@ -167,6 +168,9 @@ export function DashboardPage() {
               currencyCount={wallets.length}
               hasAddWallet={hasRequestableMarkets}
             >
+              {hasRequestableMarkets ? (
+                <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
+              ) : null}
               {wallets.map((wallet) => {
                 const amount = Number(wallet.availableBalance ?? wallet.balance)
                 const safeAmount = Number.isFinite(amount) ? amount : 0
@@ -185,9 +189,6 @@ export function DashboardPage() {
                   />
                 )
               })}
-              {hasRequestableMarkets ? (
-                <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
-              ) : null}
             </DashboardWalletsRow>
           )}
 

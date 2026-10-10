@@ -156,6 +156,25 @@ export function sortWalletsUnavailableLast<T extends BalanceWalletItem>(
   })
 }
 
+function walletAddedAt(wallet: BalanceWalletItem) {
+  const time = Date.parse(wallet.createdAt || wallet.updatedAt || '')
+  return Number.isFinite(time) ? time : 0
+}
+
+/** Newest pockets first so a just-added wallet is visible. Unavailable stay last. */
+export function sortWalletsNewestFirst<T extends BalanceWalletItem>(
+  wallets: T[],
+): T[] {
+  return [...wallets].sort((a, b) => {
+    const aDown = isWalletUnavailableOrDown(a) ? 1 : 0
+    const bDown = isWalletUnavailableOrDown(b) ? 1 : 0
+    if (aDown !== bDown) {
+      return aDown - bDown
+    }
+    return walletAddedAt(b) - walletAddedAt(a)
+  })
+}
+
 export function getActivatedWallets(
   balance: BalanceResponse | undefined,
 ): BalanceWalletItem[] {

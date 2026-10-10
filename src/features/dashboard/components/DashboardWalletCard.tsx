@@ -77,6 +77,9 @@ function activationFooterNote(
   if (code === 'CAD' || marketKey === 'canada') {
     return 'CAD bank / Interac / bill payouts'
   }
+  if (code === 'KES' || marketKey === 'kenya') {
+    return 'M-Pesa collect · M-Pesa payout'
+  }
   if (marketKey) {
     return getMarketRailSummary(marketKey)
   }

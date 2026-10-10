@@ -2,12 +2,17 @@ import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
-import { getActivatedWallets } from '../utils/balanceWalletUtils.ts'
+import {
+  getActivatedWallets,
+  sortWalletsNewestFirst,
+} from '../utils/balanceWalletUtils.ts'
 
 export function DashboardWalletsIndexPage() {
   const navigate = useNavigate()
   const balanceQuery = useBalanceQuery(true)
-  const activatedWallets = getActivatedWallets(balanceQuery.data)
+  const activatedWallets = sortWalletsNewestFirst(
+    getActivatedWallets(balanceQuery.data),
+  )
 
   useEffect(() => {
     if (balanceQuery.isPending) {

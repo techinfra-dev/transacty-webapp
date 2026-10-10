@@ -5,13 +5,20 @@ import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 import { usePortalRole } from '../../../hooks/usePortalRole.ts'
 import { useUiPreferencesStore } from '../../../store/uiPreferencesStore.ts'
 import { BrazilPixPayinDialog } from '../components/BrazilPixPayinDialog.tsx'
+import { KenyaMpesaCollectDialog } from '../components/KenyaMpesaCollectDialog.tsx'
 import { NgnVirtualAccountDialog } from '../components/NgnVirtualAccountDialog.tsx'
 import { WalletActivityTable } from '../components/wallet/WalletActivityTable.tsx'
 import { WalletOverviewCard } from '../components/wallet/WalletOverviewCard.tsx'
 import { useBalanceQuery } from '../hooks/useBalanceQuery.ts'
+import { usePortalEnvironmentStore } from '../../../store/portalEnvironmentStore.ts'
+import {
+  KENYA_LIVE_ONLY_ENVIRONMENT,
+  isKenyaWallet as isKenyaKesWallet,
+} from '../utils/kenyaMarket.ts'
 import {
   getActivatedWallets,
   getWalletDisplayLabel,
+  sortWalletsNewestFirst,
 } from '../utils/balanceWalletUtils.ts'
 import { isPayoutSupportedWallet } from '../components/payouts/payoutConstants.ts'
 import { resolveWalletTransactionRail } from '../utils/transactionRailUtils.ts'
@@ -79,10 +86,14 @@ export function DashboardWalletPage() {
     (state) => state.toggleBalancesVisibility,
   )
   const [isPixPayinOpen, setIsPixPayinOpen] = useState(false)
+  const [isKeCollectOpen, setIsKeCollectOpen] = useState(false)
   const [isNgnVirtualAccountOpen, setIsNgnVirtualAccountOpen] = useState(false)
+  const portalEnvironment = usePortalEnvironmentStore((state) => state.environment)
 
   const balanceQuery = useBalanceQuery(true)
-  const wallets = balanceQuery.data ? getActivatedWallets(balanceQuery.data) : null
+  const wallets = balanceQuery.data
+    ? sortWalletsNewestFirst(getActivatedWallets(balanceQuery.data))
+    : null
   const activeWallet =
     wallets?.find((wallet) => wallet.id === walletId) ?? null
   const walletRail = resolveWalletTransactionRail(activeWallet)
@@ -95,6 +106,7 @@ export function DashboardWalletPage() {
   const isBrazilWallet = activeWallet ? isBrazilBrlWallet(activeWallet) : false
   const isNigeriaWallet = activeWallet ? isNigeriaNgnWallet(activeWallet) : false
   const isCanadaWallet = activeWallet ? isCanadaCadWallet(activeWallet) : false
+  const isKenyaWallet = activeWallet ? isKenyaKesWallet(activeWallet) : false
 
   useEffect(() => {
     if (va === 'bvn' && isNigeriaWallet) {
@@ -128,11 +140,15 @@ export function DashboardWalletPage() {
     if (isCanadaWallet) {
       return `${getWalletDisplayLabel(activeWallet)} · CAD bank / Interac / bill payouts`
     }
+    if (isKenyaWallet) {
+      return `${getWalletDisplayLabel(activeWallet)} · M-Pesa collect and payout`
+    }
     return `${getWalletDisplayLabel(activeWallet)} · ${code} merchant pocket`
   }, [
     activeWallet,
     isBrazilWallet,
     isCanadaWallet,
+    isKenyaWallet,
     isIndiaUsdtWallet,
     isNigeriaWallet,
     isPyusdWallet,
@@ -215,6 +231,16 @@ export function DashboardWalletPage() {
               PIX pay-in
             </Button>
           ) : null}
+          {isKenyaWallet && canWriteMoney ? (
+            <Button
+              variant="ghost"
+              className={outlineBtn}
+              disabled={portalEnvironment !== KENYA_LIVE_ONLY_ENVIRONMENT}
+              onClick={() => setIsKeCollectOpen(true)}
+            >
+              M-Pesa collect
+            </Button>
+          ) : null}
           {activeWallet && isPayoutSupportedWallet(activeWallet) ? (
             <Button
               className="dash-btn-primary"
@@ -257,6 +283,11 @@ export function DashboardWalletPage() {
       <BrazilPixPayinDialog
         isOpen={isPixPayinOpen}
         onClose={() => setIsPixPayinOpen(false)}
+      />
+
+      <KenyaMpesaCollectDialog
+        isOpen={isKeCollectOpen}
+        onClose={() => setIsKeCollectOpen(false)}
       />
 
       <NgnVirtualAccountDialog

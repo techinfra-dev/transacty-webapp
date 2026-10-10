@@ -19,6 +19,7 @@ export const transactionRailFilterOptions: {
   { value: 'brazil', label: 'Brazil' },
   { value: 'nigeria', label: 'Nigeria' },
   { value: 'canada', label: 'Canada' },
+  { value: 'kenya', label: 'Kenya' },
   { value: 'pyusd', label: 'PYUSD' },
 ]
 
@@ -53,6 +54,7 @@ const CURRENCY_TRANSACTION_RAIL: Record<string, TransactionRailApi> = {
   BRL: 'brazil',
   NGN: 'nigeria',
   CAD: 'canada',
+  KES: 'kenya',
   INR: 'india',
   EUR: 'europe',
 }

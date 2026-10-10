@@ -12,6 +12,7 @@ export const KNOWN_MERCHANT_MARKETS = [
   'brazil',
   'nigeria',
   'canada',
+  'kenya',
   'pyusd',
 ] as const
 

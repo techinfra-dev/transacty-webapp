@@ -6,6 +6,7 @@ import type { EurPayoutFormPayload } from '../../services/eurPayoutFormTypes.ts'
 import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
+import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
 
@@ -34,8 +35,11 @@ export const NIGERIA_PAYOUT_CURRENCY = 'NGN'
 export const CANADA_PAYOUT_CURRENCY = 'CAD'
 export const minimumCadPayoutAmount = 1
 export const maximumCadPayoutAmount = 50_000
+export const KENYA_PAYOUT_CURRENCY = 'KES'
+export const minimumKesPayoutAmount = 20
+export const maximumKesPayoutAmount = 250_000
 
-export type PayoutRail = 'bdt' | 'eur' | 'cpg' | 'pix' | 'ngn' | 'cad'
+export type PayoutRail = 'bdt' | 'eur' | 'cpg' | 'pix' | 'ngn' | 'cad' | 'kes'
 
 /** Bangladesh BDT payouts via POST /portal/me/payouts. */
 export const PAYOUT_SUPPORTED_CURRENCY = 'BDT'
@@ -72,6 +76,9 @@ export function getPayoutRailForWallet(
   if (code === CANADA_PAYOUT_CURRENCY) {
     return 'cad'
   }
+  if (code === KENYA_PAYOUT_CURRENCY || market === 'kenya') {
+    return 'kes'
+  }
   if (code === EUR_PAYOUT_SETTLEMENT_CURRENCY) {
     return market === 'europe' ? 'eur' : null
   }
@@ -98,6 +105,7 @@ export function isPayoutSupportedCurrency(currency: string) {
     code === BRAZIL_PAYOUT_CURRENCY ||
     code === NIGERIA_PAYOUT_CURRENCY ||
     code === CANADA_PAYOUT_CURRENCY ||
+    code === KENYA_PAYOUT_CURRENCY ||
     code === EUR_PAYOUT_SETTLEMENT_CURRENCY ||
     code === INDIA_PAYOUT_SETTLEMENT_CURRENCY
   )
@@ -177,6 +185,15 @@ export const initialNgnPayoutPayload: NgnPayoutFormPayload = {
   accountName: '',
   merchantReference: '',
   description: '',
+}
+
+export const initialKePayoutPayload: KePayoutFormPayload = {
+  amount: '',
+  accountNumber: '',
+  confirmAccountNumber: '',
+  accountName: '',
+  description: '',
+  merchantReference: '',
 }
 
 export const initialCadPayoutPayload: CadPayoutFormPayload = {

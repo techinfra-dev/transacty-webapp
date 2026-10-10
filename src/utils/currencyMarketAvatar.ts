@@ -6,6 +6,7 @@ export const MARKET_FLAG_CODES: Record<string, string> = {
   brazil: 'br',
   nigeria: 'ng',
   canada: 'ca',
+  kenya: 'ke',
 }
 
 /** Fiat currencies that map 1:1 to a country flag (no crypto badge). */
@@ -15,6 +16,7 @@ export const FIAT_CURRENCY_FLAG_CODES: Record<string, string> = {
   INR: 'in',
   NGN: 'ng',
   CAD: 'ca',
+  KES: 'ke',
   EUR: 'eu',
   USD: 'us',
 }

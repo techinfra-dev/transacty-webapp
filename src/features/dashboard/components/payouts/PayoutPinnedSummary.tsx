@@ -4,6 +4,7 @@ import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
+import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
@@ -12,6 +13,7 @@ import {
   BRAZIL_PAYOUT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   CANADA_PAYOUT_CURRENCY,
+  KENYA_PAYOUT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   type PayoutRail,
 } from './payoutConstants.ts'
@@ -28,6 +30,7 @@ interface PayoutPinnedSummaryProps {
   brPayload: BrPayoutFormPayload
   ngnPayload: NgnPayoutFormPayload
   cadPayload: CadPayoutFormPayload
+  kePayload: KePayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -44,6 +47,7 @@ export function PayoutPinnedSummary({
   brPayload,
   ngnPayload,
   cadPayload,
+  kePayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
@@ -65,6 +69,8 @@ export function PayoutPinnedSummary({
                 : cadPayload.rail === 'interac_email'
                   ? cadPayload.interac.name.trim() || cadPayload.interac.email.trim() || '—'
                   : cadPayload.bill.billerName.trim() || '—'
+              : payoutRail === 'kes'
+                ? kePayload.accountName.trim() || '—'
               : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
                 '—'
 
@@ -83,7 +89,9 @@ export function PayoutPinnedSummary({
             ? ngnPayload.amount
             : payoutRail === 'cad'
               ? cadPayload.amount
-              : payload.amount
+              : payoutRail === 'kes'
+                ? kePayload.amount
+                : payload.amount
 
   return (
     <aside data-payout-pinned className="payout-summary">
@@ -120,6 +128,8 @@ export function PayoutPinnedSummary({
                   ? `Payout amount (${NIGERIA_PAYOUT_CURRENCY})`
                   : payoutRail === 'cad'
                     ? `Payout amount (${CANADA_PAYOUT_CURRENCY})`
+                    : payoutRail === 'kes'
+                      ? `Payout amount (${KENYA_PAYOUT_CURRENCY})`
                     : 'Amount'}
         </p>
         <p
@@ -155,6 +165,10 @@ export function PayoutPinnedSummary({
                 ? 'Canada Interac email'
                 : 'Canada bill pay'}
           </p>
+        ) : payoutRail === 'kes' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            Kenya M-Pesa payout
+          </p>
         ) : null}
       </div>
 
@@ -188,6 +202,18 @@ export function PayoutPinnedSummary({
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
                 {ngnPayload.bankName || ngnPayload.bankCode || '—'}
+              </p>
+            </div>
+          ) : payoutRail === 'kes' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">
+                {kePayload.accountName || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs">
+                {kePayload.accountNumber || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                M-Pesa
               </p>
             </div>
           ) : payoutRail === 'cad' ? (
@@ -256,6 +282,8 @@ export function PayoutPinnedSummary({
                   ? 'Verified recipient'
                   : payoutRail === 'cad'
                     ? 'Recipient'
+                    : payoutRail === 'kes'
+                      ? 'Recipient'
                     : 'Sender'}
         </p>
         {hasSenderDetails ? (
@@ -292,6 +320,13 @@ export function PayoutPinnedSummary({
                   : cadPayload.rail === 'interac_email'
                     ? 'Interac email recipient'
                     : 'Canadian biller'}
+              </p>
+            </div>
+          ) : payoutRail === 'kes' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                M-Pesa recipient
               </p>
             </div>
           ) : payoutRail === 'pix' ? (

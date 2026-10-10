@@ -22,6 +22,7 @@ import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../../services/marketSchemas.ts'
 import { CANADA_MARKET_SUMMARY } from '../../utils/canadaMarket.ts'
+import { KENYA_MARKET_SUMMARY } from '../../utils/kenyaMarket.ts'
 import { NIGERIA_MARKET_SUMMARY } from '../../utils/nigeriaMarket.ts'
 import { ServicesBoardCard } from './ServicesBoardCard.tsx'
 
@@ -71,6 +72,10 @@ function MarketSettingsRow({
           ) : market.market === 'canada' ? (
             <p className="settings-card-desc mt-1">
               {CANADA_MARKET_SUMMARY}
+            </p>
+          ) : market.market === 'kenya' ? (
+            <p className="settings-card-desc mt-1">
+              {KENYA_MARKET_SUMMARY}
             </p>
           ) : (
             <p className="settings-card-desc mt-1">

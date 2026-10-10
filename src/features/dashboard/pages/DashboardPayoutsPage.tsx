@@ -4,6 +4,7 @@ import { BrPixPayoutSuccessView } from '../components/payouts/BrPixPayoutSuccess
 import { CpgPayoutSuccessView } from '../components/payouts/CpgPayoutSuccessView.tsx'
 import { EurPayoutSuccessView } from '../components/payouts/EurPayoutSuccessView.tsx'
 import { CadPayoutSuccessView } from '../components/payouts/CadPayoutSuccessView.tsx'
+import { KesPayoutSuccessView } from '../components/payouts/KesPayoutSuccessView.tsx'
 import { NgnPayoutSuccessView } from '../components/payouts/NgnPayoutSuccessView.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
 import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
@@ -19,6 +20,7 @@ import {
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
 import { CANADA_LIVE_ONLY_COPY } from '../utils/canadaMarket.ts'
+import { KENYA_LIVE_ONLY_COPY } from '../utils/kenyaMarket.ts'
 import { NIGERIA_LIVE_ONLY_COPY } from '../utils/nigeriaMarket.ts'
 
 export function DashboardPayoutsPage() {
@@ -73,6 +75,15 @@ export function DashboardPayoutsPage() {
             createdPayout={flow.createdCadPayout}
             polledPayout={flow.cadPayoutStatusQuery.data}
             isPolling={flow.cadPayoutStatusQuery.isFetching}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.payoutRail === 'kes' && flow.createdKePayout ? (
+          <KesPayoutSuccessView
+            environment={flow.portalEnvironment}
+            kePayload={flow.kePayload}
+            createdPayout={flow.createdKePayout}
+            polledPayout={flow.kePayoutStatusQuery.data}
+            isPolling={flow.kePayoutStatusQuery.isFetching}
             onCreateAnother={flow.handleResetFlow}
           />
         ) : flow.payoutRail === 'cpg' && flow.createdCpgPayout ? (
@@ -147,7 +158,11 @@ export function DashboardPayoutsPage() {
                                 ? flow.portalEnvironment !== 'live'
                                   ? CANADA_LIVE_ONLY_COPY
                                   : 'Canada market access must be approved before CAD payouts are available.'
-                                : 'Payouts are available for BRL (Brazil PIX), NGN (Nigeria), CAD (Canada), USDT (India), and USDC (Europe) wallets only.'}
+                                : flow.payoutRail === 'kes' && !flow.marketsQuery.isPending
+                                  ? flow.portalEnvironment !== 'live'
+                                    ? KENYA_LIVE_ONLY_COPY
+                                    : 'Kenya market access must be approved before KES payouts are available.'
+                                : 'Payouts are available for BRL, NGN, CAD, KES, USDT, and USDC wallets only.'}
                     </p>
                   ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
@@ -169,6 +184,8 @@ export function DashboardPayoutsPage() {
                   setNgnPayload={flow.setNgnPayload}
                   cadPayload={flow.cadPayload}
                   setCadPayload={flow.setCadPayload}
+                  kePayload={flow.kePayload}
+                  setKePayload={flow.setKePayload}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
@@ -214,6 +231,7 @@ export function DashboardPayoutsPage() {
               brPayload={flow.brPayload}
               ngnPayload={flow.ngnPayload}
               cadPayload={flow.cadPayload}
+              kePayload={flow.kePayload}
               formattedPreviewAmount={flow.formattedPreviewAmount}
               hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
               hasSenderDetails={flow.hasSenderDetails}
@@ -241,6 +259,8 @@ export function DashboardPayoutsPage() {
                   ? 'You are about to send a real NGN bank transfer. NGN will be debited from your wallet and bank transfers cannot be reversed.'
                   : flow.payoutRail === 'cad'
                     ? 'You are about to send a real CAD payout. CAD will be debited from your wallet and transfers cannot be reversed.'
+                    : flow.payoutRail === 'kes'
+                      ? 'You are about to send a real KES M-Pesa payout. KES will be debited from your wallet and transfers cannot be reversed.'
                     : 'You are about to submit a real payout in the live environment. This may move real funds.'
         }
         maxWidthClassName="max-w-md"

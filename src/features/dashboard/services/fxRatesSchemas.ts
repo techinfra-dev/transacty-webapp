@@ -26,5 +26,6 @@ export const FALLBACK_USD_RATES: Record<string, number> = {
   INR: 95.4,
   NGN: 1550,
   CAD: 1.37,
+  KES: 129,
   GBP: 0.74,
 }

@@ -11,6 +11,7 @@ export const MARKET_DISPLAY_NAMES: Record<string, string> = {
   brazil: 'Brazil',
   nigeria: 'Nigeria',
   canada: 'Canada',
+  kenya: 'Kenya',
   pyusd: 'PYUSD',
 }
 
@@ -22,6 +23,7 @@ export const MARKET_AVATAR_CODES: Record<string, string> = {
   brazil: 'BR',
   nigeria: 'NG',
   canada: 'CA',
+  kenya: 'KE',
   pyusd: 'PY',
 }
 
@@ -33,6 +35,7 @@ export const MARKET_RAIL_SUMMARIES: Record<string, string> = {
   brazil: 'Pix',
   nigeria: 'Virtual account · Bank payout',
   canada: 'Bank / Interac / bill payout',
+  kenya: 'M-Pesa collect · M-Pesa payout',
   pyusd: 'Stablecoin settlement · PYUSD → PYUSD USDC',
 }
 
@@ -41,7 +44,7 @@ export const MARKET_RAIL_SUMMARIES: Record<string, string> = {
  * inactive pocket in the test catalog — that means "switch to live", not
  * "not approved".
  */
-export const LIVE_ONLY_MARKETS = new Set<string>(['nigeria', 'canada'])
+export const LIVE_ONLY_MARKETS = new Set<string>(['nigeria', 'canada', 'kenya'])
 
 export function normalizeMarketKey(market: string | null | undefined) {
   return (market ?? '').trim().toLowerCase()

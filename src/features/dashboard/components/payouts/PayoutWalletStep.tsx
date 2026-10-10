@@ -10,6 +10,7 @@ import {
   EUR_PAYOUT_SETTLEMENT_CURRENCY,
   INDIA_PAYOUT_SETTLEMENT_CURRENCY,
   CANADA_PAYOUT_CURRENCY,
+  KENYA_PAYOUT_CURRENCY,
   NIGERIA_PAYOUT_CURRENCY,
   getPayoutRailForWallet,
   isPayoutSupportedWallet,
@@ -121,6 +122,8 @@ export function PayoutWalletStep({
                           ? `${NIGERIA_PAYOUT_CURRENCY} wallet · bank transfer payout`
                           : payoutRail === 'cad'
                             ? `${CANADA_PAYOUT_CURRENCY} wallet · bank / Interac / bill payout`
+                            : payoutRail === 'kes'
+                              ? `${KENYA_PAYOUT_CURRENCY} wallet · M-Pesa payout`
                             : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>

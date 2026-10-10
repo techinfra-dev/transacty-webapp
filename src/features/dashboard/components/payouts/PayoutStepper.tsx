@@ -13,7 +13,10 @@ function getStepLabel(
 ) {
   if (
     item.id === 4 &&
-    (payoutRail === 'ngn' || payoutRail === 'cpg' || payoutRail === 'cad')
+    (payoutRail === 'ngn' ||
+      payoutRail === 'cpg' ||
+      payoutRail === 'cad' ||
+      payoutRail === 'kes')
   ) {
     return 'Review'
   }

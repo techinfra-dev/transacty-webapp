@@ -24,6 +24,10 @@ import {
   useCadPayoutQuery,
 } from './useCadPayoutMutations.ts'
 import {
+  useCreateKePayoutMutation,
+  useKePayoutQuery,
+} from './useKePayoutMutations.ts'
+import {
   createPayoutPayloadSchema,
   type BeneficiaryAccountInfo,
   type CardHolderInfo,
@@ -58,6 +62,11 @@ import {
   type CadPayoutInstance,
 } from '../services/cadPayoutSchemas.ts'
 import {
+  createKePayoutPayloadSchema,
+  type KePayoutFormPayload,
+  type KePayoutInstance,
+} from '../services/kePayoutSchemas.ts'
+import {
   NIGERIA_LIVE_ONLY_COPY,
   NIGERIA_LIVE_ONLY_ENVIRONMENT,
   isNigeriaWallet,
@@ -66,6 +75,12 @@ import {
   CANADA_LIVE_ONLY_COPY,
   CANADA_LIVE_ONLY_ENVIRONMENT,
 } from '../utils/canadaMarket.ts'
+import {
+  KENYA_LIVE_ONLY_COPY,
+  KENYA_LIVE_ONLY_ENVIRONMENT,
+  isValidKenyaMsisdn,
+  normalizeKenyaMsisdn,
+} from '../utils/kenyaMarket.ts'
 import { getNgnVirtualAccount } from '../services/ngnVirtualAccountService.ts'
 import { isNgnBvnRequired } from '../services/ngnVirtualAccountSchemas.ts'
 import { PayoutPinError } from '../utils/payoutPinErrors.ts'
@@ -87,11 +102,14 @@ import {
   initialCpgPayoutPayload,
   initialEurPayoutPayload,
   initialCadPayoutPayload,
+  initialKePayoutPayload,
   initialNgnPayoutPayload,
   initialPayoutPayload,
   isPayoutSupportedWallet,
   minimumCadPayoutAmount,
   maximumCadPayoutAmount,
+  minimumKesPayoutAmount,
+  maximumKesPayoutAmount,
   minimumCpgPayoutAmount,
   minimumEurPayoutAmount,
   minimumNgnPayoutAmount,
@@ -124,6 +142,8 @@ export function usePayoutFlow() {
     useState<NgnPayoutInstance | null>(null)
   const [createdCadPayout, setCreatedCadPayout] =
     useState<CadPayoutInstance | null>(null)
+  const [createdKePayout, setCreatedKePayout] =
+    useState<KePayoutInstance | null>(null)
   const [queuedApproval, setQueuedApproval] =
     useState<PayoutQueuedApproval | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
@@ -138,6 +158,9 @@ export function usePayoutFlow() {
   const [cadPayload, setCadPayload] = useState<CadPayoutFormPayload>(
     initialCadPayoutPayload,
   )
+  const [kePayload, setKePayload] = useState<KePayoutFormPayload>(
+    initialKePayoutPayload,
+  )
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
 
   const createPayoutMutation = useCreatePayoutMutation()
@@ -146,6 +169,7 @@ export function usePayoutFlow() {
   const createBrPayoutMutation = useCreateBrPayoutMutation()
   const createNgnPayoutMutation = useCreateNgnPayoutMutation()
   const createCadPayoutMutation = useCreateCadPayoutMutation()
+  const createKePayoutMutation = useCreateKePayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
   const marketsQuery = useMarketsQuery(true)
@@ -217,6 +241,15 @@ export function usePayoutFlow() {
     [marketsQuery.data],
   )
 
+  const isKenyaMarketApproved = useMemo(
+    () =>
+      marketsQuery.data?.some(
+        (market) =>
+          market.market === 'kenya' && market.entitlementStatus === 'approved',
+      ) ?? false,
+    [marketsQuery.data],
+  )
+
   const walletBalance = useMemo(() => {
     if (!selectedWallet) {
       return null
@@ -240,7 +273,9 @@ export function usePayoutFlow() {
             ? Math.max(minimumNgnPayoutAmount, payoutLimits?.min ?? 0)
             : payoutRail === 'cad'
               ? Math.max(minimumCadPayoutAmount, payoutLimits?.min ?? 0)
-              : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
+              : payoutRail === 'kes'
+                ? Math.max(minimumKesPayoutAmount, payoutLimits?.min ?? 0)
+                : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
 
   const effectiveMaximumAmount = useMemo(() => {
     if (payoutRail === 'eur') {
@@ -259,6 +294,9 @@ export function usePayoutFlow() {
     if (payoutRail === 'cad') {
       limits.push(maximumCadPayoutAmount)
     }
+    if (payoutRail === 'kes') {
+      limits.push(maximumKesPayoutAmount)
+    }
     if (walletBalance !== null) {
       limits.push(walletBalance)
     }
@@ -276,7 +314,9 @@ export function usePayoutFlow() {
             ? ngnPayload.amount
             : payoutRail === 'cad'
               ? cadPayload.amount
-              : payload.amount
+              : payoutRail === 'kes'
+                ? kePayload.amount
+                : payload.amount
 
   const formattedPreviewAmount = useMemo(
     () =>
@@ -299,6 +339,7 @@ export function usePayoutFlow() {
     createdCpgPayout?.transactionId ||
     createdNgnPayout?.transactionId ||
     createdCadPayout?.transactionId ||
+    createdKePayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
     createdPayout?.id
@@ -323,6 +364,11 @@ export function usePayoutFlow() {
     step === 5 && payoutRail === 'cad',
   )
 
+  const kePayoutStatusQuery = useKePayoutQuery(
+    createdKePayout?.transactionId,
+    step === 5 && payoutRail === 'kes',
+  )
+
   const hasBeneficiaryDetails =
     payoutRail === 'eur'
       ? eurPayload.iban.trim().length > 0
@@ -344,6 +390,9 @@ export function usePayoutFlow() {
                     cadPayload.interac.name.trim().length > 0
                   : cadPayload.bill.billerId.trim().length > 0 ||
                     cadPayload.bill.accountNumber.trim().length > 0
+              : payoutRail === 'kes'
+                ? kePayload.accountNumber.trim().length > 0 ||
+                  kePayload.accountName.trim().length > 0
               : payload.benificiaryAccountInfo.number.trim().length > 0 ||
                 payload.benificiaryAccountInfo.holderName.trim().length > 0
 
@@ -370,6 +419,11 @@ export function usePayoutFlow() {
                     cadPayload.interac.name.trim().length > 0
                   : cadPayload.bill.billerId.trim().length > 0 &&
                     cadPayload.bill.accountNumber.trim().length > 0
+              : payoutRail === 'kes'
+                ? kePayload.accountName.trim().length > 0 &&
+                  isValidKenyaMsisdn(kePayload.accountNumber) &&
+                  normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
+                    normalizeKenyaMsisdn(kePayload.accountNumber)
               : payload.cardHolderInfo.firstName.trim().length > 0 ||
                 payload.cardHolderInfo.lastName.trim().length > 0
 
@@ -454,7 +508,7 @@ export function usePayoutFlow() {
       return BANGLADESH_RAIL_PAUSE_COPY
     }
     if (!isPayoutSupportedWallet(wallet)) {
-      return 'Payouts are available for BRL (Brazil PIX), NGN (Nigeria), CAD (Canada), USDT (India), and USDC (Europe) wallets only.'
+      return 'Payouts are available for BRL, NGN, CAD, KES, USDT, and USDC wallets only.'
     }
     if (wallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
@@ -482,6 +536,14 @@ export function usePayoutFlow() {
       }
       if (portalEnvironment !== CANADA_LIVE_ONLY_ENVIRONMENT) {
         return CANADA_LIVE_ONLY_COPY
+      }
+    }
+    if (getPayoutRailForWallet(wallet) === 'kes') {
+      if (!isKenyaMarketApproved) {
+        return 'Kenya market access must be approved before sending KES payouts.'
+      }
+      if (portalEnvironment !== KENYA_LIVE_ONLY_ENVIRONMENT) {
+        return KENYA_LIVE_ONLY_COPY
       }
     }
     if (
@@ -571,6 +633,22 @@ export function usePayoutFlow() {
       return null
     }
 
+    if (payoutRail === 'kes') {
+      if (!kePayload.accountName.trim()) {
+        return 'Enter the recipient name.'
+      }
+      if (!isValidKenyaMsisdn(kePayload.accountNumber)) {
+        return 'Enter a valid Kenyan M-Pesa number (2547… or 07…).'
+      }
+      if (
+        normalizeKenyaMsisdn(kePayload.confirmAccountNumber) !==
+        normalizeKenyaMsisdn(kePayload.accountNumber)
+      ) {
+        return 'M-Pesa number and confirmation do not match.'
+      }
+      return null
+    }
+
     if (payoutRail === 'cad') {
       if (cadPayload.rail === 'bank') {
         if (!/^\d{3}$/.test(cadPayload.bank.institutionNumber.trim())) {
@@ -650,7 +728,7 @@ export function usePayoutFlow() {
     }
 
     // Nigeria and Canada step 4 is a review of the recipient — no extra fields.
-    if (payoutRail === 'ngn' || payoutRail === 'cad') {
+    if (payoutRail === 'ngn' || payoutRail === 'cad' || payoutRail === 'kes') {
       return validateBeneficiaryStep()
     }
 
@@ -894,6 +972,39 @@ export function usePayoutFlow() {
       return
     }
 
+    if (payoutRail === 'kes') {
+      const parsedPayload = createKePayoutPayloadSchema.safeParse({
+        environment: KENYA_LIVE_ONLY_ENVIRONMENT,
+        amount: kePayload.amount.trim(),
+        accountNumber: kePayload.accountNumber.trim(),
+        accountName: kePayload.accountName.trim(),
+        confirmAccountNumber: kePayload.confirmAccountNumber.trim(),
+        description: kePayload.description.trim() || undefined,
+        merchantReference: kePayload.merchantReference.trim() || undefined,
+      })
+      if (!parsedPayload.success) {
+        setClientError(
+          parsedPayload.error.issues[0]?.message || 'Invalid KES payout request.',
+        )
+        return
+      }
+
+      try {
+        const response = await createKePayoutMutation.mutateAsync(parsedPayload.data)
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedKePayout(response.payout)
+        }
+        setStep(5)
+      } catch (error) {
+        if (error instanceof PayoutPinError) {
+          return
+        }
+      }
+      return
+    }
+
     if (payoutRail === 'cad') {
       const sharedCadFields = {
         environment: CANADA_LIVE_ONLY_ENVIRONMENT,
@@ -1087,7 +1198,10 @@ export function usePayoutFlow() {
           portalEnvironment === NIGERIA_LIVE_ONLY_ENVIRONMENT)) &&
       (getPayoutRailForWallet(selectedWallet) !== 'cad' ||
         (isCanadaMarketApproved &&
-          portalEnvironment === CANADA_LIVE_ONLY_ENVIRONMENT))
+          portalEnvironment === CANADA_LIVE_ONLY_ENVIRONMENT)) &&
+      (getPayoutRailForWallet(selectedWallet) !== 'kes' ||
+        (isKenyaMarketApproved &&
+          portalEnvironment === KENYA_LIVE_ONLY_ENVIRONMENT))
     : false
 
   const isAccountConfirmationMatched =
@@ -1095,6 +1209,11 @@ export function usePayoutFlow() {
       ? ngnPayload.confirmAccountNumber.trim().length > 0 &&
         ngnPayload.confirmAccountNumber.trim() ===
           ngnPayload.accountNumber.trim()
+      : payoutRail === 'kes'
+        ? kePayload.confirmAccountNumber.trim().length > 0 &&
+          isValidKenyaMsisdn(kePayload.accountNumber) &&
+          normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
+            normalizeKenyaMsisdn(kePayload.accountNumber)
       : payoutRail === 'pix'
         ? brPayload.confirmAccountNumber.trim().length > 0 &&
           brPayload.confirmAccountNumber.trim() ===
@@ -1111,7 +1230,8 @@ export function usePayoutFlow() {
     createCpgPayoutMutation.isPending ||
     createBrPayoutMutation.isPending ||
     createNgnPayoutMutation.isPending ||
-    createCadPayoutMutation.isPending
+    createCadPayoutMutation.isPending ||
+    createKePayoutMutation.isPending
 
   const mutationErrorMessage =
     payoutRail === 'eur'
@@ -1136,6 +1256,10 @@ export function usePayoutFlow() {
               ? createCadPayoutMutation.isError
                 ? createCadPayoutMutation.error.message
                 : undefined
+              : payoutRail === 'kes'
+                ? createKePayoutMutation.isError
+                  ? createKePayoutMutation.error.message
+                  : undefined
               : createPayoutMutation.isError
                 ? createPayoutMutation.error.message
                 : undefined
@@ -1151,6 +1275,7 @@ export function usePayoutFlow() {
     setCreatedBrPayout(null)
     setCreatedNgnPayout(null)
     setCreatedCadPayout(null)
+    setCreatedKePayout(null)
     setQueuedApproval(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
@@ -1159,6 +1284,7 @@ export function usePayoutFlow() {
     setCpgPayload(initialCpgPayoutPayload)
     setNgnPayload(initialNgnPayoutPayload)
     setCadPayload(initialCadPayoutPayload)
+    setKePayload(initialKePayoutPayload)
     setSelectedWalletId(
       wallets.find((wallet) => isPayoutSupportedWallet(wallet))?.id ??
         wallets[0]?.id ??
@@ -1179,6 +1305,7 @@ export function usePayoutFlow() {
     createdBrPayout,
     createdNgnPayout,
     createdCadPayout,
+    createdKePayout,
     queuedApproval,
     payload,
     setPayload,
@@ -1192,6 +1319,8 @@ export function usePayoutFlow() {
     setNgnPayload,
     cadPayload,
     setCadPayload,
+    kePayload,
+    setKePayload,
     payoutRail,
     displayCurrency,
     createPayoutMutation,
@@ -1200,11 +1329,13 @@ export function usePayoutFlow() {
     createBrPayoutMutation,
     createNgnPayoutMutation,
     createCadPayoutMutation,
+    createKePayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
     cpgPayoutStatusQuery,
     ngnPayoutStatusQuery,
     cadPayoutStatusQuery,
+    kePayoutStatusQuery,
     balanceQuery,
     marketsQuery,
     wallets,

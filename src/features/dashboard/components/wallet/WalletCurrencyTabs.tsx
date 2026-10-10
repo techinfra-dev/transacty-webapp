@@ -28,6 +28,25 @@ export function WalletCurrencyTabs({
       aria-label="Merchant wallets by currency"
     >
       <div className="dashboard-wallet-tabs-track">
+        {showAddWallet ? (
+          <button
+            type="button"
+            className="dashboard-wallet-tab dashboard-wallet-tab--add"
+            aria-label="Add wallet"
+            onClick={() => onAddWallet?.()}
+          >
+            <div className="dashboard-wallet-tab-shell">
+              <AddWalletFolderAvatar size="sm" />
+              <span className="dashboard-wallet-tab-code">Add</span>
+              <span className="dashboard-wallet-tab-name" aria-hidden>
+                New market pocket
+              </span>
+              <span className="dashboard-wallet-tab-balance dashboard-wallet-tab-balance--add">
+                Wallet
+              </span>
+            </div>
+          </button>
+        ) : null}
         {wallets.map((wallet) => {
           const isActive = wallet.id === activeWalletId
           const displayName = getWalletDisplayLabel(wallet)
@@ -72,26 +91,6 @@ export function WalletCurrencyTabs({
             </Link>
           )
         })}
-
-        {showAddWallet ? (
-          <button
-            type="button"
-            className="dashboard-wallet-tab dashboard-wallet-tab--add"
-            aria-label="Add wallet"
-            onClick={() => onAddWallet?.()}
-          >
-            <div className="dashboard-wallet-tab-shell">
-              <AddWalletFolderAvatar size="sm" />
-              <span className="dashboard-wallet-tab-code">Add</span>
-              <span className="dashboard-wallet-tab-name" aria-hidden>
-                New market pocket
-              </span>
-              <span className="dashboard-wallet-tab-balance dashboard-wallet-tab-balance--add">
-                Wallet
-              </span>
-            </div>
-          </button>
-        ) : null}
       </div>
     </div>
   )
