@@ -15,11 +15,13 @@ import type { PayoutCreateResult } from './payoutCreateResult.ts'
 import {
   cadBankVerificationSchema,
   cadBillerSchema,
+  cadInstitutionsResponseSchema,
   cadBillsSearchResponseSchema,
   cadPayoutInstanceSchema,
   createCadPayoutPayloadSchema,
   verifyCadBankPayloadSchema,
   type CadBiller,
+  type CadInstitution,
   type CadBankVerification,
   type CadPayoutInstance,
   type CreateCadPayoutPayload,
@@ -58,6 +60,19 @@ function getCadPayoutApiErrorMessage(error: unknown) {
     return error.message
   }
   return 'Unable to complete the CAD payout right now.'
+}
+
+export async function listCadInstitutions(): Promise<CadInstitution[]> {
+  try {
+    const response = await axiosInstance.get('me/cad/institutions', {
+      headers: getPortalAuthHeaders(),
+      params: { environment: CANADA_LIVE_ONLY_ENVIRONMENT },
+    })
+    const parsed = cadInstitutionsResponseSchema.parse(response.data)
+    return Array.isArray(parsed) ? parsed : parsed.items
+  } catch (error) {
+    throw new Error(getCadPayoutApiErrorMessage(error))
+  }
 }
 
 export async function verifyCadBank(

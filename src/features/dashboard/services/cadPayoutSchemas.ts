@@ -65,20 +65,53 @@ export const createCadPayoutPayloadSchema = z.discriminatedUnion('rail', [
 
 export const verifyCadBankPayloadSchema = z.object({
   environment: payoutEnvironmentSchema,
-  institutionNumber: z.string().trim().min(1),
-  transitNumber: z.string().trim().min(1),
-  accountNumber: z.string().trim().min(1),
-  accountName: z.string().trim().min(1),
+  institutionIdentifier: z.string().trim().min(1, 'Select a bank.'),
+  accountNumber: z.string().trim().min(1, 'Account number is required.'),
+  sortCode: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, 'Sort code is 5 digits.'),
 })
 
 export const cadBankVerificationSchema = z
   .object({
+    verified: z.boolean().optional(),
     accountName: z.string().nullable().optional(),
     valid: z.boolean().optional(),
     matched: z.boolean().optional(),
     message: z.string().nullable().optional(),
   })
   .passthrough()
+
+export const cadInstitutionSchema = z
+  .object({
+    identifier: z.string().min(1).optional(),
+    id: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    institutionName: z.string().min(1).optional(),
+    institutionNumber: z.string().min(1).optional(),
+  })
+  .passthrough()
+  .transform((item) => {
+    const identifier = (item.identifier ?? item.id ?? '').trim()
+    const name =
+      item.name?.trim() ||
+      item.institutionName?.trim() ||
+      identifier
+    return {
+      ...item,
+      identifier,
+      name,
+    }
+  })
+  .refine((item) => item.identifier.length > 0, {
+    message: 'Bank identifier is required.',
+  })
+
+export const cadInstitutionsResponseSchema = z
+  .object({ items: z.array(cadInstitutionSchema) })
+  .passthrough()
+  .or(z.array(cadInstitutionSchema))
 
 export const cadBillerSchema = z
   .object({
@@ -123,6 +156,7 @@ export type CadBankBeneficiary = z.infer<typeof cadBankBeneficiarySchema>
 export type CreateCadPayoutPayload = z.infer<typeof createCadPayoutPayloadSchema>
 export type VerifyCadBankPayload = z.infer<typeof verifyCadBankPayloadSchema>
 export type CadBankVerification = z.infer<typeof cadBankVerificationSchema>
+export type CadInstitution = z.infer<typeof cadInstitutionSchema>
 export type CadBiller = z.infer<typeof cadBillerSchema>
 export type CadPayoutInstance = z.infer<typeof cadPayoutInstanceSchema>
 
@@ -132,6 +166,7 @@ export type CadPayoutFormPayload = {
   description: string
   rail: CadPayoutRail
   bank: {
+    institutionIdentifier: string
     institutionNumber: string
     transitNumber: string
     accountNumber: string

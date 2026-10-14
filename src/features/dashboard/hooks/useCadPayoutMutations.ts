@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createCadPayout,
   getCadPayout,
+  listCadInstitutions,
   searchCadBills,
   verifyCadBank,
 } from '../services/cadPayoutService.ts'
@@ -19,6 +20,15 @@ function invalidatePayoutQueries(queryClient: ReturnType<typeof useQueryClient>)
     queryClient.invalidateQueries({ queryKey: ['merchant-wallets'] }),
     queryClient.invalidateQueries({ queryKey: ['payout-approvals'] }),
   ])
+}
+
+export function useCadInstitutionsQuery(enabled = true) {
+  return useQuery({
+    queryKey: ['cad-institutions', CANADA_LIVE_ONLY_ENVIRONMENT],
+    queryFn: listCadInstitutions,
+    enabled,
+    staleTime: 60 * 60 * 1000,
+  })
 }
 
 export function useCadBillSearchQuery(query: string, enabled = true) {

@@ -651,6 +651,9 @@ export function usePayoutFlow() {
 
     if (payoutRail === 'cad') {
       if (cadPayload.rail === 'bank') {
+        if (!cadPayload.bank.institutionIdentifier.trim()) {
+          return 'Select the beneficiary bank.'
+        }
         if (!/^\d{3}$/.test(cadPayload.bank.institutionNumber.trim())) {
           return 'Institution number must be 3 digits.'
         }

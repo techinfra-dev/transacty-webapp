@@ -4,12 +4,26 @@ import { Input } from '../../../../components/ui/Input.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import {
   useCadBillSearchQuery,
+  useCadInstitutionsQuery,
   useVerifyCadBankMutation,
 } from '../../hooks/useCadPayoutMutations.ts'
 import type {
+  CadInstitution,
   CadPayoutFormPayload,
   CadPayoutRail,
 } from '../../services/cadPayoutSchemas.ts'
+
+function institutionNumberFor(institution: CadInstitution) {
+  const explicit = institution.institutionNumber?.trim() ?? ''
+  if (/^\d{3}$/.test(explicit)) {
+    return explicit
+  }
+  const identifier = institution.identifier.trim()
+  if (/^\d{1,3}$/.test(identifier)) {
+    return identifier.padStart(3, '0')
+  }
+  return ''
+}
 
 const railOptions: { label: string; value: CadPayoutRail }[] = [
   { label: 'Canadian bank account', value: 'bank' },
@@ -26,11 +40,26 @@ export function CadBeneficiaryFields({
   cadPayload,
   setCadPayload,
 }: CadBeneficiaryFieldsProps) {
+  const institutionsQuery = useCadInstitutionsQuery(cadPayload.rail === 'bank')
   const verifyMutation = useVerifyCadBankMutation()
   const [verifyError, setVerifyError] = useState<string | null>(null)
   const [verifyOk, setVerifyOk] = useState(false)
   const [billQuery, setBillQuery] = useState(cadPayload.bill.billerName)
   const billsQuery = useCadBillSearchQuery(billQuery, cadPayload.rail === 'bill')
+
+  const institutionOptions = useMemo(
+    () => [
+      {
+        label: institutionsQuery.isPending ? 'Loading banks…' : 'Select bank',
+        value: '',
+      },
+      ...(institutionsQuery.data ?? []).map((institution) => ({
+        label: institution.name,
+        value: institution.identifier,
+      })),
+    ],
+    [institutionsQuery.data, institutionsQuery.isPending],
+  )
 
   const billOptions = useMemo(
     () => [
@@ -48,10 +77,9 @@ export function CadBeneficiaryFields({
     setVerifyOk(false)
     try {
       const result = await verifyMutation.mutateAsync({
-        institutionNumber: cadPayload.bank.institutionNumber.trim(),
-        transitNumber: cadPayload.bank.transitNumber.trim(),
+        institutionIdentifier: cadPayload.bank.institutionIdentifier.trim(),
         accountNumber: cadPayload.bank.accountNumber.trim(),
-        accountName: cadPayload.bank.accountName.trim(),
+        sortCode: cadPayload.bank.transitNumber.trim(),
       })
       const accountName = result.accountName?.trim()
       if (accountName) {
@@ -60,7 +88,11 @@ export function CadBeneficiaryFields({
           bank: { ...previous.bank, accountName },
         }))
       }
-      if (result.valid === false || result.matched === false) {
+      if (
+        result.verified === false ||
+        result.valid === false ||
+        result.matched === false
+      ) {
         setVerifyError(
           result.message?.trim() ||
             'This account could not be confirmed. Check the details and try again.',
@@ -116,27 +148,65 @@ export function CadBeneficiaryFields({
 
       {cadPayload.rail === 'bank' ? (
         <>
-          <label className="payout-field">
-            <span className="payout-field-label">Institution number</span>
-            <Input
-              placeholder="001"
-              inputMode="numeric"
-              maxLength={3}
-              autoComplete="off"
-              value={cadPayload.bank.institutionNumber}
-              onChange={(event) =>
-                updateBank(
-                  'institutionNumber',
-                  event.target.value.replace(/\D/g, '').slice(0, 3),
+          <label className="payout-field sm:col-span-2">
+            <span className="payout-field-label">Bank</span>
+            <DropdownSelect
+              ariaLabel="Select Canadian bank"
+              options={institutionOptions}
+              value={cadPayload.bank.institutionIdentifier}
+              disabled={institutionsQuery.isPending}
+              searchable
+              searchPlaceholder="Search banks…"
+              onChange={(identifier) => {
+                const institution = (institutionsQuery.data ?? []).find(
+                  (item) => item.identifier === identifier,
                 )
-              }
-              className="payout-field-input font-[ui-monospace,monospace]"
+                setVerifyOk(false)
+                setVerifyError(null)
+                setCadPayload((previous) => ({
+                  ...previous,
+                  bank: {
+                    ...previous.bank,
+                    institutionIdentifier: identifier,
+                    institutionNumber: institution
+                      ? institutionNumberFor(institution)
+                      : '',
+                    accountName: '',
+                  },
+                }))
+              }}
+              className="payout-field-select w-full max-w-md"
             />
+            {institutionsQuery.isError ? (
+              <span className="payout-field-hint">
+                Unable to load banks. Refresh and try again.
+              </span>
+            ) : null}
           </label>
+          {cadPayload.bank.institutionIdentifier &&
+          !/^\d{3}$/.test(cadPayload.bank.institutionNumber) ? (
+            <label className="payout-field">
+              <span className="payout-field-label">Institution number</span>
+              <Input
+                placeholder="001"
+                inputMode="numeric"
+                maxLength={3}
+                autoComplete="off"
+                value={cadPayload.bank.institutionNumber}
+                onChange={(event) =>
+                  updateBank(
+                    'institutionNumber',
+                    event.target.value.replace(/\D/g, '').slice(0, 3),
+                  )
+                }
+                className="payout-field-input font-[ui-monospace,monospace]"
+              />
+            </label>
+          ) : null}
           <label className="payout-field">
-            <span className="payout-field-label">Transit number</span>
+            <span className="payout-field-label">Sort code</span>
             <Input
-              placeholder="12345"
+              placeholder="01102"
               inputMode="numeric"
               maxLength={5}
               autoComplete="off"
@@ -180,7 +250,12 @@ export function CadBeneficiaryFields({
             <button
               type="button"
               className="dash-btn-outline"
-              disabled={verifyMutation.isPending}
+              disabled={
+                verifyMutation.isPending ||
+                !cadPayload.bank.institutionIdentifier.trim() ||
+                !/^\d{5}$/.test(cadPayload.bank.transitNumber.trim()) ||
+                cadPayload.bank.accountNumber.trim().length < 5
+              }
               onClick={() => void handleVerifyBank()}
             >
               {verifyMutation.isPending ? 'Checking account…' : 'Verify account'}

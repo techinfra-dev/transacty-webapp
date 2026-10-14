@@ -202,6 +202,7 @@ export const initialCadPayoutPayload: CadPayoutFormPayload = {
   description: '',
   rail: 'bank',
   bank: {
+    institutionIdentifier: '',
     institutionNumber: '',
     transitNumber: '',
     accountNumber: '',
