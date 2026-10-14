@@ -186,6 +186,7 @@ export function DashboardPage() {
                     market={wallet.market}
                     region={wallet.region}
                     activationStatus={wallet.activationStatus}
+                    blockers={wallet.blockers}
                   />
                 )
               })}

@@ -26,6 +26,7 @@ interface DashboardWalletCardProps {
   market?: string | null
   region?: string | null
   activationStatus?: string | null
+  blockers?: { code?: string | null; message?: string | null }[] | null
 }
 
 function formatAmountOnly(value: number) {
@@ -97,13 +98,19 @@ export function DashboardWalletCard({
   market,
   region,
   activationStatus,
+  blockers,
 }: DashboardWalletCardProps) {
   const code = currency.trim().toUpperCase()
   const symbol = getCurrencySymbol(code)
   const currencyName = getCurrencyFullName(code)
   const walletTitle = displayLabel?.trim() || currencyName
   const badgeLabel = code
-  const isPaused = isBangladeshRailPausedForWallet({ currency, market, region })
+  const isPaused = isBangladeshRailPausedForWallet({
+    currency,
+    market,
+    region,
+    blockers,
+  })
   const isMuted =
     activationStatus === 'not_enabled' ||
     activationStatus === 'pending_kyb' ||

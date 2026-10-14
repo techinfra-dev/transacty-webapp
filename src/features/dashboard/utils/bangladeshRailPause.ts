@@ -1,5 +1,8 @@
-/** Temporary product pause — Bangladesh / BDT is offline. Flip to false to restore. */
-export const BANGLADESH_RAIL_PAUSED = true
+/**
+ * Local override only. Leave false so Bangladesh follows the balance/markets
+ * payload (`blockers` with `provider_unavailable`). Flip to true to force a pause.
+ */
+export const BANGLADESH_RAIL_PAUSED = false
 
 export const BANGLADESH_RAIL_PAUSE_COPY =
   'Bangladesh is temporarily unavailable.'
@@ -33,16 +36,29 @@ export function isBangladeshRailPausedForMarket(market: string | null | undefine
   return BANGLADESH_RAIL_PAUSED && isBangladeshMarket(market)
 }
 
+export function hasProviderUnavailableBlocker(
+  blockers: { code?: string | null }[] | null | undefined,
+) {
+  return (blockers ?? []).some((blocker) => blocker.code === 'provider_unavailable')
+}
+
 export function isBangladeshRailPausedForWallet(
   wallet:
     | {
         currency?: string | null
         market?: string | null
         region?: string | null
+        blockers?: { code?: string | null }[] | null
       }
     | null
     | undefined,
 ) {
-  return BANGLADESH_RAIL_PAUSED && isBangladeshWallet(wallet)
+  if (!isBangladeshWallet(wallet)) {
+    return false
+  }
+  if (BANGLADESH_RAIL_PAUSED) {
+    return true
+  }
+  return hasProviderUnavailableBlocker(wallet?.blockers)
 }
 

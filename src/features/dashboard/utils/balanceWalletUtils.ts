@@ -118,7 +118,7 @@ export function isWalletActivated(wallet: BalanceWalletItem) {
 export function isWalletUnavailableOrDown(
   wallet: Pick<
     BalanceWalletItem,
-    'currency' | 'market' | 'region' | 'status' | 'activationStatus'
+    'currency' | 'market' | 'region' | 'status' | 'activationStatus' | 'blockers'
   >,
 ) {
   if (isBangladeshRailPausedForWallet(wallet)) {
