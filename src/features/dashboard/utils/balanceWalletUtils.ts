@@ -4,8 +4,11 @@ import { getCurrencyFullName } from '../../../utils/currencyNames.ts'
 import { isBangladeshRailPausedForWallet } from './bangladeshRailPause.ts'
 import {
   MARKET_ORDER,
+  getMarketDisplayName,
   isLiveOnlyMarket,
+  normalizeMarketKey,
   sortMarkets,
+  stripMarketCurrencySuffix,
   uniqueInPreferredOrder,
 } from './marketDisplayUtils.ts'
 
@@ -89,19 +92,23 @@ export function getWalletDisplayLabel(
     'currency' | 'displayLabel' | 'regionLabel' | 'label' | 'market' | 'region'
   >,
 ) {
-  if (wallet.displayLabel?.trim()) {
-    return wallet.displayLabel.trim()
+  const marketKey = normalizeMarketKey(wallet.market ?? wallet.region)
+  if (marketKey) {
+    return getMarketDisplayName(marketKey)
   }
-  if (wallet.regionLabel?.trim()) {
-    return wallet.regionLabel.trim()
+
+  const apiLabel =
+    wallet.displayLabel?.trim() ||
+    wallet.regionLabel?.trim() ||
+    wallet.label?.trim() ||
+    ''
+  if (apiLabel) {
+    return stripMarketCurrencySuffix(apiLabel) || apiLabel
   }
-  if (wallet.label?.trim()) {
-    return wallet.label.trim()
-  }
+
   const code = wallet.currency.trim().toUpperCase()
-  const market = (wallet.market ?? wallet.region ?? '').trim().toLowerCase()
-  if (market === 'brazil' || code === 'BRL') {
-    return 'Brazil (PIX)'
+  if (code === 'BRL') {
+    return 'Brazil'
   }
   return getCurrencyFullName(wallet.currency)
 }

@@ -19,14 +19,11 @@ import {
   useUpsertKycBusinessMutation,
 } from '../hooks/useKycMutations.ts'
 import { useProfileQuery } from '../../dashboard/hooks/useProfileQuery.ts'
-import { useMarketsQuery } from '../../dashboard/hooks/useMarketsQuery.ts'
-import { getMarketDisplayName } from '../../dashboard/utils/marketDisplayUtils.ts'
 import { useIpCountryCodeQuery } from '../hooks/useIpCountryCodeQuery.ts'
 import {
   useKycDocumentsQuery,
   useKycPersonsQuery,
   useKycBusinessQuery,
-  useKycRequirementsQuery,
 } from '../hooks/useKycQueries.ts'
 import { uploadDocumentToSignedUrl } from '../services/kycService.ts'
 import type { KycDocumentListItem } from '../services/kycSchemas.ts'
@@ -43,6 +40,7 @@ import {
   splitContactPhone,
   writeKycBusinessDraft,
 } from '../utils/kycBusinessFormUtils.ts'
+import { formatKycPersonStatusLabel } from '../utils/kycPersonStatus.ts'
 import {
   KybIconArrowRight,
   KybIconBuilding,
@@ -96,8 +94,8 @@ const idTypeOptions = [
 
 const documentTypeOptions = [
   { label: 'Registration Certificate', value: 'registration_certificate' },
-  { label: 'Trade License', value: 'trade_license' },
-  { label: 'NID', value: 'nid' },
+  { label: 'Business License', value: 'trade_license' },
+  { label: 'National ID', value: 'nid' },
   { label: 'Passport', value: 'passport' },
 ]
 
@@ -256,7 +254,6 @@ export function KycActivationModal({
   const [selectedPhoneCode, setSelectedPhoneCode] = useState('+880')
   const [selectedDocumentFile, setSelectedDocumentFile] = useState<File | null>(null)
   const [isUploadingDocument, setIsUploadingDocument] = useState(false)
-  const [reviewDocumentNames, setReviewDocumentNames] = useState<string[]>([])
   const [documentPreviews, setDocumentPreviews] = useState<
     Record<string, { url: string; fileName: string }>
   >({})
@@ -297,7 +294,6 @@ export function KycActivationModal({
   const createDocumentUploadUrlMutation = useCreateKycDocumentUploadUrlMutation()
   const deleteDocumentMutation = useDeleteKycDocumentMutation()
   const submitKycMutation = useSubmitKycMutation()
-  const [selectedKycMarket, setSelectedKycMarket] = useState<string | null>(null)
   const [deletingDocumentId, setDeletingDocumentId] = useState<string | null>(null)
   const profileQuery = useProfileQuery(isOpen)
   const resolvedKycStatus = kycStatus ?? profileQuery.data?.kycStatus
@@ -308,8 +304,6 @@ export function KycActivationModal({
   const personsQuery = useKycPersonsQuery(isOpen)
   const documentsQuery = useKycDocumentsQuery(isOpen)
   const businessQuery = useKycBusinessQuery(isOpen)
-  const requirementsQuery = useKycRequirementsQuery(isOpen)
-  const marketsQuery = useMarketsQuery(isOpen)
   const ipCountryCodeQuery = useIpCountryCodeQuery(isOpen)
 
   useEffect(() => {
@@ -417,86 +411,6 @@ export function KycActivationModal({
     documentPreviewsRef.current = nextPreviews
     setDocumentPreviews(nextPreviews)
   }, [documentsQuery.data])
-
-  const requirementItems = requirementsQuery.data?.items ?? []
-  const selectedRequirement =
-    requirementItems.find((item) => item.market === selectedKycMarket) ??
-    requirementItems[0] ??
-    null
-
-  const marketDocumentTypeOptions = useMemo(() => {
-    const requiredTypes = selectedRequirement?.requiredDocumentTypes ?? []
-    if (requiredTypes.length === 0) {
-      return documentTypeOptions
-    }
-    return requiredTypes.map((value) => ({
-      label:
-        documentTypeOptions.find((option) => option.value === value)?.label ??
-        toTitleCaseFromSnake(value),
-      value,
-    }))
-  }, [selectedRequirement])
-
-  const marketPersonRoleOptions = useMemo(() => {
-    const requiredRoles = selectedRequirement?.requiredPersonRoles ?? []
-    if (requiredRoles.length === 0) {
-      return personRoleOptions
-    }
-    return requiredRoles.map((value) => ({
-      label:
-        personRoleOptions.find((option) => option.value === value)?.label ??
-        toTitleCaseFromSnake(value),
-      value,
-    }))
-  }, [selectedRequirement])
-
-  useEffect(() => {
-    if (requirementItems.length === 0) {
-      return
-    }
-    if (
-      selectedKycMarket &&
-      requirementItems.some((item) => item.market === selectedKycMarket)
-    ) {
-      return
-    }
-    const approvedMarket = (marketsQuery.data ?? []).find(
-      (market) =>
-        market.entitlementStatus === 'approved' &&
-        requirementItems.some((item) => item.market === market.market),
-    )?.market
-    setSelectedKycMarket(approvedMarket ?? requirementItems[0]!.market)
-  }, [marketsQuery.data, requirementItems, selectedKycMarket])
-
-  useEffect(() => {
-    if (marketDocumentTypeOptions.length === 0) {
-      return
-    }
-    if (
-      !marketDocumentTypeOptions.some(
-        (option) => option.value === documentForm.documentType,
-      )
-    ) {
-      setDocumentForm((previous) => ({
-        ...previous,
-        documentType: marketDocumentTypeOptions[0]!.value,
-      }))
-    }
-  }, [documentForm.documentType, marketDocumentTypeOptions])
-
-  useEffect(() => {
-    if (marketPersonRoleOptions.length === 0) {
-      return
-    }
-    if (
-      !marketPersonRoleOptions.some((option) => option.value === personForm.role)
-    ) {
-      setPersonForm((previous) => ({
-        ...previous,
-        role: marketPersonRoleOptions[0]!.value,
-      }))
-    }
-  }, [marketPersonRoleOptions, personForm.role])
 
   useEffect(() => {
     if (!isOpen) {
@@ -609,8 +523,8 @@ export function KycActivationModal({
     activeStep === 'documents'
   const canAccessSubmit =
     documentCount > 0 ||
-    merchantProgress?.lastSuccessfulStep === 'documents' ||
     merchantProgress?.lastSuccessfulStep === 'submit' ||
+    merchantProgress?.isSubmitted === true ||
     activeStep === 'submit'
 
   const availableSteps = useMemo(() => {
@@ -825,7 +739,6 @@ export function KycActivationModal({
         pendingDocumentPreviewRef.current = null
         throw error
       }
-      setReviewDocumentNames((previous) => [...previous, selectedDocumentFile.name])
       markStepSuccessful(merchantId, 'documents')
       setDocumentForm((previous) => ({
         ...previous,
@@ -891,6 +804,26 @@ export function KycActivationModal({
     setDeletingDocumentId(document.id)
     try {
       await deleteDocumentMutation.mutateAsync(document.id)
+      const previewKeys = [
+        document.id,
+        document.fileReference,
+        document.fileName,
+        document.filename,
+      ].filter((key): key is string => Boolean(key?.trim()))
+      setDocumentPreviews((previous) => {
+        const next = { ...previous }
+        const revoked = new Set<string>()
+        for (const key of previewKeys) {
+          const preview = next[key]
+          if (preview && !revoked.has(preview.url)) {
+            URL.revokeObjectURL(preview.url)
+            revoked.add(preview.url)
+          }
+          delete next[key]
+        }
+        documentPreviewsRef.current = next
+        return next
+      })
       if (documentViewer) {
         setDocumentViewer(null)
       }
@@ -933,12 +866,15 @@ export function KycActivationModal({
   const reviewPersonNames = (personsQuery.data?.items ?? []).map(
     (person) => person.fullName,
   )
-  const reviewDocumentLabels =
-    reviewDocumentNames.length > 0
-      ? reviewDocumentNames
-      : (documentsQuery.data?.items ?? []).map((document) =>
-          toTitleCaseFromSnake(document.documentType),
-        )
+  const reviewDocumentLabels = (documentsQuery.data?.items ?? []).map(
+    (document) => {
+      const preview = findLocalDocumentPreview(document)
+      return (
+        preview?.fileName?.trim() ||
+        toTitleCaseFromSnake(document.documentType)
+      )
+    },
+  )
 
   function renderPrimaryCta() {
     if (activeStep === 'business') {
@@ -1133,65 +1069,6 @@ export function KycActivationModal({
               })}
             </div>
 
-            {requirementItems.length > 0 ? (
-              <section className="kyb-market-guide" aria-label="KYC market requirements">
-                <div className="kyb-market-tabs" role="tablist">
-                  {requirementItems.map((item) => (
-                    <button
-                      key={item.market}
-                      type="button"
-                      role="tab"
-                      aria-selected={item.market === selectedRequirement?.market}
-                      className={`kyb-market-tab${
-                        item.market === selectedRequirement?.market
-                          ? ' kyb-market-tab--active'
-                          : ''
-                      }`}
-                      onClick={() => setSelectedKycMarket(item.market)}
-                    >
-                      {getMarketDisplayName(item.market)}
-                    </button>
-                  ))}
-                </div>
-                {selectedRequirement ? (
-                  <div className="kyb-market-guide-body">
-                    <p className="kyb-market-guide-title">
-                      {getMarketDisplayName(selectedRequirement.market)} checklist
-                    </p>
-                    <ul className="kyb-market-guide-list">
-                      <li>
-                        Business profile:{' '}
-                        {selectedRequirement.requiresBusinessProfile
-                          ? 'required'
-                          : 'not required'}
-                      </li>
-                      {selectedRequirement.requiredPersonRoles.length > 0 ? (
-                        <li>
-                          People:{' '}
-                          {selectedRequirement.requiredPersonRoles
-                            .map((role) => toTitleCaseFromSnake(role))
-                            .join(', ')}
-                        </li>
-                      ) : null}
-                      {selectedRequirement.requiredDocumentTypes.length > 0 ? (
-                        <li>
-                          Documents:{' '}
-                          {selectedRequirement.requiredDocumentTypes
-                            .map((type) => toTitleCaseFromSnake(type))
-                            .join(', ')}
-                        </li>
-                      ) : null}
-                    </ul>
-                    {selectedRequirement.notes ? (
-                      <p className="kyb-market-guide-notes">
-                        {selectedRequirement.notes}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-              </section>
-            ) : null}
-
             {activeStep === 'business' ? (
               <>
                 {businessForm.legalName.trim() ? (
@@ -1232,7 +1109,7 @@ export function KycActivationModal({
                       />
                       <p className="kyb-field-hint">
                         <KybIconInfo />
-                        Sets which documents and which people we need from you.
+                        Choose the structure that matches your legal registration.
                       </p>
                     </label>
                     <label className="kyb-field">
@@ -1496,8 +1373,8 @@ export function KycActivationModal({
                         Directors and beneficial owners
                       </h3>
                       <p className="kyb-section-desc">
-                        People already saved for this merchant are listed below.
-                        Add another person if needed, or continue to documents.
+                        Previously added people are listed below. You can add
+                        another person or continue to the Documents section.
                       </p>
                     </div>
                   </div>
@@ -1508,7 +1385,7 @@ export function KycActivationModal({
                         <span className="kyb-req">*</span>
                       </span>
                       <DropdownSelect
-                        options={marketPersonRoleOptions}
+                        options={personRoleOptions}
                         value={personForm.role}
                         onChange={(nextValue) =>
                           setPersonForm((previous) => ({
@@ -1725,7 +1602,12 @@ export function KycActivationModal({
                       >
                         <p>{person.fullName}</p>
                         <p>{person.role}</p>
-                        <p>{person.status}</p>
+                        <p>
+                          {formatKycPersonStatusLabel(
+                            person.status,
+                            resolvedKycStatus,
+                          )}
+                        </p>
                       </div>
                     ))}
                     {!personsQuery.isPending && personCount === 0 ? (
@@ -1754,13 +1636,13 @@ export function KycActivationModal({
                     </div>
                   </div>
                   <div className="kyb-field-grid">
-                    <label className="kyb-field">
+                    <label className="kyb-field order-1">
                       <span className="kyb-field-label">
                         Document type
                         <span className="kyb-req">*</span>
                       </span>
                       <DropdownSelect
-                        options={marketDocumentTypeOptions}
+                        options={documentTypeOptions}
                         value={documentForm.documentType}
                         onChange={(nextValue) =>
                           setDocumentForm((previous) => ({
@@ -1772,10 +1654,8 @@ export function KycActivationModal({
                         className="w-full"
                       />
                     </label>
-                    <label className="kyb-field">
-                      <span className="kyb-field-label">
-                        Document number optional
-                      </span>
+                    <label className="kyb-field order-2">
+                      <span className="kyb-field-label">Document number</span>
                       <Input
                         value={documentForm.documentNumber}
                         onChange={(event) =>
@@ -1786,7 +1666,7 @@ export function KycActivationModal({
                         }
                       />
                     </label>
-                    <label className="kyb-field kyb-field--full">
+                    <label className="kyb-field kyb-field--full order-3">
                       <span className="kyb-field-label">
                         Upload file
                         <span className="kyb-req">*</span>
@@ -1807,19 +1687,27 @@ export function KycActivationModal({
                         helperText={`Accepted formats: ${DOCUMENT_UPLOAD_POLICY.label}`}
                       />
                     </label>
-                    <label className="kyb-field kyb-field--full">
+                    <label className="kyb-field kyb-field--full order-4">
                       <span className="kyb-field-label">
-                        Person link optional
+                        Personal link optional
                       </span>
-                      <Input
-                        placeholder="merchantPersonId"
+                      <DropdownSelect
+                        options={[
+                          { label: 'No person linked', value: '' },
+                          ...(personsQuery.data?.items ?? []).map((person) => ({
+                            label: `${person.fullName} (${toTitleCaseFromSnake(person.role)})`,
+                            value: person.id,
+                          })),
+                        ]}
                         value={documentForm.merchantPersonId}
-                        onChange={(event) =>
+                        onChange={(nextValue) =>
                           setDocumentForm((previous) => ({
                             ...previous,
-                            merchantPersonId: event.target.value,
+                            merchantPersonId: nextValue,
                           }))
                         }
+                        ariaLabel="Personal link optional"
+                        className="w-full"
                       />
                     </label>
                   </div>

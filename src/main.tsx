@@ -10,12 +10,8 @@ import { router } from './router.ts'
 applyColorScheme(readStoredColorScheme())
 
 registerPortalSecurityInterceptor({
-  onMfaSetupRequired: () => {
-    void router.navigate({
-      to: '/dashboard/settings',
-      search: { tab: 'security' },
-    })
-  },
+  // Keep MFA enrollment optional in the UI — do not trap navigation on Security.
+  onMfaSetupRequired: () => {},
   onPayoutPinSetupRequired: (adminRequired) => {
     const pathname = router.state.location.pathname
     if (

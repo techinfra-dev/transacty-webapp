@@ -29,6 +29,15 @@ export function PayoutPinSettingsCard() {
   const configured = statusQuery.data?.configured ?? false
   const lockRemaining = getPayoutPinLockRemainingMs(statusQuery.data?.lockedUntil)
   const isLocked = lockRemaining > 0
+  const pinsMatch =
+    isValidPayoutPin(newPin) &&
+    isValidPayoutPin(confirmPin) &&
+    newPin === confirmPin
+  const canChangePin =
+    isValidPayoutPin(currentPin) &&
+    pinsMatch &&
+    !changeMutation.isPending &&
+    !isLocked
 
   const handleSubmit: NonNullable<ComponentProps<'form'>['onSubmit']> = async (
     event,
@@ -37,8 +46,15 @@ export function PayoutPinSettingsCard() {
     setError(null)
     setSuccess(null)
 
-    if (!isValidPayoutPin(currentPin) || !isValidPayoutPin(newPin)) {
-      setError('PIN must be 4 digits.')
+    if (!canChangePin) {
+      if (!isValidPayoutPin(currentPin) || !isValidPayoutPin(newPin) || !isValidPayoutPin(confirmPin)) {
+        setError('PIN must be 4 digits.')
+        return
+      }
+      if (newPin !== confirmPin) {
+        setError('The new PINs do not match.')
+        return
+      }
       return
     }
 
@@ -126,7 +142,20 @@ export function PayoutPinSettingsCard() {
             value={confirmPin}
             onChange={setConfirmPin}
             disabled={changeMutation.isPending || isLocked}
+            hasError={
+              isValidPayoutPin(newPin) &&
+              isValidPayoutPin(confirmPin) &&
+              newPin !== confirmPin
+            }
           />
+
+          {isValidPayoutPin(newPin) &&
+          isValidPayoutPin(confirmPin) &&
+          newPin !== confirmPin ? (
+            <p className="settings-error settings-error--inline">
+              The new PINs do not match.
+            </p>
+          ) : null}
 
           {error ? (
             <p className="settings-error settings-error--inline">{error}</p>
@@ -139,7 +168,7 @@ export function PayoutPinSettingsCard() {
             <Button
               type="submit"
               className="px-4"
-              disabled={changeMutation.isPending || isLocked}
+              disabled={!canChangePin}
             >
               {changeMutation.isPending ? 'Updating…' : 'Change PIN'}
             </Button>

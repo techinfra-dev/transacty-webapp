@@ -5,7 +5,6 @@ import {
 } from '../features/auth/services/authSession.ts'
 import {
   getPayoutPinOnboardingTarget,
-  isPathAllowedDuringMfaSetup,
   isPathAllowedDuringPayoutPinSetup,
 } from '../features/auth/utils/postAuthNavigation.ts'
 import { isAdminRole } from '../utils/portalRoles.ts'
@@ -22,17 +21,7 @@ export const Route = createRoute({
     const user = getAuthUser()
     hydratePortalEnvironmentForUser(user?.merchantId ?? null)
     if (
-      user?.mfaSetupRequired &&
-      !isPathAllowedDuringMfaSetup(location.pathname)
-    ) {
-      throw redirect({
-        to: '/dashboard/settings',
-        search: { tab: 'security' },
-      })
-    }
-    if (
       user &&
-      !user.mfaSetupRequired &&
       user.payoutPinSetupRequired &&
       !isPathAllowedDuringPayoutPinSetup(
         location.pathname,

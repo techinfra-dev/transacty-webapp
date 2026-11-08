@@ -1572,69 +1572,6 @@ body {
   color: var(--dash-fg-muted);
 }
 
-.kyb-market-guide {
-  margin-bottom: 14px;
-  border: 1px solid var(--kyb-divider);
-  border-radius: 12px;
-  background: var(--kyb-canvas);
-  overflow: hidden;
-}
-
-.kyb-market-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--kyb-divider);
-}
-
-.kyb-market-tab {
-  border: 1px solid var(--kyb-field-border);
-  border-radius: 999px;
-  background: var(--kyb-field-bg);
-  padding: 6px 12px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--dash-fg-muted);
-  cursor: pointer;
-}
-
-.kyb-market-tab--active {
-  border-color: var(--dash-fg);
-  background: var(--dash-fg);
-  color: var(--kyb-canvas);
-}
-
-.kyb-market-guide-body {
-  padding: 12px 14px 14px;
-}
-
-.kyb-market-guide-title {
-  margin: 0 0 8px;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--dash-fg);
-}
-
-.kyb-market-guide-list {
-  margin: 0;
-  padding-left: 18px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--dash-fg);
-}
-
-.kyb-market-guide-notes {
-  margin: 10px 0 0;
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--dash-fg-muted);
-}
-
 .kyc-document-viewer {
   position: fixed;
   inset: 0;
@@ -9338,6 +9275,142 @@ button.dashboard-wallet-tab {
   font-family: var(--font-body);
   font-size: 12px;
   color: var(--dash-fg-muted);
+}
+
+.settings-fees-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-fees-group {
+  overflow: hidden;
+  border: 1px solid var(--dash-hairline);
+  border-radius: 10px;
+  background: var(--dash-surface-2);
+}
+
+.settings-fees-group--paused {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.settings-fees-group-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--dash-hairline);
+}
+
+.settings-fees-group-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dash-fg);
+}
+
+.settings-fees-group-meta {
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dash-fg-muted);
+}
+
+.settings-fees-table-wrap {
+  overflow-x: auto;
+}
+
+.settings-fees-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+}
+
+.settings-fees-table th,
+.settings-fees-table td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.settings-fees-table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--dash-fg-muted);
+  border-bottom: 1px solid var(--dash-hairline);
+}
+
+.settings-fees-table tbody tr + tr td {
+  border-top: 1px solid var(--dash-hairline);
+}
+
+.settings-fees-type {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-fees-type span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dash-fg);
+}
+
+.settings-fees-type-sub {
+  font-size: 11px;
+  color: var(--dash-fg-muted);
+}
+
+.settings-fees-rate {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-fg);
+}
+
+.settings-fees-muted {
+  font-size: 13px;
+  color: var(--dash-fg-muted);
+}
+
+.settings-fees-legacy-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .settings-fees-legacy-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.settings-fees-legacy-item {
+  padding: 12px 14px;
+  border: 1px solid var(--dash-hairline);
+  border-radius: 10px;
+  background: var(--dash-surface-2);
+}
+
+.settings-fees-legacy-label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--dash-fg-muted);
+}
+
+.settings-fees-legacy-value {
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-fg);
 }
 
 .settings-hint--success {

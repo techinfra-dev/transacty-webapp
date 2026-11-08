@@ -120,15 +120,60 @@ export function getMarketBrowserFilter(
   return 'available'
 }
 
+/** Strip API suffixes like `Nigeria (NGN)` so cards show country/region only. */
+export function stripMarketCurrencySuffix(label: string) {
+  return label.replace(/\s*\([A-Za-z0-9-]{2,}\)\s*$/, '').trim()
+}
+
+function resolveKnownMarketDisplayName(market: string) {
+  const key = normalizeMarketKey(market)
+  if (MARKET_DISPLAY_NAMES[key]) {
+    return MARKET_DISPLAY_NAMES[key]
+  }
+
+  const stripped = normalizeMarketKey(stripMarketCurrencySuffix(key))
+  if (MARKET_DISPLAY_NAMES[stripped]) {
+    return MARKET_DISPLAY_NAMES[stripped]
+  }
+
+  for (const known of Object.keys(MARKET_DISPLAY_NAMES)) {
+    if (
+      key === known ||
+      key.startsWith(`${known} `) ||
+      key.startsWith(`${known}(`) ||
+      key.startsWith(`${known}-`) ||
+      key.startsWith(`${known}_`)
+    ) {
+      return MARKET_DISPLAY_NAMES[known]
+    }
+  }
+
+  return null
+}
+
 export function getMarketDisplayName(
   market: string,
   displayName?: string | null,
 ) {
-  if (displayName && displayName.trim().length > 0) {
-    return displayName.trim()
+  const known = resolveKnownMarketDisplayName(market)
+  if (known) {
+    return known
   }
-  const key = normalizeMarketKey(market)
-  return MARKET_DISPLAY_NAMES[key] ?? (humanizeMarketKey(market) || market)
+
+  const apiKnown = displayName?.trim()
+    ? resolveKnownMarketDisplayName(displayName)
+    : null
+  if (apiKnown) {
+    return apiKnown
+  }
+
+  const apiLabel = displayName?.trim()
+  if (apiLabel) {
+    return stripMarketCurrencySuffix(apiLabel) || apiLabel
+  }
+
+  const humanized = humanizeMarketKey(market)
+  return stripMarketCurrencySuffix(humanized) || humanized || market
 }
 
 export function formatEntitlementStatusLabel(status: string) {

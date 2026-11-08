@@ -20,7 +20,6 @@ import {
 interface SettingsTabsSidebarProps {
   activeTab: SettingsTabId
   onSelectTab: (tabId: SettingsTabId) => void
-  mfaSetupRequired?: boolean
   isAdmin?: boolean
 }
 
@@ -52,7 +51,6 @@ function tabIcon(tabId: SettingsTabId) {
 export function SettingsTabsSidebar({
   activeTab,
   onSelectTab,
-  mfaSetupRequired = false,
   isAdmin = true,
 }: SettingsTabsSidebarProps) {
   return (
@@ -62,14 +60,12 @@ export function SettingsTabsSidebar({
         <nav className="settings-nav-list">
           {accountTabs.map((tab) => {
             const isActive = activeTab === tab.id
-            const isLocked = mfaSetupRequired && tab.id !== 'security'
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => onSelectTab(tab.id)}
-                disabled={isLocked}
-                className={`settings-nav-item ${isActive ? 'settings-nav-item--active' : ''} ${isLocked ? 'opacity-45' : ''}`}
+                className={`settings-nav-item ${isActive ? 'settings-nav-item--active' : ''}`}
                 aria-current={isActive ? 'page' : undefined}
               >
                 <span className="settings-nav-item-icon" aria-hidden>
@@ -87,7 +83,7 @@ export function SettingsTabsSidebar({
         <nav className="settings-nav-list">
           {developerTabs.map((tab) => {
             const isActive = activeTab === tab.id
-            const isLocked = mfaSetupRequired || !isAdmin
+            const isLocked = !isAdmin
             return (
               <button
                 key={tab.id}
@@ -96,11 +92,7 @@ export function SettingsTabsSidebar({
                 disabled={isLocked}
                 className={`settings-nav-item ${isActive ? 'settings-nav-item--active' : ''} ${isLocked ? 'opacity-45' : ''}`}
                 aria-current={isActive ? 'page' : undefined}
-                title={
-                  !isAdmin && !mfaSetupRequired
-                    ? 'Admin role required'
-                    : undefined
-                }
+                title={isLocked ? 'Admin role required' : undefined}
               >
                 <span className="settings-nav-item-icon" aria-hidden>
                   {tabIcon(tab.id)}

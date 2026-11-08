@@ -21,6 +21,7 @@ export function useKycPersonsQuery(enabled = true) {
     queryFn: listKycPersons,
     enabled,
     staleTime: 15_000,
+    refetchOnMount: 'always',
   })
 }
 

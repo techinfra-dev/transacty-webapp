@@ -97,32 +97,3 @@ export async function getReconciliationReport(params: {
   }
 }
 
-export async function downloadReconciliationCsv(params: {
-  environment: PortalEnvironment
-  from: string
-  to: string
-}) {
-  try {
-    const { from, to } = formatReconciliationApiDateRange(params.from, params.to)
-    const response = await axiosInstance.get('me/reconciliation', {
-      headers: getAuthHeader(),
-      params: {
-        environment: params.environment,
-        from,
-        to,
-        format: 'csv',
-      },
-      responseType: 'blob',
-    })
-
-    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `reconciliation-${params.environment}-${params.from}-${params.to}.csv`
-    link.click()
-    window.URL.revokeObjectURL(url)
-  } catch (error) {
-    throw new Error(getReconciliationErrorMessage(error))
-  }
-}

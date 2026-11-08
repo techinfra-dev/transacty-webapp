@@ -270,7 +270,7 @@ export function DashboardSidebarLogo({ collapsed = false }: { collapsed?: boolea
       to="/dashboard"
       aria-label="Go to dashboard home"
       className={`inline-flex max-w-full shrink-0 items-center rounded-md py-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-(--color-accent)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-(--sidebar-bg) ${
-        collapsed ? 'h-9 w-9 justify-start overflow-hidden' : 'w-full justify-center'
+        collapsed ? 'h-10 w-10 justify-start overflow-hidden' : 'w-full justify-center'
       }`}
     >
       <img
@@ -278,8 +278,8 @@ export function DashboardSidebarLogo({ collapsed = false }: { collapsed?: boolea
         alt="Transacty"
         width={220}
         height={48}
-        className={`h-8 max-w-none object-contain ${
-          collapsed ? 'w-auto shrink-0 object-left' : 'w-auto max-w-[150px] object-center'
+        className={`h-9 max-w-none object-contain ${
+          collapsed ? 'w-auto shrink-0 object-left' : 'w-auto max-w-[172px] object-center'
         }`}
         decoding="async"
       />

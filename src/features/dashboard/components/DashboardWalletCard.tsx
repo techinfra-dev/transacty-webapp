@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { CurrencyMarketAvatar } from '../../../components/ui/CurrencyMarketAvatar.tsx'
-import { getCurrencyFullName, getCurrencySymbol } from '../../../utils/currencyNames.ts'
+import { getCurrencySymbol } from '../../../utils/currencyNames.ts'
 import {
   formatWalletMoney,
   maskWalletMoney,
@@ -13,6 +13,7 @@ import {
   BANGLADESH_RAIL_PAUSE_COPY,
   isBangladeshRailPausedForWallet,
 } from '../utils/bangladeshRailPause.ts'
+import { getWalletDisplayLabel } from '../utils/balanceWalletUtils.ts'
 import { getMarketRailSummary } from '../utils/marketDisplayUtils.ts'
 
 interface DashboardWalletCardProps {
@@ -70,7 +71,7 @@ function activationFooterNote(
     return 'Europe USDC · EUR payouts'
   }
   if (code === 'BRL' || marketKey === 'brazil') {
-    return 'Brazil (PIX)'
+    return 'Pix'
   }
   if (code === 'NGN' || marketKey === 'nigeria') {
     return 'Virtual account · bank payouts'
@@ -102,8 +103,12 @@ export function DashboardWalletCard({
 }: DashboardWalletCardProps) {
   const code = currency.trim().toUpperCase()
   const symbol = getCurrencySymbol(code)
-  const currencyName = getCurrencyFullName(code)
-  const walletTitle = displayLabel?.trim() || currencyName
+  const walletTitle = getWalletDisplayLabel({
+    currency,
+    displayLabel,
+    market,
+    region,
+  })
   const badgeLabel = code
   const isPaused = isBangladeshRailPausedForWallet({
     currency,

@@ -54,7 +54,7 @@ export const tabContent: Record<
   fees: {
     title: 'Fees',
     description:
-      'View active fee schedules and legacy BD fallback rates for the current environment.',
+      'View all fee schedules.',
   },
   'business-preference': {
     title: 'Business preference',

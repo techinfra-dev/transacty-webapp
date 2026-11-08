@@ -1,4 +1,5 @@
 import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
+import type { PortalMarketRow } from '../services/marketSchemas.ts'
 import type {
   TransactionRailApi,
   TransactionRailFilter,
@@ -7,7 +8,13 @@ import {
   getMarketDisplayName,
   uniqueInPreferredOrder,
 } from './marketDisplayUtils.ts'
+import {
+  canUseWalletForTransactions,
+  getWalletMarket,
+  isVisibleWallet,
+} from './balanceWalletUtils.ts'
 
+/** Static labels for known rails — not the live filter list. */
 export const transactionRailFilterOptions: {
   value: TransactionRailFilter
   label: string
@@ -23,19 +30,46 @@ export const transactionRailFilterOptions: {
   { value: 'pyusd', label: 'PYUSD' },
 ]
 
-export function getTransactionRailFilterOptions(extraRails: string[] = []) {
-  const seen = new Set(
-    transactionRailFilterOptions.map((option) => option.value),
-  )
-  const extras = uniqueInPreferredOrder(extraRails).filter(
-    (rail) => rail !== 'all' && !seen.has(rail),
+const STATIC_RAIL_LABELS = new Map(
+  transactionRailFilterOptions.map((option) => [option.value, option.label]),
+)
+
+function railOptionLabel(rail: string) {
+  return STATIC_RAIL_LABELS.get(rail) ?? getMarketDisplayName(rail)
+}
+
+/**
+ * Markets the merchant can filter transactions by: approved entitlements
+ * plus any activated wallet pockets (covers live-only / lagging market rows).
+ */
+export function getEnabledTransactionRails(params: {
+  markets?: PortalMarketRow[] | null
+  wallets?: BalanceWalletItem[] | null
+}): string[] {
+  const fromMarkets = (params.markets ?? [])
+    .filter((row) => row.entitlementStatus === 'approved')
+    .map((row) => row.market)
+
+  const fromWallets = (params.wallets ?? [])
+    .filter(
+      (wallet) =>
+        isVisibleWallet(wallet) && canUseWalletForTransactions(wallet),
+    )
+    .map((wallet) => getWalletMarket(wallet) ?? '')
+
+  return uniqueInPreferredOrder([...fromMarkets, ...fromWallets])
+}
+
+export function getTransactionRailFilterOptions(enabledRails: string[] = []) {
+  const rails = uniqueInPreferredOrder(enabledRails).filter(
+    (rail) => rail.length > 0 && rail !== 'all',
   )
 
   return [
-    ...transactionRailFilterOptions,
-    ...extras.map((value) => ({
+    { value: 'all' as const, label: 'All' },
+    ...rails.map((value) => ({
       value,
-      label: getMarketDisplayName(value),
+      label: railOptionLabel(value),
     })),
   ]
 }

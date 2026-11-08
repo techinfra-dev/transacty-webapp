@@ -1,5 +1,4 @@
 import { transactionMethodOptions } from './transactionConstants.ts'
-import { transactionRailFilterOptions } from '../../utils/transactionRailUtils.ts'
 import type { TransactionRailFilter } from '../../services/transactionsSchemas.ts'
 import { TransactionDateFilterDialog } from './TransactionDateFilterDialog.tsx'
 import { InputClearButton } from '../../../../components/ui/InputClearButton.tsx'
@@ -72,7 +71,7 @@ export function TransactionsPageHeader({
   customerIdFilterError,
   onCustomerIdFilterChange,
   selectedRail,
-  railOptions = transactionRailFilterOptions,
+  railOptions = [{ value: 'all', label: 'All' }],
   onSelectedRailChange,
   selectedMethod,
   onSelectedMethodChange,

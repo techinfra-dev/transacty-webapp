@@ -11,6 +11,8 @@ import {
   getPersonFormFieldErrors,
   isDuplicatePerson,
 } from '../../../kyc/services/kycPersonValidation.ts'
+import { formatKycPersonStatusLabel } from '../../../kyc/utils/kycPersonStatus.ts'
+import { useProfileQuery } from '../../hooks/useProfileQuery.ts'
 
 const roleOptions = [
   { label: 'Director', value: 'director' },
@@ -70,6 +72,8 @@ export function TeamSettingsContent() {
   })
 
   const personsQuery = useKycPersonsQuery(true)
+  const profileQuery = useProfileQuery(true)
+  const merchantKycStatus = profileQuery.data?.kycStatus
   const addPersonMutation = useAddKycPersonMutation()
 
   async function handleAddMember() {
@@ -185,7 +189,9 @@ export function TeamSettingsContent() {
               >
                 <p>{member.fullName}</p>
                 <p>{toTitleCaseFromSnake(member.role)}</p>
-                <p>{toTitleCaseFromSnake(member.status)}</p>
+                <p>
+                  {formatKycPersonStatusLabel(member.status, merchantKycStatus)}
+                </p>
               </div>
             ))}
           </div>

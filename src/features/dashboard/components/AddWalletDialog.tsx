@@ -167,6 +167,7 @@ function MarketBrowserRow({
   const requestMutation = useRequestMarketMutation()
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const [justRequested, setJustRequested] = useState(false)
+  // Country/market title only — currency stays in the badge below.
   const displayName = getMarketDisplayName(market.market, market.displayName)
   const railSummary = getMarketRailSummary(market.market)
   const currencyLabel = currencies[0] ?? market.settlementCurrencies[0]?.toUpperCase()

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { usePortalEnvironmentStore } from '../../../../store/portalEnvironmentStore.ts'
 import { useReconciliationQuery } from '../../hooks/useReconciliationQuery.ts'
-import { downloadReconciliationCsv } from '../../services/reconciliationService.ts'
 import type {
   ReconciliationRow,
   ReconciliationVolumeByCurrency,
@@ -11,6 +10,7 @@ import {
   getLedgerStatusPillClass,
   toTitleCase,
 } from '../transactions/transactionFormatters.ts'
+import { downloadReconciliationRowsAsCsv } from '../../utils/reconciliationCsv.ts'
 import { validateReconciliationDateRange } from '../../utils/reconciliationDateUtils.ts'
 import { isVisibleWallet } from '../../utils/balanceWalletUtils.ts'
 import { TransactionsFooter } from '../transactions/TransactionsFooter.tsx'
@@ -185,14 +185,21 @@ export function ReconciliationSettingsContent() {
     [summary?.payinVolumeByCurrency, summary?.payoutVolumeByCurrency],
   )
 
-  async function handleDownloadCsv() {
-    if (!rangeValid) {
+  const canDownloadCsv =
+    rangeValid &&
+    !reconciliationQuery.isPending &&
+    !reconciliationQuery.isError &&
+    visibleRows.length > 0
+
+  function handleDownloadCsv() {
+    if (!canDownloadCsv) {
       return
     }
     setDownloadError(null)
     setIsDownloading(true)
     try {
-      await downloadReconciliationCsv({
+      downloadReconciliationRowsAsCsv({
+        rows: visibleRows,
         environment: portalEnvironment,
         from: fromDate,
         to: toDate,
@@ -239,8 +246,8 @@ export function ReconciliationSettingsContent() {
           <button
             type="button"
             className="settings-btn settings-btn--primary settings-recon-download-btn"
-            disabled={!rangeValid || isDownloading}
-            onClick={() => void handleDownloadCsv()}
+            disabled={!canDownloadCsv || isDownloading}
+            onClick={handleDownloadCsv}
           >
             {isDownloading ? 'Downloading…' : 'Download CSV'}
           </button>

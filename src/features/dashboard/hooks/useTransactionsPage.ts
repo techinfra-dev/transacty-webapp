@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue.ts'
 import { useTransactionDetailModalStore } from '../../../store/transactionDetailModalStore.ts'
 import type { TransactionStatusTabId } from '../components/transactions/TransactionStatusTabs.tsx'
@@ -11,10 +11,10 @@ import type {
 } from '../services/transactionsSchemas.ts'
 import { customerWalletIdFilterSchema } from '../services/transactionsSchemas.ts'
 import {
+  getEnabledTransactionRails,
   getTransactionRailFilterOptions,
   transactionRailFilterToApiParam,
 } from '../utils/transactionRailUtils.ts'
-import { getWalletMarket } from '../utils/balanceWalletUtils.ts'
 import { useBalanceQuery } from './useBalanceQuery.ts'
 import { useMarketsQuery } from './useMarketsQuery.ts'
 
@@ -70,15 +70,22 @@ export function useTransactionsPage() {
   const marketsQuery = useMarketsQuery()
   const balanceQuery = useBalanceQuery()
   const railOptions = useMemo(() => {
-    const extras = [
-      ...(marketsQuery.data ?? []).map((row) => row.market),
-      ...(balanceQuery.data?.items ?? []).flatMap((wallet) => [
-        getWalletMarket(wallet) ?? '',
-        wallet.region ?? '',
-      ]),
-    ]
-    return getTransactionRailFilterOptions(extras)
+    const enabledRails = getEnabledTransactionRails({
+      markets: marketsQuery.data,
+      wallets: balanceQuery.data?.items,
+    })
+    return getTransactionRailFilterOptions(enabledRails)
   }, [marketsQuery.data, balanceQuery.data?.items])
+
+  useEffect(() => {
+    if (
+      selectedRail !== 'all' &&
+      !railOptions.some((option) => option.value === selectedRail)
+    ) {
+      setSelectedRail('all')
+      setCurrentPage(1)
+    }
+  }, [railOptions, selectedRail])
 
   const statusCountsQuery = useTransactionStatusCounts({
     type: listType,

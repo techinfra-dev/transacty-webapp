@@ -1,7 +1,12 @@
+import { useMemo } from 'react'
+import { CurrencyMarketAvatar } from '../../../../components/ui/CurrencyMarketAvatar.tsx'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner.tsx'
 import { useMerchantFeesQuery } from '../../hooks/usePortalDepthQueries.ts'
 import { isBangladeshRailPausedForMarket } from '../../utils/bangladeshRailPause.ts'
-import { getMarketDisplayName } from '../../utils/marketDisplayUtils.ts'
+import {
+  getMarketDisplayName,
+  uniqueInPreferredOrder,
+} from '../../utils/marketDisplayUtils.ts'
 import type { FeeScheduleItem } from '../../services/feesSchemas.ts'
 import { SettingsCard } from './SettingsCard.tsx'
 
@@ -9,13 +14,23 @@ function formatFeeType(value: string | undefined) {
   const key = (value ?? '').trim().toLowerCase()
   if (key === 'payin') return 'Pay-in'
   if (key === 'payout') return 'Pay-out'
-  if (!key) return null
+  if (!key) return '—'
   return key.charAt(0).toUpperCase() + key.slice(1)
 }
 
-function formatStatus(value: string | undefined) {
+function formatBillingMode(value: string | undefined) {
   const key = (value ?? '').trim()
   if (!key) return null
+  return key
+    .split(/[_-\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+}
+
+function formatStatus(value: string | undefined) {
+  const key = (value ?? '').trim().toLowerCase()
+  if (!key) return '—'
   return key.charAt(0).toUpperCase() + key.slice(1)
 }
 
@@ -37,14 +52,14 @@ function formatMoneyAmount(value: string | undefined, currency?: string) {
 }
 
 function formatEffectiveFrom(iso: string | null | undefined) {
-  if (!iso) return null
+  if (!iso) return '—'
   const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  return `From ${date.toLocaleDateString('en-US', {
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  })}`
+  })
 }
 
 function feeRateCopy(item: FeeScheduleItem) {
@@ -61,11 +76,76 @@ function feeRateCopy(item: FeeScheduleItem) {
   return '—'
 }
 
+function scheduleMarketKey(item: FeeScheduleItem) {
+  return (item.rail || item.market || 'other').trim().toLowerCase() || 'other'
+}
+
+function statusPillClass(status: string | undefined) {
+  const key = (status ?? '').trim().toLowerCase()
+  if (key === 'active') return 'dashboard-pill dashboard-pill-success'
+  if (key === 'inactive' || key === 'disabled' || key === 'expired') {
+    return 'dashboard-pill dashboard-pill-neutral'
+  }
+  return 'dashboard-pill dashboard-pill-neutral'
+}
+
+function feeTypeSortRank(feeType: string | undefined) {
+  const key = (feeType ?? '').trim().toLowerCase()
+  if (key === 'payin') return 0
+  if (key === 'payout') return 1
+  return 2
+}
+
+type FeeMarketGroup = {
+  market: string
+  items: FeeScheduleItem[]
+  isPaused: boolean
+}
+
+function groupSchedulesByMarket(schedules: FeeScheduleItem[]): FeeMarketGroup[] {
+  const byMarket = new Map<string, FeeScheduleItem[]>()
+  for (const item of schedules) {
+    const key = scheduleMarketKey(item)
+    const list = byMarket.get(key) ?? []
+    list.push(item)
+    byMarket.set(key, list)
+  }
+
+  return uniqueInPreferredOrder(byMarket.keys()).map((market) => {
+    const items = [...(byMarket.get(market) ?? [])].sort((a, b) => {
+      const typeDelta = feeTypeSortRank(a.feeType) - feeTypeSortRank(b.feeType)
+      if (typeDelta !== 0) return typeDelta
+      return feeRateCopy(a).localeCompare(feeRateCopy(b))
+    })
+    return {
+      market,
+      items,
+      isPaused: isBangladeshRailPausedForMarket(market),
+    }
+  })
+}
+
+function formatLegacyRate(percentBps?: number, flat?: string) {
+  return (
+    [
+      typeof percentBps === 'number' ? `${(percentBps / 100).toFixed(2)}%` : null,
+      flat,
+    ]
+      .filter(Boolean)
+      .join(' + ') || '—'
+  )
+}
+
 export function FeesSettingsContent() {
   const feesQuery = useMerchantFeesQuery(true)
   const schedules = feesQuery.data?.items ?? feesQuery.data?.schedules ?? []
   const legacy = feesQuery.data?.legacy
   const note = feesQuery.data?.note
+
+  const marketGroups = useMemo(
+    () => groupSchedulesByMarket(schedules),
+    [schedules],
+  )
 
   if (feesQuery.isPending) {
     return (
@@ -75,60 +155,113 @@ export function FeesSettingsContent() {
     )
   }
 
-  if (feesQuery.isError) {
+  const errorMessage =
+    feesQuery.error instanceof Error ? feesQuery.error.message : ''
+  // Empty / unconfigured fee catalogs often come back as generic load errors.
+  // Prefer the empty-state copy so merchants are not told the system failed.
+  const looksLikeNoFees =
+    feesQuery.isError &&
+    /no fees? applicable|no fee|not configured|not found|no schedules?|unable to load fee schedules|payment_unavailable/i.test(
+      errorMessage || 'unable to load fee schedules',
+    )
+
+  if (feesQuery.isError && !looksLikeNoFees) {
     return (
       <p className="settings-error">
-        {feesQuery.error instanceof Error
-          ? feesQuery.error.message
-          : 'Unable to load fee schedules.'}
+        {errorMessage || 'Unable to load fee schedules.'}
       </p>
     )
   }
+
+  const showEmpty = schedules.length === 0 || looksLikeNoFees
 
   return (
     <div className="settings-stack">
       <SettingsCard
         title="Active fee schedules"
-        description="Merchant-facing fees for the current environment. Contact support to change pricing."
+        description="Rates for the current environment. Contact support to change pricing."
       >
-        {schedules.length === 0 ? (
-          <p className="settings-hint">
-            No active fee schedules. Legacy BD rates may still apply.
-          </p>
+        {showEmpty ? (
+          <p className="settings-hint">No fees applicable.</p>
         ) : (
-          <ul className="space-y-2">
-            {schedules.map((item, index) => {
-              const railKey = item.rail || item.market || ''
-              const isPaused = isBangladeshRailPausedForMarket(railKey)
-              const title = [getMarketDisplayName(railKey), formatFeeType(item.feeType)]
-                .filter(Boolean)
-                .join(' · ')
-              const meta = [
-                feeRateCopy(item),
-                item.currency?.trim().toUpperCase(),
-                formatStatus(item.status),
-                formatEffectiveFrom(item.effectiveFrom),
-              ]
-                .filter(Boolean)
-                .join(' · ')
-
-              return (
-                <li
-                  key={item.id ?? `${railKey}-${item.feeType}-${index}`}
-                  className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border border-(--color-accent)/30 px-3 py-2.5 ${isPaused ? 'opacity-55 grayscale' : ''}`}
-                >
-                  <div>
-                    <p className="[font-family:var(--font-body)] text-sm font-medium text-(--color-primary)">
-                      {title || 'Schedule'}
-                    </p>
-                    <p className="mt-0.5 [font-family:var(--font-body)] text-xs text-(--color-secondary)">
-                      {isPaused ? `Temporarily down · ${meta}` : meta}
+          <div className="settings-fees-groups">
+            {marketGroups.map((group) => (
+              <section
+                key={group.market}
+                className={`settings-fees-group${group.isPaused ? ' settings-fees-group--paused' : ''}`}
+              >
+                <header className="settings-fees-group-head">
+                  <CurrencyMarketAvatar
+                    market={group.market}
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <h4 className="settings-fees-group-title">
+                      {getMarketDisplayName(group.market)}
+                    </h4>
+                    <p className="settings-fees-group-meta">
+                      {group.isPaused
+                        ? 'Temporarily down'
+                        : `${group.items.length} schedule${group.items.length === 1 ? '' : 's'}`}
                     </p>
                   </div>
-                </li>
-              )
-            })}
-          </ul>
+                </header>
+
+                <div className="settings-fees-table-wrap">
+                  <table className="settings-fees-table">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Rate</th>
+                        <th>Currency</th>
+                        <th>Status</th>
+                        <th>Effective</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.items.map((item, index) => {
+                        const billingMode = formatBillingMode(item.billingMode)
+                        return (
+                          <tr
+                            key={
+                              item.id ??
+                              `${group.market}-${item.feeType}-${index}`
+                            }
+                          >
+                            <td>
+                              <div className="settings-fees-type">
+                                <span>{formatFeeType(item.feeType)}</span>
+                                {billingMode ? (
+                                  <span className="settings-fees-type-sub">
+                                    {billingMode}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </td>
+                            <td className="settings-fees-rate">
+                              {feeRateCopy(item)}
+                            </td>
+                            <td className="settings-fees-muted">
+                              {item.currency?.trim().toUpperCase() || '—'}
+                            </td>
+                            <td>
+                              <span className={statusPillClass(item.status)}>
+                                <i aria-hidden />
+                                {formatStatus(item.status)}
+                              </span>
+                            </td>
+                            <td className="settings-fees-muted">
+                              {formatEffectiveFrom(item.effectiveFrom)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ))}
+          </div>
         )}
         {note ? <p className="settings-hint mt-3">{note}</p> : null}
       </SettingsCard>
@@ -138,34 +271,20 @@ export function FeesSettingsContent() {
           title="Legacy BD fallback"
           description="Used when no schedule matches the rail."
         >
-          <dl className="grid gap-2 sm:grid-cols-2">
-            <div>
-              <dt className="settings-hint">Pay-in</dt>
-              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
-                {[
-                  typeof legacy.payinPercentBps === 'number'
-                    ? `${(legacy.payinPercentBps / 100).toFixed(2)}%`
-                    : null,
-                  legacy.payinFlat,
-                ]
-                  .filter(Boolean)
-                  .join(' + ') || '—'}
-              </dd>
+          <div className="settings-fees-legacy-grid">
+            <div className="settings-fees-legacy-item">
+              <p className="settings-fees-legacy-label">Pay-in</p>
+              <p className="settings-fees-legacy-value">
+                {formatLegacyRate(legacy.payinPercentBps, legacy.payinFlat)}
+              </p>
             </div>
-            <div>
-              <dt className="settings-hint">Pay-out</dt>
-              <dd className="[font-family:var(--font-body)] text-sm text-(--color-primary)">
-                {[
-                  typeof legacy.payoutPercentBps === 'number'
-                    ? `${(legacy.payoutPercentBps / 100).toFixed(2)}%`
-                    : null,
-                  legacy.payoutFlat,
-                ]
-                  .filter(Boolean)
-                  .join(' + ') || '—'}
-              </dd>
+            <div className="settings-fees-legacy-item">
+              <p className="settings-fees-legacy-label">Pay-out</p>
+              <p className="settings-fees-legacy-value">
+                {formatLegacyRate(legacy.payoutPercentBps, legacy.payoutFlat)}
+              </p>
             </div>
-          </dl>
+          </div>
         </SettingsCard>
       ) : null}
     </div>

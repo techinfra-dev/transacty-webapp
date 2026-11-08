@@ -42,7 +42,7 @@ export function AuthSplitLayout({
               alt="Transacty"
               width={220}
               height={48}
-              className="h-8 w-auto max-w-[140px] object-contain object-left md:h-9 md:max-w-[160px]"
+              className="h-9 w-auto max-w-[160px] object-contain object-left md:h-10 md:max-w-[184px]"
               decoding="async"
             />
             <ThemeToggle />

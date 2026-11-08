@@ -94,7 +94,7 @@ export function TransactionsHistoryTable({
       <thead>
         <tr>
           <th>Transaction</th>
-          <th>Customer wallet</th>
+          <th>Platform order</th>
           <th>Type</th>
           <th className="num">Amount</th>
           <th className="num">Settled</th>
@@ -106,7 +106,7 @@ export function TransactionsHistoryTable({
       </thead>
       <tbody>
         {rows.map((activity) => {
-          const customerWalletId = activity.customerWalletId || '—'
+          const platformOrderId = activity.platformOrderId?.trim() || ''
           const isFailed = activity.status === 'failed'
           const amountColumn = getTransactionAmountColumnDisplay(activity)
           const paidColumn = getTransactionPaidColumnDisplay(activity)
@@ -133,10 +133,14 @@ export function TransactionsHistoryTable({
                 </div>
               </td>
               <td
-                title={customerWalletId}
+                title={platformOrderId || undefined}
                 className="tx-history-td-ref tx-history-mono tx-history-dim"
               >
-                {customerWalletId}
+                {platformOrderId
+                  ? platformOrderId.length > 16
+                    ? `${platformOrderId.slice(0, 8)}…${platformOrderId.slice(-4)}`
+                    : platformOrderId
+                  : '—'}
               </td>
               <td className="tx-history-td-type">
                 <TransactionMethodTag transaction={activity} />

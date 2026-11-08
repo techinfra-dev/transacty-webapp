@@ -270,7 +270,7 @@ export function WebhooksSettingsContent() {
       {isKycVerified && isAdmin ? (
         <SettingsCard
           title="Delivery log"
-          description="Recent outbound webhook attempts, including lastError for failed sends."
+          description="Recent outbound webhook attempts, including the last error for failed sends."
         >
           {testMessage ? (
             <p className="settings-hint mb-2">{testMessage}</p>
@@ -314,7 +314,7 @@ export function WebhooksSettingsContent() {
                     </p>
                     {delivery.lastError ? (
                       <p className="mt-1 [font-family:var(--font-body)] text-xs text-rose-700">
-                        {delivery.lastError}
+                        Last error: {delivery.lastError}
                       </p>
                     ) : null}
                   </div>

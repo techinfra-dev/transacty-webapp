@@ -13,12 +13,6 @@ export function getPostAuthNavigateOptions(
   nextPath?: string | null,
 ): PostAuthNavigateOptions {
   const user = getAuthUser()
-  if (user?.mfaSetupRequired) {
-    return {
-      to: '/dashboard/settings',
-      search: { tab: 'security' },
-    }
-  }
   if (user?.payoutPinSetupRequired) {
     return isAdminRole(user.role)
       ? { to: '/dashboard/onboarding/payout-pin' }
@@ -34,14 +28,6 @@ export function getPostAuthNavigateOptions(
     }
   }
   return { to: '/dashboard' }
-}
-
-/** Paths allowed while MFA enrollment is required by policy. */
-export function isPathAllowedDuringMfaSetup(pathname: string) {
-  return (
-    pathname === '/dashboard/settings' ||
-    pathname.startsWith('/dashboard/settings/')
-  )
 }
 
 export function isPathAllowedDuringPayoutPinSetup(

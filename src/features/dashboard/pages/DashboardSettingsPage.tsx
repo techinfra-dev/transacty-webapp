@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Route } from '../../../routes/dashboard.settings.tsx'
 import { usePortalRole } from '../../../hooks/usePortalRole.ts'
@@ -9,24 +8,10 @@ import type { SettingsTabId } from '../components/settings/settingsTabs.ts'
 export function DashboardSettingsPage() {
   const navigate = useNavigate({ from: Route.fullPath })
   const { tab: tabFromSearch } = Route.useSearch()
-  const { mfaSetupRequired, isAdmin } = usePortalRole()
-  const activeTab: SettingsTabId = mfaSetupRequired
-    ? 'security'
-    : (tabFromSearch ?? 'profile')
-
-  useEffect(() => {
-    if (mfaSetupRequired && tabFromSearch !== 'security') {
-      void navigate({
-        search: { tab: 'security' },
-        replace: true,
-      })
-    }
-  }, [mfaSetupRequired, tabFromSearch, navigate])
+  const { isAdmin } = usePortalRole()
+  const activeTab: SettingsTabId = tabFromSearch ?? 'profile'
 
   function handleSelectTab(tabId: SettingsTabId) {
-    if (mfaSetupRequired && tabId !== 'security') {
-      return
-    }
     if (
       (tabId === 'api-keys' || tabId === 'webhooks') &&
       !isAdmin
@@ -43,9 +28,7 @@ export function DashboardSettingsPage() {
       <header className="settings-head">
         <h1 className="settings-title">Settings</h1>
         <p className="settings-sub">
-          {mfaSetupRequired
-            ? 'Enroll multi-factor authentication to continue using the merchant portal.'
-            : 'Manage profile, team access, and developer integration settings.'}
+          Manage profile, team access, and developer integration settings.
         </p>
       </header>
 
@@ -53,7 +36,6 @@ export function DashboardSettingsPage() {
         <SettingsTabsSidebar
           activeTab={activeTab}
           onSelectTab={handleSelectTab}
-          mfaSetupRequired={mfaSetupRequired}
           isAdmin={isAdmin}
         />
         <SettingsTabContentPanel activeTab={activeTab} />
