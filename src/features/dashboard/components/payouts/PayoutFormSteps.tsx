@@ -7,7 +7,9 @@ import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
+import type { NuvionPayoutFormPayload } from '../../services/nuvionPayoutSchemas.ts'
 import { KesBeneficiaryFields } from './KesBeneficiaryFields.tsx'
+import { NuvionBeneficiaryFields } from './NuvionBeneficiaryFields.tsx'
 import { useKePayoutFeeQuoteQuery } from '../../hooks/useKePayoutMutations.ts'
 import { formatPayoutMoney } from './payoutFormatters.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
@@ -49,6 +51,9 @@ interface PayoutFormStepsProps {
   setCadPayload: React.Dispatch<React.SetStateAction<CadPayoutFormPayload>>
   kePayload: KePayoutFormPayload
   setKePayload: React.Dispatch<React.SetStateAction<KePayoutFormPayload>>
+  nuvionPayload: NuvionPayoutFormPayload
+  setNuvionPayload: React.Dispatch<React.SetStateAction<NuvionPayoutFormPayload>>
+  nuvionEntityApproved: boolean
   displayCurrency: string
   settlementCurrency: string
   effectiveMinimumAmount: number
@@ -81,6 +86,9 @@ export function PayoutFormSteps({
   setCadPayload,
   kePayload,
   setKePayload,
+  nuvionPayload,
+  setNuvionPayload,
+  nuvionEntityApproved,
   displayCurrency,
   settlementCurrency,
   effectiveMinimumAmount,
@@ -97,7 +105,9 @@ export function PayoutFormSteps({
 }: PayoutFormStepsProps) {
   const keFeeQuoteQuery = useKePayoutFeeQuoteQuery(
     kePayload.amount,
-    payoutRail === 'kes' && (step === 2 || step === 4),
+    payoutRail === 'kes' &&
+      kePayload.channel === 'momo' &&
+      (step === 2 || step === 4),
   )
   const paymentMethodOptions = payoutMethodOptions.map((methodOption) => ({
     label: methodOption,
@@ -121,6 +131,8 @@ export function PayoutFormSteps({
               ? cadPayload.amount
               : payoutRail === 'kes'
                 ? kePayload.amount
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.amount
                 : payload.amount
 
   function setAmountValue(nextAmount: string) {
@@ -164,6 +176,17 @@ export function PayoutFormSteps({
         ...previousPayload,
         amount: nextAmount,
       }))
+      setNuvionPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
+      return
+    }
+    if (payoutRail === 'nuvion') {
+      setNuvionPayload((previousPayload) => ({
+        ...previousPayload,
+        amount: nextAmount,
+      }))
       return
     }
     setPayload((previousPayload) => ({
@@ -184,7 +207,9 @@ export function PayoutFormSteps({
             : payoutRail === 'cad'
               ? 'Canada settlement pocket · bank / Interac / bill payout'
               : payoutRail === 'kes'
-                ? 'Kenya settlement pocket · M-Pesa payout'
+                ? 'Kenya settlement pocket · M-Pesa or Nuvion bank EFT'
+                : payoutRail === 'nuvion'
+                  ? 'Nuvion own-currency payout'
                 : undefined
 
   // Limits and balance live in the amount card — this only carries what the
@@ -203,7 +228,10 @@ export function PayoutFormSteps({
       return 'CAD payouts cannot be reversed once submitted.'
     }
     if (payoutRail === 'kes') {
-      return 'M-Pesa payouts cannot be reversed once submitted.'
+      return 'M-Pesa and bank payouts cannot be reversed once submitted.'
+    }
+    if (payoutRail === 'nuvion') {
+      return 'Nuvion payouts cannot be reversed once submitted.'
     }
     return null
   })()
@@ -230,7 +258,9 @@ export function PayoutFormSteps({
                       : payoutRail === 'cad'
                         ? 'Enter how much CAD to send from your Canada wallet to a bank account, Interac email, or biller.'
                         : payoutRail === 'kes'
-                          ? 'Enter how much KES to send from your Kenya wallet to M-Pesa.'
+                          ? 'Enter how much KES to send from your Kenya wallet.'
+                          : payoutRail === 'nuvion'
+                            ? `Enter how much ${displayCurrency || 'funds'} to send via Nuvion.`
                         : 'Enter how much to send from the selected wallet.'}
             </p>
 
@@ -282,6 +312,14 @@ export function PayoutFormSteps({
             <KesBeneficiaryFields
               kePayload={kePayload}
               setKePayload={setKePayload}
+              nuvionPayload={nuvionPayload}
+              setNuvionPayload={setNuvionPayload}
+              nuvionEntityApproved={nuvionEntityApproved}
+            />
+          ) : payoutRail === 'nuvion' ? (
+            <NuvionBeneficiaryFields
+              nuvionPayload={nuvionPayload}
+              setNuvionPayload={setNuvionPayload}
             />
           ) : payoutRail === 'eur' ? (
             <div className="payout-field-grid">
@@ -558,32 +596,97 @@ export function PayoutFormSteps({
                 Review payout
               </h2>
               <p className="payout-panel-section-desc sm:col-span-2">
-                Confirm the M-Pesa recipient before submitting. Transfers cannot
-                be reversed once sent.
+                {kePayload.channel === 'bank'
+                  ? 'Confirm the Nuvion bank recipient before submitting. Transfers cannot be reversed once sent.'
+                  : 'Confirm the M-Pesa recipient before submitting. Transfers cannot be reversed once sent.'}
+              </p>
+              <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                {kePayload.channel === 'bank' ? (
+                  <>
+                    <p>
+                      <span className="text-(--color-secondary)">Amount:</span>{' '}
+                      {nuvionPayload.amount || kePayload.amount || '—'}{' '}
+                      {KENYA_PAYOUT_CURRENCY}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">
+                        Beneficiary:
+                      </span>{' '}
+                      {nuvionPayload.accountHolderName || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Bank:</span>{' '}
+                      {nuvionPayload.bankName ||
+                        nuvionPayload.bankCode ||
+                        '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Account:</span>{' '}
+                      {nuvionPayload.accountNumber || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Narration:</span>{' '}
+                      {nuvionPayload.narration || '—'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <span className="text-(--color-secondary)">Amount:</span>{' '}
+                      {kePayload.amount || '—'} {KENYA_PAYOUT_CURRENCY}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Recipient:</span>{' '}
+                      {kePayload.accountName || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">M-Pesa:</span>{' '}
+                      {kePayload.accountNumber || '—'}
+                    </p>
+                    {keFeeQuoteQuery.data?.feeAmount ? (
+                      <p className="mt-2">
+                        <span className="text-(--color-secondary)">Est. fee:</span>{' '}
+                        {formatPayoutMoney(
+                          keFeeQuoteQuery.data.feeCurrency?.trim().toUpperCase() ||
+                            KENYA_PAYOUT_CURRENCY,
+                          keFeeQuoteQuery.data.feeAmount,
+                        )}
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </div>
+          ) : payoutRail === 'nuvion' ? (
+            <div className="payout-field-grid">
+              <h2 className="payout-panel-section-title sm:col-span-2">
+                Review payout
+              </h2>
+              <p className="payout-panel-section-desc sm:col-span-2">
+                Confirm the Nuvion destination before submitting. Transfers
+                cannot be reversed once sent.
               </p>
               <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
                 <p>
                   <span className="text-(--color-secondary)">Amount:</span>{' '}
-                  {kePayload.amount || '—'} {KENYA_PAYOUT_CURRENCY}
+                  {nuvionPayload.amount || '—'} {displayCurrency || '—'}
                 </p>
                 <p className="mt-2">
-                  <span className="text-(--color-secondary)">Recipient:</span>{' '}
-                  {kePayload.accountName || '—'}
+                  <span className="text-(--color-secondary)">Destination:</span>{' '}
+                  {nuvionPayload.destinationType || '—'}
                 </p>
                 <p className="mt-2">
-                  <span className="text-(--color-secondary)">M-Pesa:</span>{' '}
-                  {kePayload.accountNumber || '—'}
+                  <span className="text-(--color-secondary)">Beneficiary:</span>{' '}
+                  {nuvionPayload.accountHolderName || '—'}
                 </p>
-                {keFeeQuoteQuery.data?.feeAmount ? (
-                  <p className="mt-2">
-                    <span className="text-(--color-secondary)">Est. fee:</span>{' '}
-                    {formatPayoutMoney(
-                      keFeeQuoteQuery.data.feeCurrency?.trim().toUpperCase() ||
-                        KENYA_PAYOUT_CURRENCY,
-                      keFeeQuoteQuery.data.feeAmount,
-                    )}
-                  </p>
-                ) : null}
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Relationship:</span>{' '}
+                  {nuvionPayload.relationship || 'vendor'}
+                </p>
+                <p className="mt-2">
+                  <span className="text-(--color-secondary)">Narration:</span>{' '}
+                  {nuvionPayload.narration || '—'}
+                </p>
               </div>
             </div>
           ) : payoutRail === 'cad' ? (

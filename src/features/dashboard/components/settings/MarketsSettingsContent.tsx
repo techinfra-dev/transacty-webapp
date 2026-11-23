@@ -21,6 +21,7 @@ import {
 import { useBalanceQuery } from '../../hooks/useBalanceQuery.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../../services/marketSchemas.ts'
+import { NuvionGetStartedCard } from './NuvionGetStartedCard.tsx'
 import { ServicesBoardCard } from './ServicesBoardCard.tsx'
 
 function formatMarketDate(iso: string) {
@@ -167,6 +168,7 @@ export function MarketsSettingsContent() {
           catalog={catalog}
         />
       ))}
+      <NuvionGetStartedCard />
       <ServicesBoardCard />
     </div>
   )

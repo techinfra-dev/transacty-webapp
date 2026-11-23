@@ -10,7 +10,7 @@ export function DashboardAddWalletCard({ onClick }: DashboardAddWalletCardProps)
         event.preventDefault()
         onClick?.()
       }}
-      aria-label="Add wallet — activate another merchant pocket"
+      aria-label="Add wallet — browse markets and request access"
       className="dashboard-add-wallet"
     >
       <span className="dashboard-add-wallet-icon">
@@ -28,7 +28,7 @@ export function DashboardAddWalletCard({ onClick }: DashboardAddWalletCardProps)
       </span>
       <span className="dashboard-add-wallet-title">Add wallet</span>
       <span className="dashboard-add-wallet-desc">
-        Create another merchant pocket for this environment
+        Browse markets, request access, or open newly enabled countries
       </span>
     </button>
   )

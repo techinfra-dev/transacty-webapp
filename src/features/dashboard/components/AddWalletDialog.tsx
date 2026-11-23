@@ -5,6 +5,10 @@ import { useKycDialogStore } from '../../../store/kycDialogStore.ts'
 import type { BalanceWalletItem } from '../services/balanceSchemas.ts'
 import type { PortalMarketRow } from '../services/marketSchemas.ts'
 import { useRequestMarketMutation } from '../hooks/useRequestMarketMutation.ts'
+import {
+  useCreateNuvionEntityMutation,
+  useNuvionEntityQuery,
+} from '../hooks/useNuvionEntity.ts'
 import { useProfileQuery } from '../hooks/useProfileQuery.ts'
 import {
   getMarketWalletAction,
@@ -26,8 +30,16 @@ import {
   sortMarkets,
   type MarketBrowserFilter,
 } from '../utils/marketDisplayUtils.ts'
+import {
+  isNuvionEntityApproved,
+  isNuvionEntityPending,
+  isNuvionEntityTerminalFailure,
+  isNuvionMarketRow,
+} from '../utils/nuvionMarket.ts'
 import { CurrencyMarketAvatar } from '../../../components/ui/CurrencyMarketAvatar.tsx'
 import { AnimateHeight } from '../../../components/ui/AnimateHeight.tsx'
+import { NuvionEntitySetupForm } from './NuvionEntitySetupForm.tsx'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner.tsx'
 
 interface AddWalletDialogProps {
   isOpen: boolean
@@ -133,12 +145,24 @@ function statusLabel(
   filter: BrowserRow['filter'],
   market: PortalMarketRow,
   action: CatalogWalletAction,
+  options?: {
+    isNuvion?: boolean
+    nuvionEntityPending?: boolean
+    nuvionEntityFailed?: boolean
+  },
 ) {
-  if (filter === 'enabled') {
-    return 'Enabled'
-  }
   if (filter === 'unavailable') {
     return 'Unavailable'
+  }
+  if (options?.isNuvion && options.nuvionEntityFailed) {
+    return 'Needs support'
+  }
+  if (
+    options?.isNuvion &&
+    options.nuvionEntityPending &&
+    market.entitlementStatus === 'disabled'
+  ) {
+    return 'Setting up'
   }
   if (action === 'pending_review' || market.entitlementStatus === 'requested') {
     return 'Requested'
@@ -152,6 +176,12 @@ function statusLabel(
   if (action === 'switch_to_live') {
     return 'Live only'
   }
+  if (action === 'provisioning') {
+    return 'Setting up'
+  }
+  if (filter === 'enabled') {
+    return 'Enabled'
+  }
   // Available tab: not enabled yet (requestable), not offline.
   return 'Not enabled'
 }
@@ -159,12 +189,17 @@ function statusLabel(
 function MarketBrowserRow({
   row,
   enterDelayMs = 0,
+  nuvionEntityStatus,
+  isRequestingMarket,
+  onRequestWallet,
 }: {
   row: BrowserRow
   enterDelayMs?: number
+  nuvionEntityStatus: string | null | undefined
+  isRequestingMarket: boolean
+  onRequestWallet: (market: PortalMarketRow) => void
 }) {
   const { market, action, filter, currencies } = row
-  const requestMutation = useRequestMarketMutation()
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const [justRequested, setJustRequested] = useState(false)
   // Country/market title only — currency stays in the badge below.
@@ -173,14 +208,20 @@ function MarketBrowserRow({
   const currencyLabel = currencies[0] ?? market.settlementCurrencies[0]?.toUpperCase()
   const temporarilyDown = isMarketTemporarilyDown(market)
   const unavailable = filter === 'unavailable' || temporarilyDown
+  const isNuvion = isNuvionMarketRow(market)
+  const nuvionPending = isNuvionEntityPending(nuvionEntityStatus)
+  const nuvionFailed = isNuvionEntityTerminalFailure(nuvionEntityStatus)
+  const nuvionApproved = isNuvionEntityApproved(nuvionEntityStatus)
 
-  function handleRequestAccess() {
-    if (requestMutation.isPending) {
+  function handleRequestWallet() {
+    if (isRequestingMarket) {
       return
     }
-    requestMutation.mutate(market.market, {
-      onSuccess: () => setJustRequested(true),
-    })
+    onRequestWallet(market)
+    // Optimistic label for non-setup paths; setup panel handles create-first.
+    if (!isNuvion || nuvionApproved) {
+      setJustRequested(true)
+    }
   }
 
   function renderAction() {
@@ -188,7 +229,28 @@ function MarketBrowserRow({
       return <span className="add-wallet-row-pill">Temporarily down</span>
     }
 
-    if (action === 'none' || row.hasActiveWallet) {
+    if (row.hasActiveWallet) {
+      return <span className="add-wallet-row-done">Active</span>
+    }
+
+    if (isNuvion && nuvionFailed) {
+      return <span className="add-wallet-row-pill">Contact support</span>
+    }
+
+    if (
+      isNuvion &&
+      nuvionPending &&
+      market.entitlementStatus === 'disabled' &&
+      !justRequested
+    ) {
+      return <span className="add-wallet-row-pill">Setting up</span>
+    }
+
+    if (action === 'none' && filter === 'enabled') {
+      return <span className="add-wallet-row-done">Enabled</span>
+    }
+
+    if (action === 'none') {
       return null
     }
 
@@ -211,11 +273,11 @@ function MarketBrowserRow({
           <button
             type="button"
             className="dash-btn-primary add-wallet-row-btn"
-            onClick={handleRequestAccess}
-            disabled={requestMutation.isPending}
-            aria-busy={requestMutation.isPending}
+            onClick={handleRequestWallet}
+            disabled={isRequestingMarket}
+            aria-busy={isRequestingMarket}
           >
-            {requestMutation.isPending ? (
+            {isRequestingMarket ? (
               <span className="add-wallet-row-btn-loading">
                 <span
                   className="add-wallet-row-btn-spinner animate-spin"
@@ -224,7 +286,7 @@ function MarketBrowserRow({
                 Requesting…
               </span>
             ) : (
-              'Request access'
+              'Request wallet'
             )}
           </button>
         )
@@ -265,13 +327,15 @@ function MarketBrowserRow({
   const canRequest =
     !unavailable &&
     market.entitlementStatus === 'disabled' &&
-    !justRequested
+    !justRequested &&
+    !(isNuvion && nuvionPending) &&
+    !(isNuvion && nuvionFailed)
   const canCompleteKyc = !unavailable && action === 'complete_kyc'
   const isInteractive = canRequest || canCompleteKyc
 
   function handleRowActivate() {
     if (canRequest) {
-      handleRequestAccess()
+      handleRequestWallet()
       return
     }
     if (canCompleteKyc) {
@@ -324,21 +388,22 @@ function MarketBrowserRow({
         {temporarilyDown && isBangladeshRailPausedForMarket(market.market) ? (
           <p className="add-wallet-row-note">{BANGLADESH_RAIL_PAUSE_COPY}</p>
         ) : null}
-        {requestMutation.isError ? (
-          <p className="add-wallet-row-error">
-            {requestMutation.error instanceof Error
-              ? requestMutation.error.message
-              : 'Unable to request market access.'}
-          </p>
-        ) : null}
       </div>
 
       <div className="add-wallet-browser-aside">
         <span
-          className={`add-wallet-status-pill add-wallet-status-pill--${statusTone(filter)}`}
+          className={`add-wallet-status-pill add-wallet-status-pill--${
+            isNuvion && nuvionPending && market.entitlementStatus === 'disabled'
+              ? 'available'
+              : statusTone(filter)
+          }`}
         >
           <span className="add-wallet-status-dot" aria-hidden />
-          {statusLabel(filter, market, action)}
+          {statusLabel(filter, market, action, {
+            isNuvion,
+            nuvionEntityPending: nuvionPending,
+            nuvionEntityFailed: nuvionFailed,
+          })}
         </span>
         <div className="add-wallet-row-action">{renderAction()}</div>
       </div>
@@ -354,13 +419,101 @@ export function AddWalletDialog({
 }: AddWalletDialogProps) {
   const openKycDialog = useKycDialogStore((state) => state.openDialog)
   const profileQuery = useProfileQuery(isOpen)
+  const isKycVerified = profileQuery.data?.kycStatus === 'verified'
+  const nuvionEntityQuery = useNuvionEntityQuery(isOpen && Boolean(isKycVerified))
+  const createNuvionEntityMutation = useCreateNuvionEntityMutation()
+  const requestMutation = useRequestMarketMutation()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<MarketBrowserFilter>('all')
+  const [walletSetupFor, setWalletSetupFor] = useState<PortalMarketRow | null>(
+    null,
+  )
+  const [flowError, setFlowError] = useState<string | null>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
   const filterChipRefs = useRef<
     Partial<Record<MarketBrowserFilter, HTMLButtonElement>>
   >({})
   const [pill, setPill] = useState({ width: 0, x: 0 })
+
+  useEffect(() => {
+    if (!isOpen) {
+      setWalletSetupFor(null)
+      setFlowError(null)
+      setQuery('')
+      setFilter('all')
+    }
+  }, [isOpen])
+
+  async function requestMarketWallet(marketKey: string) {
+    await requestMutation.mutateAsync(marketKey)
+  }
+
+  async function handleRequestWallet(market: PortalMarketRow) {
+    setFlowError(null)
+
+    if (!isNuvionMarketRow(market)) {
+      try {
+        await requestMarketWallet(market.market)
+      } catch (error) {
+        setFlowError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to request this wallet right now.',
+        )
+      }
+      return
+    }
+
+    const entityStatus = nuvionEntityQuery.data?.status
+    if (isNuvionEntityTerminalFailure(entityStatus)) {
+      setFlowError(
+        'Wallet setup could not be completed. Contact support to continue.',
+      )
+      return
+    }
+
+    if (isNuvionEntityPending(entityStatus)) {
+      // Already submitted — list rows show Setting up.
+      return
+    }
+
+    if (isNuvionEntityApproved(entityStatus)) {
+      try {
+        await requestMarketWallet(market.market)
+      } catch (error) {
+        setFlowError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to request this wallet right now.',
+        )
+      }
+      return
+    }
+
+    // No entity yet — collect the one-time details, then request.
+    setWalletSetupFor(market)
+  }
+
+  async function handleNuvionSetupSubmit(payload: {
+    address: {
+      line1: string
+      city: string
+      state: string
+      postalCode: string
+      countryCode: string
+    }
+    description: string
+    incorporationCountry: string
+    incorporationState: string
+  }) {
+    if (!walletSetupFor) {
+      return
+    }
+    setFlowError(null)
+    await createNuvionEntityMutation.mutateAsync(payload)
+    await requestMarketWallet(walletSetupFor.market)
+    setWalletSetupFor(null)
+  }
 
   const rows = useMemo<BrowserRow[]>(() => {
     const mapped = sortMarkets(markets).map((market) => {
@@ -523,18 +676,33 @@ export function AddWalletDialog({
               <WalletGlyph />
             </div>
             <div>
-              <h2 className="add-wallet-browser-title-lg">Add a wallet</h2>
+              <h2 className="add-wallet-browser-title-lg">
+                {walletSetupFor
+                  ? `Request ${getMarketDisplayName(
+                      walletSetupFor.market,
+                      walletSetupFor.displayName,
+                    )} wallet`
+                  : 'Add a wallet'}
+              </h2>
               <p className="add-wallet-browser-subtitle">
-                Each wallet holds one currency and settles on its own rails. Pick
-                the markets you sell into.
+                {walletSetupFor
+                  ? 'One quick step to finish this wallet request. We submit it right after.'
+                  : 'Browse every country rail here. Request a wallet to enable it for this environment.'}
               </p>
             </div>
           </div>
           <button
             type="button"
             className="add-wallet-browser-close"
-            onClick={onClose}
-            aria-label="Close"
+            onClick={() => {
+              if (walletSetupFor) {
+                setWalletSetupFor(null)
+                setFlowError(null)
+                return
+              }
+              onClose()
+            }}
+            aria-label={walletSetupFor ? 'Back to markets' : 'Close'}
           >
             <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden>
               <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 1 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
@@ -542,121 +710,180 @@ export function AddWalletDialog({
           </button>
         </header>
 
-        <div className="add-wallet-browser-toolbar">
-          <label className="add-wallet-browser-search">
-            <span className="add-wallet-browser-search-icon">
-              <SearchGlyph />
-            </span>
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by country, currency or rail — try 'Pix' or 'NGN'"
-              className="add-wallet-browser-search-input"
-              aria-label="Search markets"
-            />
-          </label>
-
-          <div
-            ref={filtersRef}
-            className="add-wallet-browser-filters"
-            role="tablist"
-            aria-label="Filter markets"
-          >
-            <span
-              className="add-wallet-filter-pill"
-              style={{
-                width: pill.width,
-                transform: `translateX(${pill.x}px)`,
-                opacity: pill.width > 0 ? 1 : 0,
-              }}
-              aria-hidden
-            />
-            {FILTER_OPTIONS.map((option) => {
-              const count = counts[option.id]
-              const isActive = filter === option.id
-              return (
-                <button
-                  key={option.id}
-                  ref={(node) => {
-                    filterChipRefs.current[option.id] = node ?? undefined
-                  }}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  className={`add-wallet-filter-chip${isActive ? ' add-wallet-filter-chip--active' : ''}`}
-                  onClick={() => setFilter(option.id)}
-                >
-                  <span className="add-wallet-filter-label">{option.label}</span>
-                  <AnimatedCount value={count} />
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="add-wallet-browser-body">
-          {needsVerification ? (
-            <div className="add-wallet-verify-banner" role="status">
-              <InfoGlyph />
-              <p>
-                Markets switch on when your business is verified. Request them now
-                and they&apos;ll go live together with Live mode — usually within 1
-                business day.{' '}
-                <button
-                  type="button"
-                  className="add-wallet-verify-link"
-                  onClick={handleFinishVerification}
-                >
-                  Finish verification
-                </button>
+        {walletSetupFor ? (
+          <div className="add-wallet-browser-body">
+            <div className="mb-4 rounded-lg border border-(--color-accent)/30 bg-(--color-card) px-3 py-2.5">
+              <p className="[font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-(--color-secondary)">
+                Wallet request
+              </p>
+              <p className="mt-1 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
+                Step 1 of 2 — confirm business details, then we send your{' '}
+                {getMarketDisplayName(
+                  walletSetupFor.market,
+                  walletSetupFor.displayName,
+                )}{' '}
+                wallet request.
               </p>
             </div>
-          ) : null}
-
-          <div className="add-wallet-section-label">
-            <span>
-              Local currency markets <AnimatedCount value={localMarketCount} />
-            </span>
-            <span className="add-wallet-section-rule" aria-hidden />
+            <NuvionEntitySetupForm
+              submitLabel="Submit wallet request"
+              cancelLabel="Back"
+              isSubmitting={
+                createNuvionEntityMutation.isPending || requestMutation.isPending
+              }
+              errorMessage={
+                flowError ||
+                (createNuvionEntityMutation.isError
+                  ? createNuvionEntityMutation.error.message
+                  : null) ||
+                (requestMutation.isError ? requestMutation.error.message : null)
+              }
+              onCancel={() => {
+                setWalletSetupFor(null)
+                setFlowError(null)
+              }}
+              onSubmit={handleNuvionSetupSubmit}
+            />
           </div>
+        ) : (
+          <>
+            <div className="add-wallet-browser-toolbar">
+              <label className="add-wallet-browser-search">
+                <span className="add-wallet-browser-search-icon">
+                  <SearchGlyph />
+                </span>
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search by country, currency or rail — try 'Pix' or 'NGN'"
+                  className="add-wallet-browser-search-input"
+                  aria-label="Search markets"
+                />
+              </label>
 
-          <AnimateHeight
-            dependency={`${filter}:${query.trim().toLowerCase()}:${filteredRows.length}`}
-            className="add-wallet-browser-results-shell"
-            contentClassName="add-wallet-browser-results"
-          >
-            {filteredRows.length === 0 ? (
-              <p className="add-wallet-empty">
-                {rows.length === 0
-                  ? 'No payment markets are available yet.'
-                  : 'No markets match your search or filter.'}
-              </p>
-            ) : (
-              <ul className="add-wallet-browser-list">
-                {filteredRows.map((row, index) => (
-                  <MarketBrowserRow
-                    key={row.market.market}
-                    row={row}
-                    enterDelayMs={Math.min(index * 40, 200)}
-                  />
-                ))}
-              </ul>
-            )}
-          </AnimateHeight>
-
-          <p className="add-wallet-browser-request-market">
-            <GlobeGlyph />
-            <span>
-              Market not listed?{' '}
-              <a
-                className="add-wallet-verify-link"
-                href="mailto:support@n23.io?subject=Market%20request"
+              <div
+                ref={filtersRef}
+                className="add-wallet-browser-filters"
+                role="tablist"
+                aria-label="Filter markets"
               >
-                Tell us where you sell
-              </a>
-            </span>
-          </p>
-        </div>
+                <span
+                  className="add-wallet-filter-pill"
+                  style={{
+                    width: pill.width,
+                    transform: `translateX(${pill.x}px)`,
+                    opacity: pill.width > 0 ? 1 : 0,
+                  }}
+                  aria-hidden
+                />
+                {FILTER_OPTIONS.map((option) => {
+                  const count = counts[option.id]
+                  const isActive = filter === option.id
+                  return (
+                    <button
+                      key={option.id}
+                      ref={(node) => {
+                        filterChipRefs.current[option.id] = node ?? undefined
+                      }}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`add-wallet-filter-chip${isActive ? ' add-wallet-filter-chip--active' : ''}`}
+                      onClick={() => setFilter(option.id)}
+                    >
+                      <span className="add-wallet-filter-label">{option.label}</span>
+                      <AnimatedCount value={count} />
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="add-wallet-browser-body">
+              {needsVerification ? (
+                <div className="add-wallet-verify-banner" role="status">
+                  <InfoGlyph />
+                  <p>
+                    Markets switch on when your business is verified. Request them
+                    now and they&apos;ll go live together with Live mode — usually
+                    within 1 business day.{' '}
+                    <button
+                      type="button"
+                      className="add-wallet-verify-link"
+                      onClick={handleFinishVerification}
+                    >
+                      Finish verification
+                    </button>
+                  </p>
+                </div>
+              ) : null}
+
+              {nuvionEntityQuery.isPending && isKycVerified ? (
+                <div className="mb-3 flex items-center gap-2">
+                  <LoadingSpinner label="Checking wallet setup…" />
+                </div>
+              ) : null}
+
+              {flowError ? (
+                <p className="add-wallet-row-error mb-3" role="alert">
+                  {flowError}
+                </p>
+              ) : null}
+
+              <div className="add-wallet-section-label">
+                <span>
+                  Local currency markets <AnimatedCount value={localMarketCount} />
+                </span>
+                <span className="add-wallet-section-rule" aria-hidden />
+              </div>
+
+              <AnimateHeight
+                dependency={`${filter}:${query.trim().toLowerCase()}:${filteredRows.length}`}
+                className="add-wallet-browser-results-shell"
+                contentClassName="add-wallet-browser-results"
+              >
+                {filteredRows.length === 0 ? (
+                  <p className="add-wallet-empty">
+                    {rows.length === 0
+                      ? 'No payment markets are available yet.'
+                      : 'No markets match your search or filter.'}
+                  </p>
+                ) : (
+                  <ul className="add-wallet-browser-list">
+                    {filteredRows.map((row, index) => (
+                      <MarketBrowserRow
+                        key={row.market.market}
+                        row={row}
+                        enterDelayMs={Math.min(index * 40, 200)}
+                        nuvionEntityStatus={nuvionEntityQuery.data?.status}
+                        isRequestingMarket={
+                          requestMutation.isPending &&
+                          requestMutation.variables === row.market.market
+                        }
+                        onRequestWallet={(market) => {
+                          void handleRequestWallet(market)
+                        }}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </AnimateHeight>
+
+              <p className="add-wallet-browser-request-market">
+                <GlobeGlyph />
+                <span>
+                  Market not listed?{' '}
+                  <a
+                    className="add-wallet-verify-link"
+                    href="mailto:support@n23.io?subject=Market%20request"
+                  >
+                    Tell us where you sell
+                  </a>
+                </span>
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </Sheet>
   )

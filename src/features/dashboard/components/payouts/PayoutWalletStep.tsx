@@ -123,7 +123,9 @@ export function PayoutWalletStep({
                           : payoutRail === 'cad'
                             ? `${CANADA_PAYOUT_CURRENCY} wallet · bank / Interac / bill payout`
                             : payoutRail === 'kes'
-                              ? `${KENYA_PAYOUT_CURRENCY} wallet · M-Pesa payout`
+                              ? `${KENYA_PAYOUT_CURRENCY} wallet · M-Pesa / Nuvion bank`
+                              : payoutRail === 'nuvion'
+                                ? `${code} wallet · Nuvion payout`
                             : walletSubtitle(wallet)
                   : 'Payouts not available for this wallet yet'}
               </span>

@@ -28,6 +28,11 @@ import {
   useKePayoutQuery,
 } from './useKePayoutMutations.ts'
 import {
+  useCreateNuvionPayoutMutation,
+  useNuvionPayoutQuery,
+} from './useNuvionPayoutMutations.ts'
+import { useNuvionEntityQuery } from './useNuvionEntity.ts'
+import {
   createPayoutPayloadSchema,
   type BeneficiaryAccountInfo,
   type CardHolderInfo,
@@ -67,6 +72,18 @@ import {
   type KePayoutInstance,
 } from '../services/kePayoutSchemas.ts'
 import {
+  buildNuvionDestinationFromForm,
+  createNuvionPayoutPayloadSchema,
+  initialNuvionPayoutPayload,
+  type NuvionPayoutFormPayload,
+  type NuvionPayoutInstance,
+} from '../services/nuvionPayoutSchemas.ts'
+import {
+  isNuvionEntityApproved,
+  isNuvionPayoutCurrency,
+  type NuvionPayoutCurrency,
+} from '../utils/nuvionMarket.ts'
+import {
   NIGERIA_LIVE_ONLY_COPY,
   NIGERIA_LIVE_ONLY_ENVIRONMENT,
   isNigeriaWallet,
@@ -102,6 +119,7 @@ import {
   initialCpgPayoutPayload,
   initialEurPayoutPayload,
   initialCadPayoutPayload,
+  emptyNuvionPayoutPayload,
   initialKePayoutPayload,
   initialNgnPayoutPayload,
   initialPayoutPayload,
@@ -110,6 +128,8 @@ import {
   maximumCadPayoutAmount,
   minimumKesPayoutAmount,
   maximumKesPayoutAmount,
+  minimumNuvionPayoutAmount,
+  maximumNuvionPayoutAmount,
   minimumCpgPayoutAmount,
   minimumEurPayoutAmount,
   minimumNgnPayoutAmount,
@@ -144,6 +164,8 @@ export function usePayoutFlow() {
     useState<CadPayoutInstance | null>(null)
   const [createdKePayout, setCreatedKePayout] =
     useState<KePayoutInstance | null>(null)
+  const [createdNuvionPayout, setCreatedNuvionPayout] =
+    useState<NuvionPayoutInstance | null>(null)
   const [queuedApproval, setQueuedApproval] =
     useState<PayoutQueuedApproval | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
@@ -161,6 +183,9 @@ export function usePayoutFlow() {
   const [kePayload, setKePayload] = useState<KePayoutFormPayload>(
     initialKePayoutPayload,
   )
+  const [nuvionPayload, setNuvionPayload] = useState<NuvionPayoutFormPayload>(
+    emptyNuvionPayoutPayload,
+  )
   const [isLivePayoutConfirmOpen, setIsLivePayoutConfirmOpen] = useState(false)
 
   const createPayoutMutation = useCreatePayoutMutation()
@@ -170,9 +195,12 @@ export function usePayoutFlow() {
   const createNgnPayoutMutation = useCreateNgnPayoutMutation()
   const createCadPayoutMutation = useCreateCadPayoutMutation()
   const createKePayoutMutation = useCreateKePayoutMutation()
+  const createNuvionPayoutMutation = useCreateNuvionPayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
   const marketsQuery = useMarketsQuery(true)
+  const nuvionEntityQuery = useNuvionEntityQuery(true)
+  const isNuvionApproved = isNuvionEntityApproved(nuvionEntityQuery.data?.status)
 
   const wallets = useMemo(
     () => getActivatedWallets(balanceQuery.data),
@@ -188,6 +216,11 @@ export function usePayoutFlow() {
     ? getPayoutRailForWallet(selectedWallet)
     : null
 
+  /** KES bank EFT uses Nuvion while the wallet rail stays `kes` for M-Pesa. */
+  const usesNuvionSubmit =
+    payoutRail === 'nuvion' ||
+    (payoutRail === 'kes' && kePayload.channel === 'bank')
+
   const settlementCurrency = selectedWallet?.currency.trim().toUpperCase() ?? ''
   const displayCurrency =
     payoutRail === 'eur'
@@ -195,6 +228,28 @@ export function usePayoutFlow() {
       : payoutRail === 'cpg'
         ? INDIA_PAYOUT_SETTLEMENT_CURRENCY
         : settlementCurrency
+
+  useEffect(() => {
+    if (payoutRail !== 'nuvion' || !isNuvionPayoutCurrency(settlementCurrency)) {
+      return
+    }
+    setNuvionPayload((previous) => {
+      if (previous.currency === settlementCurrency) {
+        return previous
+      }
+      return {
+        ...initialNuvionPayoutPayload(settlementCurrency as NuvionPayoutCurrency),
+        amount: previous.amount,
+        narration: previous.narration,
+        accountHolderName: previous.accountHolderName,
+        email: previous.email,
+        beneficiaryLine1: previous.beneficiaryLine1,
+        beneficiaryCity: previous.beneficiaryCity,
+        beneficiaryCountryCode: previous.beneficiaryCountryCode,
+        relationship: previous.relationship,
+      }
+    })
+  }, [payoutRail, settlementCurrency])
 
   const isEuropeMarketApproved = useMemo(
     () =>
@@ -275,6 +330,8 @@ export function usePayoutFlow() {
               ? Math.max(minimumCadPayoutAmount, payoutLimits?.min ?? 0)
               : payoutRail === 'kes'
                 ? Math.max(minimumKesPayoutAmount, payoutLimits?.min ?? 0)
+                : payoutRail === 'nuvion'
+                  ? Math.max(minimumNuvionPayoutAmount, payoutLimits?.min ?? 0)
                 : Math.max(minimumPayoutAmount, payoutLimits?.min ?? 0)
 
   const effectiveMaximumAmount = useMemo(() => {
@@ -297,6 +354,9 @@ export function usePayoutFlow() {
     if (payoutRail === 'kes') {
       limits.push(maximumKesPayoutAmount)
     }
+    if (payoutRail === 'nuvion') {
+      limits.push(maximumNuvionPayoutAmount)
+    }
     if (walletBalance !== null) {
       limits.push(walletBalance)
     }
@@ -315,7 +375,11 @@ export function usePayoutFlow() {
             : payoutRail === 'cad'
               ? cadPayload.amount
               : payoutRail === 'kes'
-                ? kePayload.amount
+                ? kePayload.channel === 'bank'
+                  ? nuvionPayload.amount || kePayload.amount
+                  : kePayload.amount
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.amount
                 : payload.amount
 
   const formattedPreviewAmount = useMemo(
@@ -340,6 +404,7 @@ export function usePayoutFlow() {
     createdNgnPayout?.transactionId ||
     createdCadPayout?.transactionId ||
     createdKePayout?.transactionId ||
+    createdNuvionPayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
     createdPayout?.id
@@ -366,7 +431,12 @@ export function usePayoutFlow() {
 
   const kePayoutStatusQuery = useKePayoutQuery(
     createdKePayout?.transactionId,
-    step === 5 && payoutRail === 'kes',
+    step === 5 && payoutRail === 'kes' && kePayload.channel === 'momo',
+  )
+
+  const nuvionPayoutStatusQuery = useNuvionPayoutQuery(
+    createdNuvionPayout?.transactionId,
+    step === 5 && Boolean(createdNuvionPayout),
   )
 
   const hasBeneficiaryDetails =
@@ -391,8 +461,14 @@ export function usePayoutFlow() {
                   : cadPayload.bill.billerId.trim().length > 0 ||
                     cadPayload.bill.accountNumber.trim().length > 0
               : payoutRail === 'kes'
-                ? kePayload.accountNumber.trim().length > 0 ||
-                  kePayload.accountName.trim().length > 0
+                ? kePayload.channel === 'bank'
+                  ? nuvionPayload.accountHolderName.trim().length > 0 ||
+                    nuvionPayload.accountNumber.trim().length > 0
+                  : kePayload.accountNumber.trim().length > 0 ||
+                    kePayload.accountName.trim().length > 0
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.accountHolderName.trim().length > 0 ||
+                    Boolean(nuvionPayload.destinationType)
               : payload.benificiaryAccountInfo.number.trim().length > 0 ||
                 payload.benificiaryAccountInfo.holderName.trim().length > 0
 
@@ -420,10 +496,16 @@ export function usePayoutFlow() {
                   : cadPayload.bill.billerId.trim().length > 0 &&
                     cadPayload.bill.accountNumber.trim().length > 0
               : payoutRail === 'kes'
-                ? kePayload.accountName.trim().length > 0 &&
-                  isValidKenyaMsisdn(kePayload.accountNumber) &&
-                  normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
-                    normalizeKenyaMsisdn(kePayload.accountNumber)
+                ? kePayload.channel === 'bank'
+                  ? nuvionPayload.accountHolderName.trim().length > 0 &&
+                    nuvionPayload.narration.trim().length > 0
+                  : kePayload.accountName.trim().length > 0 &&
+                    isValidKenyaMsisdn(kePayload.accountNumber) &&
+                    normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
+                      normalizeKenyaMsisdn(kePayload.accountNumber)
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.accountHolderName.trim().length > 0 &&
+                    nuvionPayload.narration.trim().length > 0
               : payload.cardHolderInfo.firstName.trim().length > 0 ||
                 payload.cardHolderInfo.lastName.trim().length > 0
 
@@ -508,7 +590,7 @@ export function usePayoutFlow() {
       return BANGLADESH_RAIL_PAUSE_COPY
     }
     if (!isPayoutSupportedWallet(wallet)) {
-      return 'Payouts are available for BRL, NGN, CAD, KES, USDT, and USDC wallets only.'
+      return 'Payouts are available for BRL, NGN, CAD, KES, USD, AED, GHS, TZS, MXN, USDT, and USDC wallets only.'
     }
     if (wallet.status.toLowerCase() !== 'active') {
       return 'Selected wallet must be active to send a payout.'
@@ -546,11 +628,53 @@ export function usePayoutFlow() {
         return KENYA_LIVE_ONLY_COPY
       }
     }
+    if (getPayoutRailForWallet(wallet) === 'nuvion' && !isNuvionApproved) {
+      return 'Register and get your Nuvion entity approved in Settings → Markets before sending these payouts.'
+    }
     if (
       getWalletMarket(wallet) === 'europe' &&
       getPayoutRailForWallet(wallet) !== 'eur'
     ) {
       return `Europe payouts debit your ${EUR_PAYOUT_SETTLEMENT_CURRENCY} wallet and send ${EUR_PAYOUT_FIAT_CURRENCY} to an IBAN.`
+    }
+    return null
+  }
+
+  function validateNuvionBeneficiaryStep() {
+    if (!isNuvionApproved) {
+      return 'Nuvion entity must be approved before sending these payouts.'
+    }
+    if (!nuvionPayload.destinationType) {
+      return 'Select a destination type.'
+    }
+    if (!nuvionPayload.narration.trim()) {
+      return 'Enter a narration for this payout.'
+    }
+    const destination = buildNuvionDestinationFromForm(nuvionPayload)
+    if (!destination) {
+      return 'Complete the destination fields.'
+    }
+    const parsed = createNuvionPayoutPayloadSchema.safeParse({
+      environment: portalEnvironment,
+      amount: (nuvionPayload.amount || activeAmount).trim() || '1.00',
+      narration: nuvionPayload.narration.trim(),
+      destination,
+      beneficiary: {
+        accountHolderName: nuvionPayload.accountHolderName.trim(),
+        email: nuvionPayload.email.trim(),
+        address: {
+          line1: nuvionPayload.beneficiaryLine1.trim(),
+          city: nuvionPayload.beneficiaryCity.trim(),
+          countryCode: nuvionPayload.beneficiaryCountryCode.trim(),
+        },
+        relationship: nuvionPayload.relationship,
+      },
+    })
+    if (!parsed.success) {
+      return (
+        parsed.error.issues[0]?.message ||
+        'Complete all Nuvion beneficiary fields.'
+      )
     }
     return null
   }
@@ -634,6 +758,9 @@ export function usePayoutFlow() {
     }
 
     if (payoutRail === 'kes') {
+      if (kePayload.channel === 'bank') {
+        return validateNuvionBeneficiaryStep()
+      }
       if (!kePayload.accountName.trim()) {
         return 'Enter the recipient name.'
       }
@@ -647,6 +774,10 @@ export function usePayoutFlow() {
         return 'M-Pesa number and confirmation do not match.'
       }
       return null
+    }
+
+    if (payoutRail === 'nuvion') {
+      return validateNuvionBeneficiaryStep()
     }
 
     if (payoutRail === 'cad') {
@@ -730,8 +861,13 @@ export function usePayoutFlow() {
       return null
     }
 
-    // Nigeria and Canada step 4 is a review of the recipient — no extra fields.
-    if (payoutRail === 'ngn' || payoutRail === 'cad' || payoutRail === 'kes') {
+    // Nigeria, Canada, Kenya, and Nuvion step 4 is a review — no extra fields.
+    if (
+      payoutRail === 'ngn' ||
+      payoutRail === 'cad' ||
+      payoutRail === 'kes' ||
+      payoutRail === 'nuvion'
+    ) {
       return validateBeneficiaryStep()
     }
 
@@ -975,6 +1111,67 @@ export function usePayoutFlow() {
       return
     }
 
+    if (usesNuvionSubmit) {
+      const amountForSubmit =
+        payoutRail === 'kes'
+          ? (nuvionPayload.amount.trim() || kePayload.amount.trim())
+          : nuvionPayload.amount.trim()
+      const destination = buildNuvionDestinationFromForm({
+        ...nuvionPayload,
+        amount: amountForSubmit,
+        currency:
+          payoutRail === 'kes'
+            ? 'KES'
+            : (nuvionPayload.currency as NuvionPayoutCurrency | ''),
+        destinationType:
+          payoutRail === 'kes' ? 'kes_bank' : nuvionPayload.destinationType,
+      })
+      if (!destination) {
+        setClientError('Complete the Nuvion destination fields.')
+        return
+      }
+      const parsedPayload = createNuvionPayoutPayloadSchema.safeParse({
+        environment: portalEnvironment,
+        amount: amountForSubmit,
+        narration: nuvionPayload.narration.trim(),
+        destination,
+        beneficiary: {
+          accountHolderName: nuvionPayload.accountHolderName.trim(),
+          email: nuvionPayload.email.trim(),
+          address: {
+            line1: nuvionPayload.beneficiaryLine1.trim(),
+            city: nuvionPayload.beneficiaryCity.trim(),
+            countryCode: nuvionPayload.beneficiaryCountryCode.trim(),
+          },
+          relationship: nuvionPayload.relationship,
+        },
+      })
+      if (!parsedPayload.success) {
+        setClientError(
+          parsedPayload.error.issues[0]?.message ||
+            'Invalid Nuvion payout request.',
+        )
+        return
+      }
+
+      try {
+        const response = await createNuvionPayoutMutation.mutateAsync(
+          parsedPayload.data,
+        )
+        if (response.kind === 'queued') {
+          setQueuedApproval(response.approval)
+        } else {
+          setCreatedNuvionPayout(response.payout)
+        }
+        setStep(5)
+      } catch (error) {
+        if (error instanceof PayoutPinError) {
+          return
+        }
+      }
+      return
+    }
+
     if (payoutRail === 'kes') {
       const parsedPayload = createKePayoutPayloadSchema.safeParse({
         environment: KENYA_LIVE_ONLY_ENVIRONMENT,
@@ -1204,7 +1401,8 @@ export function usePayoutFlow() {
           portalEnvironment === CANADA_LIVE_ONLY_ENVIRONMENT)) &&
       (getPayoutRailForWallet(selectedWallet) !== 'kes' ||
         (isKenyaMarketApproved &&
-          portalEnvironment === KENYA_LIVE_ONLY_ENVIRONMENT))
+          portalEnvironment === KENYA_LIVE_ONLY_ENVIRONMENT)) &&
+      (getPayoutRailForWallet(selectedWallet) !== 'nuvion' || isNuvionApproved)
     : false
 
   const isAccountConfirmationMatched =
@@ -1213,10 +1411,12 @@ export function usePayoutFlow() {
         ngnPayload.confirmAccountNumber.trim() ===
           ngnPayload.accountNumber.trim()
       : payoutRail === 'kes'
-        ? kePayload.confirmAccountNumber.trim().length > 0 &&
-          isValidKenyaMsisdn(kePayload.accountNumber) &&
-          normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
-            normalizeKenyaMsisdn(kePayload.accountNumber)
+        ? kePayload.channel === 'bank'
+          ? true
+          : kePayload.confirmAccountNumber.trim().length > 0 &&
+            isValidKenyaMsisdn(kePayload.accountNumber) &&
+            normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
+              normalizeKenyaMsisdn(kePayload.accountNumber)
       : payoutRail === 'pix'
         ? brPayload.confirmAccountNumber.trim().length > 0 &&
           brPayload.confirmAccountNumber.trim() ===
@@ -1234,10 +1434,14 @@ export function usePayoutFlow() {
     createBrPayoutMutation.isPending ||
     createNgnPayoutMutation.isPending ||
     createCadPayoutMutation.isPending ||
-    createKePayoutMutation.isPending
+    createKePayoutMutation.isPending ||
+    createNuvionPayoutMutation.isPending
 
-  const mutationErrorMessage =
-    payoutRail === 'eur'
+  const mutationErrorMessage = usesNuvionSubmit
+    ? createNuvionPayoutMutation.isError
+      ? createNuvionPayoutMutation.error.message
+      : undefined
+    : payoutRail === 'eur'
       ? createEurPayoutMutation.isError
         ? createEurPayoutMutation.error.message
         : undefined
@@ -1279,6 +1483,7 @@ export function usePayoutFlow() {
     setCreatedNgnPayout(null)
     setCreatedCadPayout(null)
     setCreatedKePayout(null)
+    setCreatedNuvionPayout(null)
     setQueuedApproval(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
@@ -1288,6 +1493,7 @@ export function usePayoutFlow() {
     setNgnPayload(initialNgnPayoutPayload)
     setCadPayload(initialCadPayoutPayload)
     setKePayload(initialKePayoutPayload)
+    setNuvionPayload(emptyNuvionPayoutPayload)
     setSelectedWalletId(
       wallets.find((wallet) => isPayoutSupportedWallet(wallet))?.id ??
         wallets[0]?.id ??
@@ -1309,6 +1515,7 @@ export function usePayoutFlow() {
     createdNgnPayout,
     createdCadPayout,
     createdKePayout,
+    createdNuvionPayout,
     queuedApproval,
     payload,
     setPayload,
@@ -1324,7 +1531,11 @@ export function usePayoutFlow() {
     setCadPayload,
     kePayload,
     setKePayload,
+    nuvionPayload,
+    setNuvionPayload,
     payoutRail,
+    usesNuvionSubmit,
+    isNuvionApproved,
     displayCurrency,
     createPayoutMutation,
     createEurPayoutMutation,
@@ -1333,12 +1544,15 @@ export function usePayoutFlow() {
     createNgnPayoutMutation,
     createCadPayoutMutation,
     createKePayoutMutation,
+    createNuvionPayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
     cpgPayoutStatusQuery,
     ngnPayoutStatusQuery,
     cadPayoutStatusQuery,
     kePayoutStatusQuery,
+    nuvionPayoutStatusQuery,
+    nuvionEntityQuery,
     balanceQuery,
     marketsQuery,
     wallets,

@@ -77,8 +77,12 @@ export type CreateKePayoutPayload = z.infer<typeof createKePayoutPayloadSchema>
 export type KePayoutFeeQuote = z.infer<typeof kePayoutFeeQuoteSchema>
 export type KePayoutInstance = z.infer<typeof kePayoutInstanceSchema>
 
+export type KePayoutChannel = 'momo' | 'bank'
+
 export type KePayoutFormPayload = {
   amount: string
+  /** M-Pesa via Tekko KE, or bank EFT via Nuvion. */
+  channel: KePayoutChannel
   accountNumber: string
   confirmAccountNumber: string
   accountName: string

@@ -5,6 +5,7 @@ import type { BrPayoutFormPayload } from '../../services/brPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
+import type { NuvionPayoutFormPayload } from '../../services/nuvionPayoutSchemas.ts'
 import type { PortalEnvironment } from '../../../../types/portalEnvironment.ts'
 import type { BalanceWalletItem } from '../../services/balanceSchemas.ts'
 import { getCurrencyFullName } from '../../../../utils/currencyNames.ts'
@@ -31,6 +32,7 @@ interface PayoutPinnedSummaryProps {
   ngnPayload: NgnPayoutFormPayload
   cadPayload: CadPayoutFormPayload
   kePayload: KePayoutFormPayload
+  nuvionPayload: NuvionPayoutFormPayload
   formattedPreviewAmount: string
   hasBeneficiaryDetails: boolean
   hasSenderDetails: boolean
@@ -48,6 +50,7 @@ export function PayoutPinnedSummary({
   ngnPayload,
   cadPayload,
   kePayload,
+  nuvionPayload,
   formattedPreviewAmount,
   hasBeneficiaryDetails,
   hasSenderDetails,
@@ -70,7 +73,11 @@ export function PayoutPinnedSummary({
                   ? cadPayload.interac.name.trim() || cadPayload.interac.email.trim() || '—'
                   : cadPayload.bill.billerName.trim() || '—'
               : payoutRail === 'kes'
-                ? kePayload.accountName.trim() || '—'
+                ? kePayload.channel === 'bank'
+                  ? nuvionPayload.accountHolderName.trim() || '—'
+                  : kePayload.accountName.trim() || '—'
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.accountHolderName.trim() || '—'
               : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
                 '—'
 
@@ -91,6 +98,8 @@ export function PayoutPinnedSummary({
               ? cadPayload.amount
               : payoutRail === 'kes'
                 ? kePayload.amount
+                : payoutRail === 'nuvion'
+                  ? nuvionPayload.amount
                 : payload.amount
 
   return (
@@ -130,6 +139,8 @@ export function PayoutPinnedSummary({
                     ? `Payout amount (${CANADA_PAYOUT_CURRENCY})`
                     : payoutRail === 'kes'
                       ? `Payout amount (${KENYA_PAYOUT_CURRENCY})`
+                      : payoutRail === 'nuvion'
+                        ? `Payout amount (${selectedWallet?.currency.trim().toUpperCase() || '—'})`
                     : 'Amount'}
         </p>
         <p
@@ -167,7 +178,13 @@ export function PayoutPinnedSummary({
           </p>
         ) : payoutRail === 'kes' ? (
           <p className="payout-summary-value payout-summary-value--muted">
-            Kenya M-Pesa payout
+            {kePayload.channel === 'bank'
+              ? 'Kenya bank EFT (Nuvion)'
+              : 'Kenya M-Pesa payout'}
+          </p>
+        ) : payoutRail === 'nuvion' ? (
+          <p className="payout-summary-value payout-summary-value--muted">
+            Nuvion own-currency payout
           </p>
         ) : null}
       </div>
@@ -207,13 +224,29 @@ export function PayoutPinnedSummary({
           ) : payoutRail === 'kes' ? (
             <div className="space-y-1">
               <p className="payout-summary-value">
-                {kePayload.accountName || '—'}
+                {kePayload.channel === 'bank'
+                  ? nuvionPayload.accountHolderName || '—'
+                  : kePayload.accountName || '—'}
               </p>
               <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs">
-                {kePayload.accountNumber || '—'}
+                {kePayload.channel === 'bank'
+                  ? nuvionPayload.accountNumber || '—'
+                  : kePayload.accountNumber || '—'}
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
-                M-Pesa
+                {kePayload.channel === 'bank' ? 'Bank EFT' : 'M-Pesa'}
+              </p>
+            </div>
+          ) : payoutRail === 'nuvion' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">
+                {nuvionPayload.accountHolderName || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {nuvionPayload.destinationType || '—'}
+              </p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {nuvionPayload.relationship || 'vendor'}
               </p>
             </div>
           ) : payoutRail === 'cad' ? (
@@ -282,7 +315,7 @@ export function PayoutPinnedSummary({
                   ? 'Verified recipient'
                   : payoutRail === 'cad'
                     ? 'Recipient'
-                    : payoutRail === 'kes'
+                    : payoutRail === 'kes' || payoutRail === 'nuvion'
                       ? 'Recipient'
                     : 'Sender'}
         </p>
@@ -326,7 +359,16 @@ export function PayoutPinnedSummary({
             <div className="space-y-1">
               <p className="payout-summary-value">{senderName}</p>
               <p className="payout-summary-value payout-summary-value--muted">
-                M-Pesa recipient
+                {kePayload.channel === 'bank'
+                  ? 'Bank EFT recipient'
+                  : 'M-Pesa recipient'}
+              </p>
+            </div>
+          ) : payoutRail === 'nuvion' ? (
+            <div className="space-y-1">
+              <p className="payout-summary-value">{senderName}</p>
+              <p className="payout-summary-value payout-summary-value--muted">
+                {nuvionPayload.email || 'Nuvion beneficiary'}
               </p>
             </div>
           ) : payoutRail === 'pix' ? (

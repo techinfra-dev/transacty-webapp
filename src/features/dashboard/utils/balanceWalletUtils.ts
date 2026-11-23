@@ -455,6 +455,13 @@ export function getEntitlementOnlyAction(
   if (market.entitlementStatus === 'approved' && market.kybStatus !== 'verified') {
     return 'complete_kyc'
   }
+  // Approved + verified but the balance pocket is not up yet.
+  if (
+    market.entitlementStatus === 'approved' &&
+    market.walletsProvisioned === false
+  ) {
+    return 'provisioning'
+  }
   return 'none'
 }
 

@@ -7,8 +7,17 @@ import type { CpgPayoutFormPayload } from '../../services/cpgPayoutFormTypes.ts'
 import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
+import {
+  initialNuvionPayoutPayload,
+  type NuvionPayoutFormPayload,
+} from '../../services/nuvionPayoutSchemas.ts'
 import type { EurPayoutUserDetails } from '../../services/eurPayoutSchemas.ts'
 import { isBangladeshRailPausedForWallet } from '../../utils/bangladeshRailPause.ts'
+import {
+  isNuvionPayoutCurrency,
+  NUVION_MAXIMUM_PAYOUT_AMOUNT,
+  NUVION_MINIMUM_PAYOUT_AMOUNT,
+} from '../../utils/nuvionMarket.ts'
 
 export const payoutStepItems = [
   { id: 1, label: 'Wallet' },
@@ -38,8 +47,18 @@ export const maximumCadPayoutAmount = 50_000
 export const KENYA_PAYOUT_CURRENCY = 'KES'
 export const minimumKesPayoutAmount = 20
 export const maximumKesPayoutAmount = 250_000
+export const minimumNuvionPayoutAmount = NUVION_MINIMUM_PAYOUT_AMOUNT
+export const maximumNuvionPayoutAmount = NUVION_MAXIMUM_PAYOUT_AMOUNT
 
-export type PayoutRail = 'bdt' | 'eur' | 'cpg' | 'pix' | 'ngn' | 'cad' | 'kes'
+export type PayoutRail =
+  | 'bdt'
+  | 'eur'
+  | 'cpg'
+  | 'pix'
+  | 'ngn'
+  | 'cad'
+  | 'kes'
+  | 'nuvion'
 
 /** Bangladesh BDT payouts via POST /portal/me/payouts. */
 export const PAYOUT_SUPPORTED_CURRENCY = 'BDT'
@@ -79,6 +98,10 @@ export function getPayoutRailForWallet(
   if (code === KENYA_PAYOUT_CURRENCY || market === 'kenya') {
     return 'kes'
   }
+  // Nuvion own-currency payouts (CAD stays Tekko; KES momo stays Tekko KE).
+  if (isNuvionPayoutCurrency(code) && code !== KENYA_PAYOUT_CURRENCY) {
+    return 'nuvion'
+  }
   if (code === EUR_PAYOUT_SETTLEMENT_CURRENCY) {
     return market === 'europe' ? 'eur' : null
   }
@@ -106,6 +129,7 @@ export function isPayoutSupportedCurrency(currency: string) {
     code === NIGERIA_PAYOUT_CURRENCY ||
     code === CANADA_PAYOUT_CURRENCY ||
     code === KENYA_PAYOUT_CURRENCY ||
+    isNuvionPayoutCurrency(code) ||
     code === EUR_PAYOUT_SETTLEMENT_CURRENCY ||
     code === INDIA_PAYOUT_SETTLEMENT_CURRENCY
   )
@@ -189,12 +213,16 @@ export const initialNgnPayoutPayload: NgnPayoutFormPayload = {
 
 export const initialKePayoutPayload: KePayoutFormPayload = {
   amount: '',
+  channel: 'momo',
   accountNumber: '',
   confirmAccountNumber: '',
   accountName: '',
   description: '',
   merchantReference: '',
 }
+
+export const emptyNuvionPayoutPayload: NuvionPayoutFormPayload =
+  initialNuvionPayoutPayload()
 
 export const initialCadPayoutPayload: CadPayoutFormPayload = {
   amount: '',

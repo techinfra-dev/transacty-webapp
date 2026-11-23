@@ -5,6 +5,7 @@ import { CpgPayoutSuccessView } from '../components/payouts/CpgPayoutSuccessView
 import { EurPayoutSuccessView } from '../components/payouts/EurPayoutSuccessView.tsx'
 import { CadPayoutSuccessView } from '../components/payouts/CadPayoutSuccessView.tsx'
 import { KesPayoutSuccessView } from '../components/payouts/KesPayoutSuccessView.tsx'
+import { NuvionPayoutSuccessView } from '../components/payouts/NuvionPayoutSuccessView.tsx'
 import { NgnPayoutSuccessView } from '../components/payouts/NgnPayoutSuccessView.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
 import { PayoutFormSteps } from '../components/payouts/PayoutFormSteps.tsx'
@@ -75,6 +76,15 @@ export function DashboardPayoutsPage() {
             createdPayout={flow.createdCadPayout}
             polledPayout={flow.cadPayoutStatusQuery.data}
             isPolling={flow.cadPayoutStatusQuery.isFetching}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.createdNuvionPayout ? (
+          <NuvionPayoutSuccessView
+            environment={flow.portalEnvironment}
+            nuvionPayload={flow.nuvionPayload}
+            createdPayout={flow.createdNuvionPayout}
+            polledPayout={flow.nuvionPayoutStatusQuery.data}
+            isPolling={flow.nuvionPayoutStatusQuery.isFetching}
             onCreateAnother={flow.handleResetFlow}
           />
         ) : flow.payoutRail === 'kes' && flow.createdKePayout ? (
@@ -162,7 +172,10 @@ export function DashboardPayoutsPage() {
                                   ? flow.portalEnvironment !== 'live'
                                     ? KENYA_LIVE_ONLY_COPY
                                     : 'Kenya market access must be approved before KES payouts are available.'
-                                : 'Payouts are available for BRL, NGN, CAD, KES, USDT, and USDC wallets only.'}
+                                  : flow.payoutRail === 'nuvion' &&
+                                      !flow.nuvionEntityQuery.isPending
+                                    ? 'Register and get your Nuvion entity approved in Settings → Markets before these payouts are available.'
+                                : 'Payouts are available for BRL, NGN, CAD, KES, USD, AED, GHS, TZS, MXN, USDT, and USDC wallets only.'}
                     </p>
                   ) : flow.clientError ? (
                     <p className="payout-alert payout-alert--panel">{flow.clientError}</p>
@@ -186,6 +199,9 @@ export function DashboardPayoutsPage() {
                   setCadPayload={flow.setCadPayload}
                   kePayload={flow.kePayload}
                   setKePayload={flow.setKePayload}
+                  nuvionPayload={flow.nuvionPayload}
+                  setNuvionPayload={flow.setNuvionPayload}
+                  nuvionEntityApproved={flow.isNuvionApproved}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
@@ -232,6 +248,7 @@ export function DashboardPayoutsPage() {
               ngnPayload={flow.ngnPayload}
               cadPayload={flow.cadPayload}
               kePayload={flow.kePayload}
+              nuvionPayload={flow.nuvionPayload}
               formattedPreviewAmount={flow.formattedPreviewAmount}
               hasBeneficiaryDetails={flow.hasBeneficiaryDetails}
               hasSenderDetails={flow.hasSenderDetails}
@@ -260,7 +277,11 @@ export function DashboardPayoutsPage() {
                   : flow.payoutRail === 'cad'
                     ? 'You are about to send a real CAD payout. CAD will be debited from your wallet and transfers cannot be reversed.'
                     : flow.payoutRail === 'kes'
-                      ? 'You are about to send a real KES M-Pesa payout. KES will be debited from your wallet and transfers cannot be reversed.'
+                      ? flow.kePayload.channel === 'bank'
+                        ? 'You are about to send a real KES bank payout via Nuvion. KES will be debited from your wallet and transfers cannot be reversed.'
+                        : 'You are about to send a real KES M-Pesa payout. KES will be debited from your wallet and transfers cannot be reversed.'
+                      : flow.payoutRail === 'nuvion'
+                        ? 'You are about to send a real Nuvion payout. Funds will be debited from your wallet and transfers cannot be reversed.'
                     : 'You are about to submit a real payout in the live environment. This may move real funds.'
         }
         maxWidthClassName="max-w-md"

@@ -18,7 +18,6 @@ import {
   mergeCatalogMarkets,
   sortWalletsNewestFirst,
 } from '../utils/balanceWalletUtils.ts'
-import { getMarketBrowserFilter, canRequestMarketAccess } from '../utils/marketDisplayUtils.ts'
 
 function MerchantKycBadge({
   kycStatus,
@@ -63,16 +62,9 @@ export function DashboardPage() {
     () => mergeCatalogMarkets(marketsQuery.data ?? [], catalog),
     [marketsQuery.data, catalog],
   )
-  // Only markets that can still be requested (Available > 0), not already enabled/down.
-  const hasRequestableMarkets = useMemo(
-    () =>
-      markets.some(
-        (market) =>
-          getMarketBrowserFilter(market) === 'available' &&
-          canRequestMarketAccess(market),
-      ),
-    [markets],
-  )
+  // Keep the Add wallet entry visible so newly granted markets stay discoverable
+  // (enabled countries no longer count as "requestable").
+  const showAddWalletEntry = markets.length > 0
 
   const isKycVerified = profileQuery.data?.kycStatus === 'verified'
   const showGoLiveChecklist =
@@ -147,7 +139,7 @@ export function DashboardPage() {
             businessProfileStatus={profileQuery.data?.businessProfile?.status}
           />
           <div className="go-live-side-stack">
-            {hasRequestableMarkets ? (
+            {showAddWalletEntry ? (
               <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
             ) : null}
             <DashboardWalletDistributionChart />
@@ -166,9 +158,9 @@ export function DashboardPage() {
           ) : (
             <DashboardWalletsRow
               currencyCount={wallets.length}
-              hasAddWallet={hasRequestableMarkets}
+              hasAddWallet={showAddWalletEntry}
             >
-              {hasRequestableMarkets ? (
+              {showAddWalletEntry ? (
                 <DashboardAddWalletCard onClick={() => setIsAddWalletOpen(true)} />
               ) : null}
               {wallets.map((wallet) => {

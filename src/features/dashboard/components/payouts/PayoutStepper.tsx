@@ -16,7 +16,8 @@ function getStepLabel(
     (payoutRail === 'ngn' ||
       payoutRail === 'cpg' ||
       payoutRail === 'cad' ||
-      payoutRail === 'kes')
+      payoutRail === 'kes' ||
+      payoutRail === 'nuvion')
   ) {
     return 'Review'
   }
