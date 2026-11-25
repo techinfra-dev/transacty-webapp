@@ -35,7 +35,7 @@ export const MARKET_RAIL_SUMMARIES: Record<string, string> = {
   brazil: 'Pix',
   nigeria: 'Virtual account · Bank payout',
   canada: 'Bank / Interac / bill payout',
-  kenya: 'M-Pesa collect · M-Pesa payout',
+  kenya: 'M-Pesa collect · M-Pesa payout · KES → USDT/USDC',
   pyusd: 'Stablecoin settlement · PYUSD → PYUSD USDC',
 }
 

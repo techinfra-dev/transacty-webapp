@@ -48,6 +48,7 @@ export const keCollectInstanceSchema = z
     merchantReference: z.string().nullable().optional(),
     paymentInstructions: keCollectInstructionsSchema.nullable().optional(),
     expiresAt: z.string().nullable().optional(),
+    settled: z.boolean().optional(),
     environment: portalEnvironmentSchema.optional(),
   })
   .passthrough()

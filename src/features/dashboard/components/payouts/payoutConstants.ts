@@ -219,6 +219,9 @@ export const initialKePayoutPayload: KePayoutFormPayload = {
   accountName: '',
   description: '',
   merchantReference: '',
+  stablecoinCurrency: 'USDT',
+  recipientAddress: '',
+  chain: '',
 }
 
 export const emptyNuvionPayoutPayload: NuvionPayoutFormPayload =

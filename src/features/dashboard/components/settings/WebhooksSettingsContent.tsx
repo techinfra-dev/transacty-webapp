@@ -226,7 +226,8 @@ export function WebhooksSettingsContent() {
           }
         >
           <p className="settings-hint">
-            Use{' '}
+            Payment results are sent to your registered email and to your
+            webhook URL. Use{' '}
             <a
               href={`${DEVELOPER_DOCS_URL}/webhooks`}
               target="_blank"

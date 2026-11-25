@@ -13,6 +13,8 @@ import { getPostAuthNavigateOptions } from '../utils/postAuthNavigation.ts'
 
 export function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [welcomeSlug, setWelcomeSlug] = useState<string | null>(null)
+  const [isSlugCopied, setIsSlugCopied] = useState(false)
   const navigate = useNavigate()
   const signupMutation = useSignupMutation()
 
@@ -51,6 +53,21 @@ export function SignUpPage() {
         })
         return
       }
+      const slugFromMerchant =
+        'merchant' in result &&
+        result.merchant &&
+        typeof result.merchant === 'object' &&
+        'slug' in result.merchant &&
+        typeof result.merchant.slug === 'string'
+          ? result.merchant.slug.trim()
+          : ''
+      const slug =
+        ('merchantSlug' in result ? result.merchantSlug?.trim() : '') ||
+        slugFromMerchant
+      if (slug) {
+        setWelcomeSlug(slug)
+        return
+      }
       await navigate(getPostAuthNavigateOptions())
     } catch (error) {
       setErrorMessage(
@@ -59,6 +76,58 @@ export function SignUpPage() {
           : 'Unable to create account right now. Please try again.',
       )
     }
+  }
+
+  async function handleCopySlug() {
+    if (!welcomeSlug) {
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(welcomeSlug)
+      setIsSlugCopied(true)
+      window.setTimeout(() => setIsSlugCopied(false), 1800)
+    } catch {
+      setIsSlugCopied(false)
+    }
+  }
+
+  if (welcomeSlug) {
+    return (
+      <div className="auth-form-enter space-y-5">
+        <div className="space-y-2 text-center">
+          <h2 className="[font-family:var(--font-display)] text-xl font-semibold text-[#0F0700]">
+            Welcome to Transacty
+          </h2>
+          <p className="[font-family:var(--font-body)] text-sm text-[#566167]">
+            Your merchant id is ready. Keep it handy for support and docs.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-[#9D8F82]/40 bg-[#F3E8D6]/40 px-4 py-3 text-center">
+          <p className="[font-family:var(--font-body)] text-xs font-semibold uppercase tracking-wide text-[#566167]">
+            Merchant id
+          </p>
+          <code className="mt-1 block [font-family:ui-monospace,monospace] text-lg font-semibold text-[#0F0700]">
+            {welcomeSlug}
+          </code>
+          <button
+            type="button"
+            className="mt-2 [font-family:var(--font-body)] text-sm font-semibold text-[#c58b6b] transition hover:text-[#a97659]"
+            onClick={() => void handleCopySlug()}
+          >
+            {isSlugCopied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+
+        <Button
+          type="button"
+          className="w-full"
+          onClick={() => void navigate(getPostAuthNavigateOptions())}
+        >
+          Continue to dashboard
+        </Button>
+      </div>
+    )
   }
 
   return (

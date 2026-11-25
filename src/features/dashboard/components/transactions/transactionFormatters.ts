@@ -95,6 +95,8 @@ const TYLT_PRODUCT_LABELS: Record<string, string> = {
   tekko_ke_collect: 'Kenya KES M-Pesa collect',
   'tekko-ke-payout': 'Kenya KES M-Pesa payout',
   tekko_ke_payout: 'Kenya KES M-Pesa payout',
+  'tekko-ke-stablecoin-payout': 'Kenya KES → stablecoin payout',
+  tekko_ke_stablecoin_payout: 'Kenya KES → stablecoin payout',
 }
 
 function readTyltProduct(metadata: Record<string, unknown> | null | undefined) {

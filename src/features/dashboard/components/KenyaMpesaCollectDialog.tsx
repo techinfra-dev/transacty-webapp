@@ -40,6 +40,9 @@ function CollectStatusPanel({ created }: { created: KeCollectInstance }) {
   const collectQuery = useKeCollectQuery(transactionId, Boolean(transactionId))
   const latest = collectQuery.data ?? created
   const status = latest.status?.trim().toLowerCase() || 'pending'
+  const settled = (latest as { settled?: boolean }).settled === true
+  const isPaid = status === 'credited' || status === 'settled' || settled
+  const isFailed = status === 'failed' || status === 'expired'
   const instructions = instructionText(latest)
 
   return (
@@ -47,8 +50,11 @@ function CollectStatusPanel({ created }: { created: KeCollectInstance }) {
       <p className="[font-family:var(--font-body)] text-sm text-(--dash-fg-muted)">
         Status is{' '}
         <span className="capitalize text-(--dash-fg)">{status}</span>
-        . Ask the payer to approve the M-Pesa prompt. Money credits after they
-        pay.
+        {isPaid
+          ? '. Payment received — the KES wallet has been credited.'
+          : isFailed
+            ? '. This collect did not complete.'
+            : '. Ask the payer to approve the M-Pesa prompt. Money credits after they pay.'}
       </p>
 
       {instructions ? (

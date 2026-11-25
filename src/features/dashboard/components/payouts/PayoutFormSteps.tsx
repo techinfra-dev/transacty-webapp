@@ -8,6 +8,7 @@ import type { NgnPayoutFormPayload } from '../../services/ngnPayoutSchemas.ts'
 import type { CadPayoutFormPayload } from '../../services/cadPayoutSchemas.ts'
 import type { KePayoutFormPayload } from '../../services/kePayoutSchemas.ts'
 import type { NuvionPayoutFormPayload } from '../../services/nuvionPayoutSchemas.ts'
+import type { KeStablecoinQuote } from '../../services/keStablecoinPayoutSchemas.ts'
 import { KesBeneficiaryFields } from './KesBeneficiaryFields.tsx'
 import { NuvionBeneficiaryFields } from './NuvionBeneficiaryFields.tsx'
 import { useKePayoutFeeQuoteQuery } from '../../hooks/useKePayoutMutations.ts'
@@ -54,6 +55,8 @@ interface PayoutFormStepsProps {
   nuvionPayload: NuvionPayoutFormPayload
   setNuvionPayload: React.Dispatch<React.SetStateAction<NuvionPayoutFormPayload>>
   nuvionEntityApproved: boolean
+  stablecoinQuote: KeStablecoinQuote | null
+  setStablecoinQuote: React.Dispatch<React.SetStateAction<KeStablecoinQuote | null>>
   displayCurrency: string
   settlementCurrency: string
   effectiveMinimumAmount: number
@@ -89,6 +92,8 @@ export function PayoutFormSteps({
   nuvionPayload,
   setNuvionPayload,
   nuvionEntityApproved,
+  stablecoinQuote,
+  setStablecoinQuote,
   displayCurrency,
   settlementCurrency,
   effectiveMinimumAmount,
@@ -180,6 +185,7 @@ export function PayoutFormSteps({
         ...previousPayload,
         amount: nextAmount,
       }))
+      setStablecoinQuote(null)
       return
     }
     if (payoutRail === 'nuvion') {
@@ -315,6 +321,8 @@ export function PayoutFormSteps({
               nuvionPayload={nuvionPayload}
               setNuvionPayload={setNuvionPayload}
               nuvionEntityApproved={nuvionEntityApproved}
+              stablecoinQuote={stablecoinQuote}
+              setStablecoinQuote={setStablecoinQuote}
             />
           ) : payoutRail === 'nuvion' ? (
             <NuvionBeneficiaryFields
@@ -598,6 +606,8 @@ export function PayoutFormSteps({
               <p className="payout-panel-section-desc sm:col-span-2">
                 {kePayload.channel === 'bank'
                   ? 'Confirm the Nuvion bank recipient before submitting. Transfers cannot be reversed once sent.'
+                  : kePayload.channel === 'stablecoin'
+                    ? 'Confirm the quote and destination before submitting. Quotes expire — refresh if needed.'
                   : 'Confirm the M-Pesa recipient before submitting. Transfers cannot be reversed once sent.'}
               </p>
               <div className="sm:col-span-2 rounded-lg border border-(--color-accent)/35 bg-(--color-card) p-4 [font-family:var(--font-body)] text-sm text-(--color-foreground)">
@@ -627,6 +637,30 @@ export function PayoutFormSteps({
                     <p className="mt-2">
                       <span className="text-(--color-secondary)">Narration:</span>{' '}
                       {nuvionPayload.narration || '—'}
+                    </p>
+                  </>
+                ) : kePayload.channel === 'stablecoin' ? (
+                  <>
+                    <p>
+                      <span className="text-(--color-secondary)">KES amount:</span>{' '}
+                      {kePayload.amount || '—'} {KENYA_PAYOUT_CURRENCY}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Receive:</span>{' '}
+                      {stablecoinQuote?.destinationAmount || '—'}{' '}
+                      {kePayload.stablecoinCurrency}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Rate:</span>{' '}
+                      {stablecoinQuote?.rate || '—'}
+                    </p>
+                    <p className="mt-2">
+                      <span className="text-(--color-secondary)">Beneficiary:</span>{' '}
+                      {kePayload.accountName || '—'}
+                    </p>
+                    <p className="mt-2 break-all">
+                      <span className="text-(--color-secondary)">Address:</span>{' '}
+                      {kePayload.recipientAddress || '—'}
                     </p>
                   </>
                 ) : (

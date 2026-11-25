@@ -329,7 +329,9 @@ export function ApiKeysSettingsContent() {
           <div>
             <p className={settingsFieldLabelClass}>Scopes</p>
             <p className="settings-hint mt-1">
-              Optional. Leave all unchecked to use the server default scopes.
+              One key gates Bangladesh and cross-border rails (India, Europe,
+              and other markets). Optional scopes — leave all unchecked to use
+              the server default.
             </p>
             <div className="settings-scope-toggle-list" role="group" aria-label="API key scopes">
               {API_KEY_SCOPE_OPTIONS.map((option) => {

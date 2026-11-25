@@ -75,6 +75,8 @@ export function DashboardOutletHeader({
   onOpenMobileNav,
 }: DashboardOutletHeaderProps) {
   const merchantName = resolveMerchantLabel(authUser, profile, isProfilePending)
+  const merchantSlug =
+    profile?.merchantSlug?.trim() || authUser?.merchantSlug?.trim() || ''
   const email = profile?.email ?? authUser?.email ?? ''
   const role = profile?.role ?? authUser?.role ?? ''
   const initials = displayInitials(merchantName, email)
@@ -99,12 +101,18 @@ export function DashboardOutletHeader({
 
         <Link
           to="/dashboard/settings"
+          search={{ tab: 'profile' }}
           className="flex min-w-0 max-w-[min(100%,280px)] items-center gap-2.5 rounded-lg px-1 py-0.5 text-inherit no-underline outline-none transition hover:bg-(--dashboard-main-bg) focus-visible:ring-2 focus-visible:ring-(--color-accent)/40"
           aria-label={`${merchantName} account settings`}
         >
           <div className="min-w-0 text-right">
             <p className="truncate [font-family:var(--font-body)] text-[15px] font-semibold text-(--color-foreground)">
               {merchantName}
+              {merchantSlug ? (
+                <span className="ml-1.5 font-medium text-(--color-secondary)">
+                  · {merchantSlug}
+                </span>
+              ) : null}
             </p>
             <p className="truncate [font-family:var(--font-body)] text-[11.5px] text-(--color-secondary)">
               {email}

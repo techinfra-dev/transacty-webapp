@@ -10,6 +10,7 @@ import {
   getLedgerStatusPillClass,
   toTitleCase,
 } from '../transactions/transactionFormatters.ts'
+import { downloadReconciliationCsv } from '../../services/reconciliationService.ts'
 import { downloadReconciliationRowsAsCsv } from '../../utils/reconciliationCsv.ts'
 import { validateReconciliationDateRange } from '../../utils/reconciliationDateUtils.ts'
 import { isVisibleWallet } from '../../utils/balanceWalletUtils.ts'
@@ -191,19 +192,28 @@ export function ReconciliationSettingsContent() {
     !reconciliationQuery.isError &&
     visibleRows.length > 0
 
-  function handleDownloadCsv() {
+  async function handleDownloadCsv() {
     if (!canDownloadCsv) {
       return
     }
     setDownloadError(null)
     setIsDownloading(true)
     try {
-      downloadReconciliationRowsAsCsv({
-        rows: visibleRows,
-        environment: portalEnvironment,
-        from: fromDate,
-        to: toDate,
-      })
+      try {
+        await downloadReconciliationCsv({
+          environment: portalEnvironment,
+          from: fromDate,
+          to: toDate,
+        })
+      } catch {
+        // Fall back to client-built CSV if the server export is unavailable.
+        downloadReconciliationRowsAsCsv({
+          rows: visibleRows,
+          environment: portalEnvironment,
+          from: fromDate,
+          to: toDate,
+        })
+      }
     } catch (error) {
       setDownloadError(
         error instanceof Error

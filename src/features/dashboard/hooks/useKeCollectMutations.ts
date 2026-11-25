@@ -34,6 +34,7 @@ export function useCreateKeCollectMutation() {
 
 const terminalKeCollectStatuses = new Set([
   'success',
+  'credited',
   'failed',
   'cancelled',
   'canceled',

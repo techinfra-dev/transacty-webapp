@@ -5,6 +5,7 @@ import { CpgPayoutSuccessView } from '../components/payouts/CpgPayoutSuccessView
 import { EurPayoutSuccessView } from '../components/payouts/EurPayoutSuccessView.tsx'
 import { CadPayoutSuccessView } from '../components/payouts/CadPayoutSuccessView.tsx'
 import { KesPayoutSuccessView } from '../components/payouts/KesPayoutSuccessView.tsx'
+import { KesStablecoinPayoutSuccessView } from '../components/payouts/KesStablecoinPayoutSuccessView.tsx'
 import { NuvionPayoutSuccessView } from '../components/payouts/NuvionPayoutSuccessView.tsx'
 import { NgnPayoutSuccessView } from '../components/payouts/NgnPayoutSuccessView.tsx'
 import { PayoutFormNav } from '../components/payouts/PayoutFormNav.tsx'
@@ -85,6 +86,17 @@ export function DashboardPayoutsPage() {
             createdPayout={flow.createdNuvionPayout}
             polledPayout={flow.nuvionPayoutStatusQuery.data}
             isPolling={flow.nuvionPayoutStatusQuery.isFetching}
+            onCreateAnother={flow.handleResetFlow}
+          />
+        ) : flow.payoutRail === 'kes' &&
+          flow.kePayload.channel === 'stablecoin' &&
+          flow.createdKeStablecoinPayout ? (
+          <KesStablecoinPayoutSuccessView
+            environment={flow.portalEnvironment}
+            kePayload={flow.kePayload}
+            createdPayout={flow.createdKeStablecoinPayout}
+            polledPayout={flow.keStablecoinPayoutStatusQuery.data}
+            isPolling={flow.keStablecoinPayoutStatusQuery.isFetching}
             onCreateAnother={flow.handleResetFlow}
           />
         ) : flow.payoutRail === 'kes' && flow.createdKePayout ? (
@@ -202,6 +214,8 @@ export function DashboardPayoutsPage() {
                   nuvionPayload={flow.nuvionPayload}
                   setNuvionPayload={flow.setNuvionPayload}
                   nuvionEntityApproved={flow.isNuvionApproved}
+                  stablecoinQuote={flow.stablecoinQuote}
+                  setStablecoinQuote={flow.setStablecoinQuote}
                   displayCurrency={flow.displayCurrency}
                   settlementCurrency={flow.settlementCurrency}
                   effectiveMinimumAmount={flow.effectiveMinimumAmount}
@@ -279,7 +293,9 @@ export function DashboardPayoutsPage() {
                     : flow.payoutRail === 'kes'
                       ? flow.kePayload.channel === 'bank'
                         ? 'You are about to send a real KES bank payout via Nuvion. KES will be debited from your wallet and transfers cannot be reversed.'
-                        : 'You are about to send a real KES M-Pesa payout. KES will be debited from your wallet and transfers cannot be reversed.'
+                        : flow.kePayload.channel === 'stablecoin'
+                          ? 'You are about to convert KES to USDT/USDC and send it on-chain. KES will be debited immediately — there is no approval queue for this rail.'
+                          : 'You are about to send a real KES M-Pesa payout. KES will be debited from your wallet and transfers cannot be reversed.'
                       : flow.payoutRail === 'nuvion'
                         ? 'You are about to send a real Nuvion payout. Funds will be debited from your wallet and transfers cannot be reversed.'
                     : 'You are about to submit a real payout in the live environment. This may move real funds.'

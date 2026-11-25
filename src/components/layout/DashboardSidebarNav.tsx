@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { Button } from '../ui/Button.tsx'
 import type { PortalEnvironment } from '../../types/portalEnvironment.ts'
 import { useBrandLogoPath } from '../../theme/useBrandLogo.ts'
@@ -15,6 +15,7 @@ export interface DashboardNavItem {
     | '/dashboard/payouts'
     | '/dashboard/payout-approvals'
     | '/dashboard/settings'
+  search?: { tab?: string }
 }
 
 interface DashboardNavSection {
@@ -43,12 +44,27 @@ export const dashboardMenuSections: DashboardNavSection[] = [
     items: [{ label: 'Customers', to: '/dashboard/customers' }],
   },
   {
+    title: 'Reports',
+    items: [
+      {
+        label: 'Reconciliation',
+        to: '/dashboard/settings',
+        search: { tab: 'reconciliation-report' },
+      },
+    ],
+  },
+  {
     title: 'Settings',
     items: [{ label: 'Settings', to: '/dashboard/settings' }],
   },
 ]
 
-export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: string) {
+export function isDashboardNavItemActive(
+  item: Pick<DashboardNavItem, 'to' | 'search'>,
+  pathname: string,
+  searchTab?: string,
+) {
+  const { to, search } = item
   if (to === '/dashboard') {
     return pathname === '/dashboard'
   }
@@ -60,6 +76,17 @@ export function isDashboardNavItemActive(to: DashboardNavItem['to'], pathname: s
   }
   if (to === '/dashboard/payout-approvals') {
     return pathname.startsWith('/dashboard/payout-approvals')
+  }
+  if (to === '/dashboard/settings' && search?.tab) {
+    return (
+      pathname.startsWith('/dashboard/settings') && searchTab === search.tab
+    )
+  }
+  if (to === '/dashboard/settings') {
+    return (
+      pathname.startsWith('/dashboard/settings') &&
+      searchTab !== 'reconciliation-report'
+    )
   }
   return pathname === to || pathname.startsWith(`${to}/`)
 }
@@ -159,6 +186,12 @@ export function DashboardSidebarNav({
   collapsed = false,
 }: DashboardSidebarNavProps) {
   const { canWriteMoney } = usePortalRole()
+  const searchTab = useRouterState({
+    select: (state) => {
+      const tab = (state.location.search as { tab?: unknown }).tab
+      return typeof tab === 'string' ? tab : undefined
+    },
+  })
   const footerPadClass =
     reserveTestBannerSpace && portalEnvironment === 'test'
       ? 'pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]'
@@ -192,11 +225,16 @@ export function DashboardSidebarNav({
             ) : null}
             <div className="space-y-1">
               {section.items.map((item) => {
-                const isActive = isDashboardNavItemActive(item.to, pathname)
+                const isActive = isDashboardNavItemActive(
+                  item,
+                  pathname,
+                  searchTab,
+                )
                 return (
                   <Link
-                    key={item.to}
+                    key={`${item.to}:${item.search?.tab ?? 'default'}`}
                     to={item.to}
+                    search={item.search}
                     activeOptions={{ exact: item.to === '/dashboard' }}
                     onClick={onNavigate}
                     aria-label={collapsed ? item.label : undefined}

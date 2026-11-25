@@ -97,3 +97,47 @@ export async function getReconciliationReport(params: {
   }
 }
 
+/** Server CSV export (`format=csv`). Caller should fall back to client CSV on failure. */
+export async function downloadReconciliationCsv(params: {
+  environment: PortalEnvironment
+  from: string
+  to: string
+}): Promise<void> {
+  const { from, to } = formatReconciliationApiDateRange(params.from, params.to)
+  const response = await axiosInstance.get('me/reconciliation', {
+    headers: getAuthHeader(),
+    params: {
+      environment: params.environment,
+      from,
+      to,
+      format: 'csv',
+    },
+    responseType: 'blob',
+  })
+
+  const blob = response.data as Blob
+  if (!(blob instanceof Blob) || blob.size === 0) {
+    throw new Error('Empty reconciliation CSV response.')
+  }
+
+  const contentType = String(response.headers['content-type'] ?? '')
+  if (contentType.includes('application/json')) {
+    const text = await blob.text()
+    let message = 'Unable to export reconciliation CSV.'
+    try {
+      const parsed = JSON.parse(text) as { message?: string; error?: string }
+      message = parsed.message || parsed.error || message
+    } catch {
+      // Keep default message when body is not JSON.
+    }
+    throw new Error(message)
+  }
+
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `reconciliation-${params.environment}-${params.from}-${params.to}.csv`
+  link.click()
+  window.URL.revokeObjectURL(url)
+}
+

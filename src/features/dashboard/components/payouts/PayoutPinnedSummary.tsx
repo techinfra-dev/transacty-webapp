@@ -75,7 +75,10 @@ export function PayoutPinnedSummary({
               : payoutRail === 'kes'
                 ? kePayload.channel === 'bank'
                   ? nuvionPayload.accountHolderName.trim() || '—'
-                  : kePayload.accountName.trim() || '—'
+                  : kePayload.accountName.trim() ||
+                    (kePayload.channel === 'stablecoin'
+                      ? kePayload.recipientAddress.trim() || '—'
+                      : '—')
                 : payoutRail === 'nuvion'
                   ? nuvionPayload.accountHolderName.trim() || '—'
               : `${payload.cardHolderInfo.firstName} ${payload.cardHolderInfo.lastName}`.trim() ||
@@ -180,7 +183,9 @@ export function PayoutPinnedSummary({
           <p className="payout-summary-value payout-summary-value--muted">
             {kePayload.channel === 'bank'
               ? 'Kenya bank EFT (Nuvion)'
-              : 'Kenya M-Pesa payout'}
+              : kePayload.channel === 'stablecoin'
+                ? `Kenya KES → ${kePayload.stablecoinCurrency}`
+                : 'Kenya M-Pesa payout'}
           </p>
         ) : payoutRail === 'nuvion' ? (
           <p className="payout-summary-value payout-summary-value--muted">
@@ -228,13 +233,19 @@ export function PayoutPinnedSummary({
                   ? nuvionPayload.accountHolderName || '—'
                   : kePayload.accountName || '—'}
               </p>
-              <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs">
+              <p className="payout-summary-value payout-summary-value--muted font-[ui-monospace,monospace] text-xs break-all">
                 {kePayload.channel === 'bank'
                   ? nuvionPayload.accountNumber || '—'
-                  : kePayload.accountNumber || '—'}
+                  : kePayload.channel === 'stablecoin'
+                    ? kePayload.recipientAddress || '—'
+                    : kePayload.accountNumber || '—'}
               </p>
               <p className="payout-summary-value payout-summary-value--muted">
-                {kePayload.channel === 'bank' ? 'Bank EFT' : 'M-Pesa'}
+                {kePayload.channel === 'bank'
+                  ? 'Bank EFT'
+                  : kePayload.channel === 'stablecoin'
+                    ? kePayload.stablecoinCurrency
+                    : 'M-Pesa'}
               </p>
             </div>
           ) : payoutRail === 'nuvion' ? (
@@ -361,7 +372,9 @@ export function PayoutPinnedSummary({
               <p className="payout-summary-value payout-summary-value--muted">
                 {kePayload.channel === 'bank'
                   ? 'Bank EFT recipient'
-                  : 'M-Pesa recipient'}
+                  : kePayload.channel === 'stablecoin'
+                    ? 'Stablecoin destination'
+                    : 'M-Pesa recipient'}
               </p>
             </div>
           ) : payoutRail === 'nuvion' ? (

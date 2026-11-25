@@ -28,6 +28,10 @@ import {
   useKePayoutQuery,
 } from './useKePayoutMutations.ts'
 import {
+  useCreateKeStablecoinPayoutMutation,
+  useKeStablecoinPayoutQuery,
+} from './useKeStablecoinPayoutMutations.ts'
+import {
   useCreateNuvionPayoutMutation,
   useNuvionPayoutQuery,
 } from './useNuvionPayoutMutations.ts'
@@ -78,6 +82,11 @@ import {
   type NuvionPayoutFormPayload,
   type NuvionPayoutInstance,
 } from '../services/nuvionPayoutSchemas.ts'
+import {
+  defaultChainForStablecoin,
+  type KeStablecoinPayoutInstance,
+  type KeStablecoinQuote,
+} from '../services/keStablecoinPayoutSchemas.ts'
 import {
   isNuvionEntityApproved,
   isNuvionPayoutCurrency,
@@ -166,6 +175,10 @@ export function usePayoutFlow() {
     useState<KePayoutInstance | null>(null)
   const [createdNuvionPayout, setCreatedNuvionPayout] =
     useState<NuvionPayoutInstance | null>(null)
+  const [createdKeStablecoinPayout, setCreatedKeStablecoinPayout] =
+    useState<KeStablecoinPayoutInstance | null>(null)
+  const [stablecoinQuote, setStablecoinQuote] =
+    useState<KeStablecoinQuote | null>(null)
   const [queuedApproval, setQueuedApproval] =
     useState<PayoutQueuedApproval | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
@@ -195,6 +208,7 @@ export function usePayoutFlow() {
   const createNgnPayoutMutation = useCreateNgnPayoutMutation()
   const createCadPayoutMutation = useCreateCadPayoutMutation()
   const createKePayoutMutation = useCreateKePayoutMutation()
+  const createKeStablecoinPayoutMutation = useCreateKeStablecoinPayoutMutation()
   const createNuvionPayoutMutation = useCreateNuvionPayoutMutation()
   const approveEurPayoutMutation = useApproveEurPayoutMutation()
   const balanceQuery = useBalanceQuery(true)
@@ -405,6 +419,7 @@ export function usePayoutFlow() {
     createdCadPayout?.transactionId ||
     createdKePayout?.transactionId ||
     createdNuvionPayout?.transactionId ||
+    createdKeStablecoinPayout?.transactionId ||
     createdEurPayout?.transactionId ||
     createdPayout?.transactionId ||
     createdPayout?.id
@@ -432,6 +447,11 @@ export function usePayoutFlow() {
   const kePayoutStatusQuery = useKePayoutQuery(
     createdKePayout?.transactionId,
     step === 5 && payoutRail === 'kes' && kePayload.channel === 'momo',
+  )
+
+  const keStablecoinPayoutStatusQuery = useKeStablecoinPayoutQuery(
+    createdKeStablecoinPayout?.transactionId,
+    step === 5 && payoutRail === 'kes' && kePayload.channel === 'stablecoin',
   )
 
   const nuvionPayoutStatusQuery = useNuvionPayoutQuery(
@@ -464,8 +484,11 @@ export function usePayoutFlow() {
                 ? kePayload.channel === 'bank'
                   ? nuvionPayload.accountHolderName.trim().length > 0 ||
                     nuvionPayload.accountNumber.trim().length > 0
-                  : kePayload.accountNumber.trim().length > 0 ||
-                    kePayload.accountName.trim().length > 0
+                  : kePayload.channel === 'stablecoin'
+                    ? kePayload.recipientAddress.trim().length > 0 ||
+                      kePayload.accountName.trim().length > 0
+                    : kePayload.accountNumber.trim().length > 0 ||
+                      kePayload.accountName.trim().length > 0
                 : payoutRail === 'nuvion'
                   ? nuvionPayload.accountHolderName.trim().length > 0 ||
                     Boolean(nuvionPayload.destinationType)
@@ -499,10 +522,14 @@ export function usePayoutFlow() {
                 ? kePayload.channel === 'bank'
                   ? nuvionPayload.accountHolderName.trim().length > 0 &&
                     nuvionPayload.narration.trim().length > 0
-                  : kePayload.accountName.trim().length > 0 &&
-                    isValidKenyaMsisdn(kePayload.accountNumber) &&
-                    normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
-                      normalizeKenyaMsisdn(kePayload.accountNumber)
+                  : kePayload.channel === 'stablecoin'
+                    ? kePayload.accountName.trim().length > 0 &&
+                      kePayload.recipientAddress.trim().length > 0 &&
+                      Boolean(stablecoinQuote?.quoteId)
+                    : kePayload.accountName.trim().length > 0 &&
+                      isValidKenyaMsisdn(kePayload.accountNumber) &&
+                      normalizeKenyaMsisdn(kePayload.confirmAccountNumber) ===
+                        normalizeKenyaMsisdn(kePayload.accountNumber)
                 : payoutRail === 'nuvion'
                   ? nuvionPayload.accountHolderName.trim().length > 0 &&
                     nuvionPayload.narration.trim().length > 0
@@ -760,6 +787,18 @@ export function usePayoutFlow() {
     if (payoutRail === 'kes') {
       if (kePayload.channel === 'bank') {
         return validateNuvionBeneficiaryStep()
+      }
+      if (kePayload.channel === 'stablecoin') {
+        if (!stablecoinQuote?.quoteId) {
+          return 'Get a quote before continuing.'
+        }
+        if (!kePayload.recipientAddress.trim()) {
+          return 'Enter the destination wallet address.'
+        }
+        if (!kePayload.accountName.trim()) {
+          return 'Enter the beneficiary name.'
+        }
+        return null
       }
       if (!kePayload.accountName.trim()) {
         return 'Enter the recipient name.'
@@ -1172,6 +1211,43 @@ export function usePayoutFlow() {
       return
     }
 
+    if (payoutRail === 'kes' && kePayload.channel === 'stablecoin') {
+      if (!stablecoinQuote?.quoteId) {
+        setClientError('Get a fresh quote before confirming this payout.')
+        return
+      }
+      const chain =
+        kePayload.chain ||
+        defaultChainForStablecoin(kePayload.stablecoinCurrency)
+      try {
+        const response = await createKeStablecoinPayoutMutation.mutateAsync({
+          quoteId: stablecoinQuote.quoteId,
+          destination: {
+            currency: kePayload.stablecoinCurrency,
+            recipientAddress: kePayload.recipientAddress.trim(),
+            chain,
+          },
+          beneficiary: {
+            accountHolderName: kePayload.accountName.trim(),
+          },
+          narration: kePayload.description.trim() || undefined,
+        })
+        setCreatedKeStablecoinPayout(response)
+        setStep(5)
+      } catch (error) {
+        if (error instanceof PayoutPinError) {
+          return
+        }
+        setStablecoinQuote(null)
+        setClientError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to confirm the stablecoin payout. Get a fresh quote and try again.',
+        )
+      }
+      return
+    }
+
     if (payoutRail === 'kes') {
       const parsedPayload = createKePayoutPayloadSchema.safeParse({
         environment: KENYA_LIVE_ONLY_ENVIRONMENT,
@@ -1411,7 +1487,7 @@ export function usePayoutFlow() {
         ngnPayload.confirmAccountNumber.trim() ===
           ngnPayload.accountNumber.trim()
       : payoutRail === 'kes'
-        ? kePayload.channel === 'bank'
+        ? kePayload.channel === 'bank' || kePayload.channel === 'stablecoin'
           ? true
           : kePayload.confirmAccountNumber.trim().length > 0 &&
             isValidKenyaMsisdn(kePayload.accountNumber) &&
@@ -1435,12 +1511,17 @@ export function usePayoutFlow() {
     createNgnPayoutMutation.isPending ||
     createCadPayoutMutation.isPending ||
     createKePayoutMutation.isPending ||
+    createKeStablecoinPayoutMutation.isPending ||
     createNuvionPayoutMutation.isPending
 
   const mutationErrorMessage = usesNuvionSubmit
     ? createNuvionPayoutMutation.isError
       ? createNuvionPayoutMutation.error.message
       : undefined
+    : payoutRail === 'kes' && kePayload.channel === 'stablecoin'
+      ? createKeStablecoinPayoutMutation.isError
+        ? createKeStablecoinPayoutMutation.error.message
+        : undefined
     : payoutRail === 'eur'
       ? createEurPayoutMutation.isError
         ? createEurPayoutMutation.error.message
@@ -1484,6 +1565,8 @@ export function usePayoutFlow() {
     setCreatedCadPayout(null)
     setCreatedKePayout(null)
     setCreatedNuvionPayout(null)
+    setCreatedKeStablecoinPayout(null)
+    setStablecoinQuote(null)
     setQueuedApproval(null)
     setIsLivePayoutConfirmOpen(false)
     setPayload(initialPayoutPayload)
@@ -1516,6 +1599,9 @@ export function usePayoutFlow() {
     createdCadPayout,
     createdKePayout,
     createdNuvionPayout,
+    createdKeStablecoinPayout,
+    stablecoinQuote,
+    setStablecoinQuote,
     queuedApproval,
     payload,
     setPayload,
@@ -1544,6 +1630,7 @@ export function usePayoutFlow() {
     createNgnPayoutMutation,
     createCadPayoutMutation,
     createKePayoutMutation,
+    createKeStablecoinPayoutMutation,
     createNuvionPayoutMutation,
     approveEurPayoutMutation,
     eurPayoutStatusQuery,
@@ -1551,6 +1638,7 @@ export function usePayoutFlow() {
     ngnPayoutStatusQuery,
     cadPayoutStatusQuery,
     kePayoutStatusQuery,
+    keStablecoinPayoutStatusQuery,
     nuvionPayoutStatusQuery,
     nuvionEntityQuery,
     balanceQuery,

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '../components/ui/Button.tsx'
 import { Dialog } from '../components/ui/Dialog.tsx'
 import { TestModeBanner } from '../components/ui/TestModeBanner.tsx'
@@ -113,6 +113,9 @@ export function DashboardLayout() {
     !isFullyVerified &&
     !showKycPendingBanner &&
     (authUser?.needsActivation || isKycRejected)
+  const showMfaPendingBanner =
+    profileQuery.data?.mfaPendingSetup === true &&
+    !pathname.includes('/dashboard/settings')
 
   useEffect(() => {
     const unsubscribe = subscribeToAuthSessionUpdates(() => {
@@ -384,6 +387,25 @@ export function DashboardLayout() {
           <div
             className={`dashboard-outlet min-h-0 flex-1 overflow-y-auto p-4 md:p-5 ${portalEnvironment === 'test' ? 'pb-32' : ''}`}
           >
+          {showMfaPendingBanner ? (
+            <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
+              <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">
+                <span className="inline-flex items-center gap-1 font-semibold text-(--color-background)">
+                  Finish two-factor setup
+                </span>
+                <div className="text-center">
+                  Complete MFA enrollment to protect your account.{' '}
+                  <Link
+                    to="/dashboard/settings"
+                    search={{ tab: 'security' }}
+                    className="font-semibold text-(--color-background) underline underline-offset-2"
+                  >
+                    Open Security
+                  </Link>
+                </div>
+              </div>
+            </section>
+          ) : null}
           {showKycPendingBanner ? (
             <section className="mb-4 border border-(--color-accent)/40 bg-(--color-primary) px-4 py-2.5">
               <div className="flex flex-col items-center justify-center gap-y-0.5 [font-family:var(--font-body)] text-[13px] text-(--color-background)/88">
